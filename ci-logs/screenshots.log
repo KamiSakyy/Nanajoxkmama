@@ -1,9 +1,9 @@
-+ echo 'run: 35536505676'
-run: 35536505676
++ echo 'run: 35537318083'
+run: 35537318083
 + git log --oneline -3
-c1dd66c test(shots): полный обход всех экранов (плеер, очередь, видео, мини-плеер, меню трека, медиатека, настройки) и отчёт об ошибках
-392eed6 chore(ci): build log [skip ci]
-327401b release(android): AniBeat 1.0.5 (versionCode 5) [skip ci]
+d1640a4 feat(android): нативное приложение AniBeat (Java) — экраны, плеер, шторки, API-слой
+c3cc07d chore(ci): build log [skip ci]
+ed6534f release(android): AniBeat 1.0.7 (versionCode 7) [skip ci]
 + ls docs/screenshots
 + wc -l
 27
