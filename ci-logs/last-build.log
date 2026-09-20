@@ -1,5 +1,5 @@
-run: 35535727940  job: build-apk  status: success
-version: 1.0.5
+run: 35536633407  job: build-apk  status: success
+version: 1.0.7
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -11,8 +11,8 @@ Daemon will be stopped at the end of the build
 > Task :app:stripReleaseDebugSymbols NO-SOURCE
 > Task :app:extractReleaseNativeSymbolTables NO-SOURCE
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
-> Task :app:javaPreCompileRelease
 > Task :app:checkReleaseDuplicateClasses
+> Task :app:javaPreCompileRelease
 > Task :app:generateReleaseResValues
 > Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
@@ -47,15 +47,15 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :app:mergeReleaseGlobalSynthetics
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
-> Task :app:optimizeReleaseResources
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
+> Task :app:optimizeReleaseResources
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 44s
+BUILD SUCCESSFUL in 54s
 39 actionable tasks: 38 executed, 1 up-to-date
