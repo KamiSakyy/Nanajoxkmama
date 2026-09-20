@@ -656,11 +656,9 @@ public class Sheets extends FrameLayout {
     /** Полоса занятого места (аналог storage.estimate() на сайте). */
     private static LinearLayout storageRow(Context c) {
         LinearLayout box = Ui.column(c);
-        box.setPadding(Theme.dp(c, 16), Theme.dp(c, 12), Theme.dp(c, 16), Theme.dp(c, 12));
-        box.setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
-                Ui.rounded(0x00000000, 0),
-                divider(c)
-        }));
+        box.addView(Ui.hairline(c), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, Theme.dp(c, 0.5f))));
+        LinearLayout inner = Ui.column(c);
+        inner.setPadding(Theme.dp(c, 16), Theme.dp(c, 12), Theme.dp(c, 16), Theme.dp(c, 12));
         long total = 0L;
         long free = 0L;
         try {
@@ -672,11 +670,12 @@ public class Sheets extends FrameLayout {
         long used = Math.max(0L, total - free);
         int percent = total > 0 ? (int) Math.min(100L, Math.round(used * 100.0 / total)) : 0;
         FrameLayout bar = Ui.progressBar(c, 4f);
-        box.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(c, 4)));
+        inner.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(c, 4)));
         bar.post(() -> Ui.setProgress(bar, percent));
         TextView tv = Ui.text(c, Format.bytes(used) + " из " + Format.bytes(total), 12.5f, Theme.ON_VARIANT);
         tv.setPadding(0, Theme.dp(c, 6), 0, 0);
-        box.addView(tv);
+        inner.addView(tv);
+        box.addView(inner);
         return box;
     }
 

@@ -447,8 +447,8 @@ public final class Ui {
         }
         if (iconName != null) {
             FrameLayout box = new FrameLayout(c);
-            box.setBackground(rounded(danger ? 0x26FF6B62 : iconColor, dpF(c, 8)));
-            ImageView iv = icon(c, iconName, 16, danger ? Theme.ERROR : Theme.ON);
+            box.setBackground(rounded(iconColor, dpF(c, 8)));
+            ImageView iv = icon(c, iconName, 16, Theme.ON);
             FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(dp(c, 16), dp(c, 16));
             ip.gravity = Gravity.CENTER;
             box.addView(iv, ip);
@@ -458,7 +458,7 @@ public final class Ui {
             box.setLayoutParams(boxLp);
         }
         LinearLayout texts = column(c);
-        texts.addView(text(c, label, 15.5f, danger ? Theme.ERROR : Theme.ON));
+        texts.addView(text(c, label, 15.5f, Theme.ON));
         if (sub != null) {
             TextView s = text(c, sub, 12.5f, Theme.ON_VARIANT);
             s.setPadding(0, dp(c, 2), 0, 0);
