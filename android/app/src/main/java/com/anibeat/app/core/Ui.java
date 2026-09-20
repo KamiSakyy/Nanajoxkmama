@@ -475,7 +475,7 @@ public final class Ui {
     }
 
     public static LinearLayout listRow(Context c, String iconName, String label, String sub, boolean first, Click click, java.util.function.Supplier<String> value, boolean danger) {
-        LinearLayout row = listRow(c, iconName, label, sub, first, click, danger ? new ArrayList<android.view.View>(0) : null);
+        LinearLayout row = listRow(c, iconName, label, sub, first, click);
         annotate(row, c, value, danger);
         return row;
     }
@@ -499,7 +499,7 @@ public final class Ui {
         GradientDrawable d = new GradientDrawable();
         d.setColor(Theme.SEPARATOR);
         d.setSize(1, Math.max(1, dp(c, HAIRLINE)));
-        android.graphics.drawable.InsetDrawable inset = new android.graphics.drawable.InsetDrawable(d);
+        android.graphics.drawable.InsetDrawable inset = new android.graphics.drawable.InsetDrawable(d, 0, 0, 0, 0);
         inset.setTint(Theme.SEPARATOR);
         return inset;
     }

@@ -58,8 +58,13 @@ public final class Player {
         restore(context);
         SessionToken token = new SessionToken(context, new ComponentName(context, PlaybackService.class));
         MediaController.Builder builder = new MediaController.Builder(context, token);
-        builder.buildAsync().addListener(() -> {
-            controller = builder.get();
+        com.google.common.util.concurrent.ListenableFuture<MediaController> future = builder.buildAsync();
+        future.addListener(() -> {
+            try {
+                controller = future.get();
+            } catch (Exception e) {
+                return;
+            }
             controller.addListener(new androidx.media3.common.Player.Listener() {
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
@@ -93,7 +98,7 @@ public final class Player {
                 applyQueue(index, false);
             }
             emit();
-        }, Runnable::run);
+        }, com.google.common.util.concurrent.MoreExecutors.directExecutor());
     }
 
     public static boolean isReady() {

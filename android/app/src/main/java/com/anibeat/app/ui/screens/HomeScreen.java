@@ -106,7 +106,7 @@ public class HomeScreen extends ScreenBase {
             rebuild();
         });
         loadSeason(Api.currentSeason());
-        if (randomTracks.isEmpty()) handler.postDelayed(this::liveTick, 45_000);
+        if (randomTracks.isEmpty()) handler.postDelayed(liveTick, 45_000);
     }
 
     private void loadFresh() {
@@ -540,7 +540,7 @@ public class HomeScreen extends ScreenBase {
         if (busy != null) return;
         busy = mix.id;
         rebuild();
-        Api.getTracksForAnimeSlugs(mix.slugs, (tracks, error) -> {
+        Api.getTracksForAnimeSlugs(java.util.Arrays.asList(mix.slugs), (tracks, error) -> {
             busy = null;
             if (tracks == null || tracks.isEmpty()) {
                 activity.toaster().show("Микс пуст — попробуйте ещё раз");

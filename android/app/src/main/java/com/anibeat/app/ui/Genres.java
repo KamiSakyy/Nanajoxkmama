@@ -9,36 +9,8 @@ import java.util.List;
 /** Жанровый фильтр каталога — порт core/catalog.ts (GENRES + trackGenreIds). */
 public final class Genres {
 
-    private static final String[][] DB = {
-            {"экшен", "боевик", "action", "action"},
-            {"фантастика", "sci-fi", "фэнтези", "fantasy", "fantasy"},
-            {"романтика", "romance", "romance"},
-            {"комедия", "comedy", "comedy"},
-            {"драма", "drama", "drama"},
-            {"приключения", "adventure", "adventure"},
-            {"спорт", "sports", "sports"},
-            {"музыка", "music", "идол", "idol", "music"},
-            {"хоррор", "ужасы", "horror", "триллер", "thriller", "мистика", "mystery", "детектив", "thriller"},
-            {"сёдзё", "shoujo", "shoujo"},
-            {"сейнен", "seinen", "seinen"},
-            {"сёнэн", "shounen", "shonen", "shounen"},
-            {"меха", "mecha", "mecha"},
-            {"повседневность", "slice of life", "slice"},
-            {"школа", "school", "school"},
-            {"исторический", "historical", "historical"},
-    };
-
-    public static final List<Models.GenreDef> ALL = new ArrayList<>();
-
-    static {
-        for (String[] row : DB) {
-            String id = row[row.length - 1];
-            String label = row[0].substring(0, 1).toUpperCase() + row[0].substring(1);
-            String[] needles = new String[row.length - 1];
-            System.arraycopy(row, 0, needles, 0, row.length - 1);
-            ALL.add(new Models.GenreDef(id, label, needles));
-        }
-    }
+    /** Каталог жанров — единый источник Api.GENRES (core/catalog.ts). */
+    public static final List<Models.GenreDef> ALL = com.anibeat.app.data.Api.GENRES;
 
     private Genres() {
     }

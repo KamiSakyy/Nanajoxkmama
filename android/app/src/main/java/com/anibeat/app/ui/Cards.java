@@ -148,8 +148,8 @@ public final class Cards {
 
     /** Обновляет индикатор воспроизведения без пересборки списка. */
     public static void refreshTrackRowIndicators(View row, Models.Track track) {
-        if (row instanceof LinearLayout && row.getChildCount() > 0 && row.getChildAt(0) instanceof FrameLayout) {
-            FrameLayout box = (FrameLayout) row.getChildAt(0);
+        if (row instanceof ViewGroup && ((ViewGroup) row).getChildCount() > 0 && ((ViewGroup) row).getChildAt(0) instanceof FrameLayout) {
+            FrameLayout box = (FrameLayout) ((ViewGroup) row).getChildAt(0);
             if (box.getChildCount() > 1) {
                 View overlay = box.getChildAt(1);
                 boolean active = Player.current() != null && Player.current().id.equals(track.id);
