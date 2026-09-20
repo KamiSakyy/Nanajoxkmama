@@ -1,292 +1,299 @@
 package com.anibeat.app;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
-import android.webkit.ConsoleMessage;
-import android.webkit.CookieManager;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
-import androidx.webkit.WebViewAssetLoader;
+
+import com.anibeat.app.core.Image;
+import com.anibeat.app.core.Net;
+import com.anibeat.app.core.Prefs;
+import com.anibeat.app.core.Theme;
+import com.anibeat.app.data.Downloads;
+import com.anibeat.app.data.Library;
+import com.anibeat.app.data.Settings;
+import com.anibeat.app.player.Player;
+import com.anibeat.app.ui.MiniPlayer;
+import com.anibeat.app.ui.Nav;
+import com.anibeat.app.ui.NowPlaying;
+import com.anibeat.app.ui.Sheets;
+import com.anibeat.app.ui.Toaster;
+import com.anibeat.app.ui.screens.AnimeScreen;
+import com.anibeat.app.ui.screens.ArtistScreen;
+import com.anibeat.app.ui.screens.BrowseScreen;
+import com.anibeat.app.ui.screens.HomeScreen;
+import com.anibeat.app.ui.screens.LibraryScreen;
+import com.anibeat.app.ui.screens.PlaylistScreen;
+import com.anibeat.app.ui.screens.SearchScreen;
+import com.anibeat.app.ui.screens.YearScreen;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * AniBeat — Android shell for the web application.
- *
- * The whole UI, design and functionality live in {@code assets/index.html}
- * (the untouched production build of the website) rendered by the system
- * WebView. This activity only provides the platform services WebView lacks:
- * media session / background playback, native file saving, share sheet and
- * full screen video.
+ * AniBeat — полностью нативное приложение (Java + Android SDK).
+ * Ни одной строки веба: экраны, анимации и логика перенесены с сайта
+ * на системные View, Media3 (ExoPlayer) и собственный API-слой.
  */
 public class MainActivity extends Activity {
 
-    /** Same-origin app URL: a real https origin keeps localStorage, IndexedDB, CORS and clipboard working. */
-    private static final String APP_URL = "https://appassets.androidplatform.net/index.html";
+    public interface Screen {
+        View view();
 
-    private WebView web;
-    private WebViewAssetLoader assetLoader;
+        default void onShow() {
+        }
+
+        default void onHide() {
+        }
+
+        default String title() {
+            return "";
+        }
+    }
+
     private FrameLayout root;
-    private WebAppBridge bridge;
-    private View customView;
-    private WebChromeClient.CustomViewCallback customViewCallback;
-    private WebChromeClient chromeClient;
-    private boolean playing;
-    private boolean notificationAsked;
+    private FrameLayout content;
+    private Nav nav;
+    private MiniPlayer miniPlayer;
+    private NowPlaying nowPlaying;
+    private Sheets sheets;
+    private Toaster toaster;
 
-    @SuppressLint("SetJavaScriptEnabled")
+    private final List<Screen> stack = new ArrayList<>();
+    private final Screen[] tabs = new Screen[4];
+    private int tabIndex;
+    private View currentView;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        PlaybackService.ensureChannel(this);
+
+        Prefs.init(this);
+        Net.init(this);
+        Image.init(this);
+        Settings.init();
+        Library.init();
+        Downloads.init(this);
+        Player.init(this);
 
         Window window = getWindow();
         window.setStatusBarColor(Color.BLACK);
         window.setNavigationBarColor(Color.BLACK);
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         WindowCompat.setDecorFitsSystemWindows(window, false);
         WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
         controller.setAppearanceLightStatusBars(false);
         controller.setAppearanceLightNavigationBars(false);
 
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.BLACK);
-        // Keep the web UI inside the safe area: bars stay black, the design is untouched.
+        root.setBackgroundColor(Theme.BG);
+
+        content = new FrameLayout(this);
+        root.addView(content, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        nav = new Nav(this);
+        toaster = new Toaster(this);
+        miniPlayer = new MiniPlayer(this);
+        sheets = new Sheets(this);
+        nowPlaying = new NowPlaying(this);
+
+        FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        miniParams.gravity = android.view.Gravity.BOTTOM;
+        miniParams.bottomMargin = Theme.dp(this, Nav.BAR_HEIGHT_DP + 6);
+        root.addView(miniPlayer, miniParams);
+        root.addView(nav);
+        root.addView(nowPlaying, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(sheets, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(toaster, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             WindowInsetsCompat bars = insets;
-            v.setPadding(0, bars.getInsets(WindowInsetsCompat.Type.systemBars()).top, 0, bars.getInsets(WindowInsetsCompat.Type.systemBars()).bottom);
+            int top = bars.getInsets(WindowInsetsCompat.Type.systemBars()).top;
+            int bottom = bars.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+            v.setPadding(0, top, 0, bottom);
             return insets;
         });
 
-        assetLoader = new WebViewAssetLoader.Builder()
-                .setDomain("appassets.androidplatform.net")
-                .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(this))
-                .build();
-
-        web = new WebView(this);
-        web.setBackgroundColor(Color.BLACK);
-        web.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        web.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        web.setVerticalScrollBarEnabled(false);
-        web.setHorizontalScrollBarEnabled(false);
-
-        WebSettings s = web.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setDatabaseEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
-        s.setUseWideViewPort(true);
-        s.setLoadWithOverviewMode(true);
-        s.setSupportZoom(false);
-        s.setBuiltInZoomControls(false);
-        s.setDisplayZoomControls(false);
-        s.setAllowFileAccess(false);
-        s.setAllowContentAccess(false);
-        s.setGeolocationEnabled(false);
-        s.setSupportMultipleWindows(false);
-        s.setJavaScriptCanOpenWindowsAutomatically(false);
-        s.setCacheMode(WebSettings.LOAD_DEFAULT);
-        s.setTextZoom(100); // ignore the system font scale — the layout must stay identical to the site
-        s.setUserAgentString(chromeUserAgent(s.getUserAgentString()));
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            CookieManager.getInstance().setAcceptThirdPartyCookies(web, true);
-        }
-
-        bridge = new WebAppBridge(this, web);
-        web.addJavascriptInterface(bridge, "AniBeatNative");
-
-        web.setWebViewClient(new WebViewClient() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                Uri uri = request.getUrl();
-                if ("appassets.androidplatform.net".equals(uri.getHost())) return false;
-                openExternallyWithChooser(uri);
-                return true;
-            }
-        });
-
-        chromeClient = new WebChromeClient() {
-            @Override
-            public void onShowCustomView(View view, CustomViewCallback callback) {
-                if (customView != null) {
-                    callback.onCustomViewHidden();
-                    return;
-                }
-                customView = view;
-                customViewCallback = callback;
-                root.setPadding(0, 0, 0, 0);
-                root.addView(customView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                web.setVisibility(View.GONE);
-                applyImmersive(true);
-            }
-
-            @Override
-            public void onHideCustomView() {
-                if (customView == null) return;
-                root.removeView(customView);
-                customView = null;
-                web.setVisibility(View.VISIBLE);
-                applyImmersive(false);
-                ViewCompat.requestApplyInsets(root);
-                if (customViewCallback != null) {
-                    customViewCallback.onCustomViewHidden();
-                    customViewCallback = null;
-                }
-            }
-
-            @Override
-            public boolean onConsoleMessage(ConsoleMessage message) {
-                if (message.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
-                    android.util.Log.e("AniBeat", message.message() + " @" + message.sourceId() + ":" + message.lineNumber());
-                }
-                return true;
-            }
-        };
-        web.setWebChromeClient(chromeClient);
-
-        // Direct (non-blob) downloads go through the system download manager.
-        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
-            if (url.startsWith("blob:") || url.startsWith("data:")) return; // handled by the JS bridge
-            try {
-                android.app.DownloadManager.Request req = new android.app.DownloadManager.Request(Uri.parse(url));
-                req.setMimeType(mimeType);
-                req.addRequestHeader("User-Agent", userAgent);
-                String name = android.webkit.URLUtil.guessFileName(url, contentDisposition, mimeType);
-                req.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, name);
-                req.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                android.app.DownloadManager dm = (android.app.DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-                if (dm != null) {
-                    dm.enqueue(req);
-                    Toast.makeText(this, "Загрузка началась", Toast.LENGTH_SHORT).show();
-                }
-            } catch (Exception e) {
-                Toast.makeText(this, "Не удалось скачать файл", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        root.addView(web);
         setContentView(root);
 
-        if (savedInstanceState == null) {
-            web.loadUrl(APP_URL);
-        } else {
-            web.restoreState(savedInstanceState);
+        showTab(0, false);
+        requestNotificationPermissionIfNeeded();
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Навигация                                                           */
+    /* ------------------------------------------------------------------ */
+
+    public void showTab(int index) {
+        showTab(index, true);
+    }
+
+    public void showTab(int index, boolean animate) {
+        if (index < 0 || index >= 4) return;
+        tabIndex = index;
+        stack.clear();
+        if (tabs[index] == null) {
+            switch (index) {
+                case 0:
+                    tabs[index] = new HomeScreen(this);
+                    break;
+                case 1:
+                    tabs[index] = new SearchScreen(this);
+                    break;
+                case 2:
+                    tabs[index] = new com.anibeat.app.ui.screens.BrowseScreen(this);
+                    break;
+                default:
+                    tabs[index] = new LibraryScreen(this);
+                    break;
+            }
         }
-
-        // Разрешение на уведомления запрашивается при первом воспроизведении
-        // (см. WebAppBridge.updatePlaybackState) — а не при запуске, как и в браузере.
+        setContent(tabs[index], animate);
+        nav.setActive(index);
     }
 
-    /** WebView UA + real Chrome in the same version, without the "; wv" marker (some CDNs treat WebView differently). */
-    private static String chromeUserAgent(String defaultUa) {
-        String ua = defaultUa == null ? "" : defaultUa.replace("; wv", "");
-        if (ua.contains("AniBeat")) return ua;
-        return ua + " AniBeat/1.0";
-    }
-
-    private void applyImmersive(boolean immersive) {
-        WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
-        if (immersive) {
-            c.hide(WindowInsetsCompat.Type.systemBars());
-            c.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-        } else {
-            c.show(WindowInsetsCompat.Type.systemBars());
+    public void push(Screen screen, boolean animate) {
+        Screen current = currentScreen();
+        if (current != null) {
+            current.onHide();
+            stack.add(current);
         }
+        setContent(screen, animate);
     }
 
-    private void openExternallyWithChooser(Uri uri) {
-        try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            startActivity(Intent.createChooser(intent, "Открыть ссылку"));
-        } catch (Exception ignored) {
+    private Screen currentScreen() {
+        if (!stack.isEmpty()) return stack.get(stack.size() - 1);
+        return tabs[tabIndex];
+    }
+
+    private void setContent(Screen screen, boolean animate) {
+        View view = screen.view();
+        content.removeAllViews();
+        content.addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        currentView = view;
+        view.setPadding(0, 0, 0, Theme.dp(this, Nav.BAR_HEIGHT_DP + 8));
+        if (animate) {
+            view.setAlpha(0f);
+            view.setTranslationY(Theme.dpF(this, 12f));
+            view.animate().alpha(1f).translationY(0f).setDuration(Theme.DUR).setInterpolator(Theme.EASE_OUT).start();
         }
+        screen.onShow();
+        updateBars();
     }
 
-    void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT < 33) return;
-        if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED) return;
-        if (notificationAsked) return;
-        notificationAsked = true;
-        new AlertDialog.Builder(this)
-                .setTitle("Уведомление плеера")
-                .setMessage("Разрешите уведомления, чтобы управлять воспроизведением с экрана блокировки.")
-                .setPositiveButton("Разрешить", (d, w) -> requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1001))
-                .setNegativeButton("Позже", null)
-                .show();
+    public void pop() {
+        if (stack.isEmpty()) {
+            showTab(0, true);
+            return;
+        }
+        Screen leaving = currentScreen();
+        if (leaving != null) leaving.onHide();
+        stack.remove(stack.size() - 1);
+        Screen screen = currentScreen();
+        if (screen != null) setContent(screen, true);
     }
 
-    /** Called by the bridge when playback starts/stops. */
-    void setPlaying(boolean value) {
-        playing = value;
+    public void open(Screen screen) {
+        push(screen, true);
     }
+
+    public void openAnime(String slug) {
+        if (slug == null || slug.isEmpty()) return;
+        push(new AnimeScreen(this, slug), true);
+    }
+
+    public void openArtist(String slug) {
+        if (slug == null || slug.isEmpty()) return;
+        push(new ArtistScreen(this, slug), true);
+    }
+
+    public void openYear(int year) {
+        push(new YearScreen(this, year), true);
+    }
+
+    public void openPlaylist(String id) {
+        push(new PlaylistScreen(this, id), true);
+    }
+
+    public void showBrowse(String type) {
+        showTab(2, true);
+        if (tabs[2] instanceof BrowseScreen) ((BrowseScreen) tabs[2]).setType(type);
+    }
+
+    public void updateBars() {
+        miniPlayer.getView().setVisibility(Player.current() != null && !nowPlaying.isOpen() ? View.VISIBLE : View.GONE);
+        miniPlayer.refresh();
+        toaster.bringToFront();
+        sheets.bringToFront();
+    }
+
+    public Sheets sheets() {
+        return sheets;
+    }
+
+    public Toaster toaster() {
+        return toaster;
+    }
+
+    public NowPlaying nowPlaying() {
+        return nowPlaying;
+    }
+
+    public Nav nav() {
+        return nav;
+    }
+
+    public int tabIndex() {
+        return tabIndex;
+    }
+
+    public boolean hasStack() {
+        return !stack.isEmpty();
+    }
+
+    /* ------------------------------------------------------------------ */
 
     @Override
-    protected void onPause() {
-        // Background playback must keep working: only freeze the web view when nothing plays.
-        if (!playing) web.onPause();
-        super.onPause();
+    public void onBackPressed() {
+        if (nowPlaying.isOpen()) {
+            nowPlaying.close();
+            return;
+        }
+        if (sheets.isOpen()) {
+            sheets.close();
+            return;
+        }
+        if (!stack.isEmpty()) {
+            pop();
+            return;
+        }
+        if (tabIndex != 0) {
+            showTab(0, true);
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        web.onResume();
+        updateBars();
     }
 
-    @Override
-    public void onBackPressed() {
-        if (customView != null) {
-            chromeClient.onHideCustomView();
-            return;
-        }
-        web.evaluateJavascript("window.__AniBeatNativeEvent && window.__AniBeatNativeEvent('back','{}')", null);
-        if (web.canGoBack()) {
-            web.goBack();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
-    @Override
-    protected void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        web.saveState(outState);
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (web != null) {
-            root.removeView(web);
-            web.destroy();
-        }
-        super.onDestroy();
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return;
+        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
     }
 }

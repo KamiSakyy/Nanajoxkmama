@@ -1,15 +1,13 @@
 name: android
 
-# Builds the signed APK of the AniBeat Android app (Java + Android SDK) and
-# publishes it to handoff/ and to a GitHub Release, then verifies the app on
-# verifies the signature and publishes everything to handoff/ + a GitHub Release.
+# Собирает подписанный APK нативного приложения AniBeat (Java + Android SDK),
+# проверяет подпись и публикует файлы в handoff/ и в GitHub Release.
 on:
   workflow_dispatch:
   push:
     branches: ["arena/**", "main"]
     paths:
       - "android/**"
-      - "web/**"
       - "tools/release/**"
       - ".github/workflows/android.yml"
 
@@ -79,23 +77,6 @@ jobs:
           yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
           "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
           ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Build the web app
-        working-directory: web
-        run: |
-          npm ci
-          npm run build
-
-      - name: Package the web app into the APK assets
-        run: |
-          rm -rf android/app/src/main/assets
-          mkdir -p android/app/src/main/assets
-          cp -r web/dist/. android/app/src/main/assets/
-          ls -la android/app/src/main/assets | head -20
 
       - name: Gradle 8.9
         run: |
