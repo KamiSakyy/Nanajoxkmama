@@ -1,9 +1,9 @@
-AniBeat Android — сборка от 2026-09-20T20:13:46Z
-версия: 1.0.4 (versionCode 4)
-файл: handoff/AniBeat-1.0.4.apk
+AniBeat Android — сборка от 2026-09-20T20:30:59Z
+версия: 1.0.5 (versionCode 5)
+файл: handoff/AniBeat-1.0.5.apk
 
 SHA-256:
-12ed140f5fa4742489810f52cfd065e1734746725a34d512df2652203c7b75cb  android/app/build/outputs/apk/release/app-release.apk
+346b89352ac1cad2990d2d1b61ded3729192bc70315991d14b3f94f804725021  android/app/build/outputs/apk/release/app-release.apk
 
 Подпись:
 Verifies
