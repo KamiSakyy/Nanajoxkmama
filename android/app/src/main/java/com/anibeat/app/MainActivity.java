@@ -144,7 +144,7 @@ public class MainActivity extends Activity {
                 root.setPadding(0, 0, 0, 0);
                 root.addView(customView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 web.setVisibility(View.GONE);
-                setImmersive(true);
+                applyImmersive(true);
             }
 
             @Override
@@ -153,7 +153,7 @@ public class MainActivity extends Activity {
                 root.removeView(customView);
                 customView = null;
                 web.setVisibility(View.VISIBLE);
-                setImmersive(false);
+                applyImmersive(false);
                 ViewCompat.requestApplyInsets(root);
                 if (customViewCallback != null) {
                     customViewCallback.onCustomViewHidden();
@@ -210,7 +210,7 @@ public class MainActivity extends Activity {
         return ua + " AniBeat/1.0";
     }
 
-    private void setImmersive(boolean immersive) {
+    private void applyImmersive(boolean immersive) {
         WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (immersive) {
             c.hide(WindowInsetsCompat.Type.systemBars());

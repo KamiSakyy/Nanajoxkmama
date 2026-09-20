@@ -231,9 +231,6 @@ public class PlaybackService extends Service {
                         | PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS | PlaybackStateCompat.ACTION_SEEK_TO);
         b.setState(playing ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED, positionMs,
                 playing ? 1f : 0f);
-        if (durationMs > 0) {
-            b.setBuffered(positionMs);
-        }
         session.setPlaybackState(b.build());
     }
 
@@ -294,10 +291,10 @@ public class PlaybackService extends Service {
 
         if (artwork != null) b.setLargeIcon(artwork);
 
-        b.addAction(action(R.drawable.ic_prev, "Назад", PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS));
-        if (playing) b.addAction(action(R.drawable.ic_pause, "Пауза", PlaybackStateCompat.ACTION_PLAY_PAUSE));
-        else b.addAction(action(R.drawable.ic_play, "Играть", PlaybackStateCompat.ACTION_PLAY_PAUSE));
-        b.addAction(action(R.drawable.ic_next, "Дальше", PlaybackStateCompat.ACTION_SKIP_TO_NEXT));
+        b.addAction(action(R.drawable.ic_prev, "Назад", "previoustrack"));
+        if (playing) b.addAction(action(R.drawable.ic_pause, "Пауза", "pause"));
+        else b.addAction(action(R.drawable.ic_play, "Играть", "play"));
+        b.addAction(action(R.drawable.ic_next, "Дальше", "nexttrack"));
 
         b.setStyle(new MediaStyle().setMediaSession(session.getSessionToken()).setShowActionsInCompactView(0, 1, 2));
         return b.build();
