@@ -1,0 +1,69 @@
+name: reference-screenshots
+
+# Renders the site in Chromium (exact phone + desktop viewports) and stores the
+# screenshots in docs/screenshots/ so the Android build can be compared 1:1.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/**", "main"]
+    paths:
+      - "web/**"
+      - "tools/screenshots/**"
+      - ".github/workflows/reference-screenshots.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build the site
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+          ls -la dist
+
+      - name: Serve the build
+        run: |
+          cd web/dist
+          python3 -m http.server 4173 --bind 127.0.0.1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4173/ >/dev/null; then echo "server up"; break; fi
+            sleep 1
+          done
+
+      - name: Prepare Playwright
+        working-directory: tools/screenshots
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Capture
+        working-directory: tools/screenshots
+        env:
+          BASE_URL: http://127.0.0.1:4173/
+          OUT_DIR: ../../docs/screenshots
+        run: node capture.mjs
+
+      - name: Publish screenshots to the branch
+        if: always()
+        run: |
+          git config user.name "anibeat-ci"
+          git config user.email "anibeat-ci@users.noreply.github.com"
+          ls -la docs/screenshots || true
+          git add -f docs/screenshots
+          git commit -m "chore(ci): reference screenshots [skip ci]" || echo "nothing to commit"
+          git push || echo "push failed"

@@ -1,0 +1,10 @@
+{
+  "name": "anibeat-screenshots",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Playwright capture of the AniBeat site (mobile + desktop) used for pixel-level design reference",
+  "devDependencies": {
+    "playwright": "1.50.1"
+  }
+}

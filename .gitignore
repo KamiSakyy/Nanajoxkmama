@@ -1,0 +1,10 @@
+# build output
+web/dist/
+web/node_modules/
+tools/screenshots/node_modules/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+.idea/
+*.iml
