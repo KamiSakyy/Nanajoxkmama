@@ -2,7 +2,7 @@ name: android
 
 # Builds the signed APK of the AniBeat Android app (Java + Android SDK) and
 # publishes it to handoff/ and to a GitHub Release, then verifies the app on
-# a real Android emulator and stores device screenshots.
+# a real Android emulator and stores device screenshots (docs/android-screenshots) plus the device logcat (ci-logs/).
 on:
   workflow_dispatch:
   push:
@@ -210,28 +210,57 @@ jobs:
           api-level: 34
           target: google_apis
           arch: x86_64
-          profile: pixel_6
+          profile: pixel_2
+          emulator-boot-timeout: 900
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none -no-snapshot -memory 3072
           script: |
             set -e
-            mkdir -p docs/android-screenshots
+            mkdir -p docs/android-screenshots ci-logs
+            grep -v "keystore.properties" .gitignore > /tmp/g || true
+            set -x
             adb install -r handoff/anibeat-release.apk
-            adb shell am start -n com.anibeat.app/.MainActivity
-            sleep 30
+            adb shell settings put global window_animation_scale 0 || true
+            adb shell settings put global transition_animation_scale 0 || true
+            adb shell settings put global animator_duration_scale 0 || true
+            adb logcat -c || true
+            adb shell am start -W -n com.anibeat.app/.MainActivity || true
+            sleep 60
+
+            SIZE=$(adb shell wm size | tr -d '\r' | awk -F': ' '{print $2}')
+            W=$(echo "$SIZE" | cut -dx -f1)
+            H=$(echo "$SIZE" | cut -dx -f2)
+            echo "screen: ${W}x${H}"
+            # закрыть служебные диалоги (разрешения), не мешая приложению
+            adb shell input keyevent 4 || true
+            sleep 5
             adb exec-out screencap -p > docs/android-screenshots/01-home.png
-            # bottom navigation: 4 tabs across the bottom of a 1080x2400 screen
-            adb shell input tap 405 2320 && sleep 8
-            adb exec-out screencap -p > docs/android-screenshots/02-search.png
-            adb shell input tap 675 2320 && sleep 8
-            adb exec-out screencap -p > docs/android-screenshots/03-browse.png
-            adb shell input tap 945 2320 && sleep 6
-            adb exec-out screencap -p > docs/android-screenshots/04-library.png
-            adb shell input tap 135 2320 && sleep 8
-            adb exec-out screencap -p > docs/android-screenshots/05-home-again.png
-            adb shell input swipe 540 1800 540 1000 300 && sleep 3
+
+            tab() { adb shell input tap $(( W * ($1 * 2 + 1) / 8 )) $(( H - H * 34 / 1000 )); }
+            tab 1; sleep 12; adb exec-out screencap -p > docs/android-screenshots/02-search.png
+            tab 2; sleep 12; adb exec-out screencap -p > docs/android-screenshots/03-browse.png
+            tab 3; sleep 10; adb exec-out screencap -p > docs/android-screenshots/04-library.png
+            tab 0; sleep 12; adb exec-out screencap -p > docs/android-screenshots/05-home-again.png
+
+            # прокрутка главной
+            adb shell input swipe $((W / 2)) $((H * 75 / 100)) $((W / 2)) $((H * 35 / 100)) 400 || true
+            sleep 6
             adb exec-out screencap -p > docs/android-screenshots/06-home-scrolled.png
-            adb shell dumpsys activity activities | head -40 > docs/android-screenshots/activity.txt || true
+
+            # воспроизведение: кнопка «Слушать» в hero-блоке (позиция фиксирована в раскладке)
+            adb shell input swipe $((W / 2)) $((H * 35 / 100)) $((W / 2)) $((H * 80 / 100)) 400 || true
+            sleep 3
+            adb shell input tap $(( W * 195 / 390 )) $(( H * 296 / 844 )) || true
+            sleep 30
+            adb exec-out screencap -p > docs/android-screenshots/07-now-playing.png
+            adb shell input keyevent 4 || true
+            sleep 6
+            adb exec-out screencap -p > docs/android-screenshots/08-mini-player.png
+
+            adb logcat -d > ci-logs/emulator-logcat.txt || true
+            adb shell dumpsys activity activities > ci-logs/emulator-activity.txt || true
+            grep -E "AniBeatBridge|AniBeatPlayback|AniBeat .*error" ci-logs/emulator-logcat.txt | tail -40 || true
+            adb shell pidof com.anibeat.app || echo "APP NOT RUNNING"
 
       - name: Publish device screenshots
         if: always()

@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chromeClient;
     private boolean playing;
+    private boolean notificationAsked;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -200,7 +201,8 @@ public class MainActivity extends Activity {
             web.restoreState(savedInstanceState);
         }
 
-        requestNotificationPermission();
+        // Разрешение на уведомления запрашивается при первом воспроизведении
+        // (см. WebAppBridge.updatePlaybackState) — а не при запуске, как и в браузере.
     }
 
     /** WebView UA + real Chrome in the same version, without the "; wv" marker (some CDNs treat WebView differently). */
@@ -228,9 +230,11 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void requestNotificationPermission() {
+    void requestNotificationPermission() {
         if (Build.VERSION.SDK_INT < 33) return;
         if (checkSelfPermission("android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED) return;
+        if (notificationAsked) return;
+        notificationAsked = true;
         new AlertDialog.Builder(this)
                 .setTitle("Уведомление плеера")
                 .setMessage("Разрешите уведомления, чтобы управлять воспроизведением с экрана блокировки.")

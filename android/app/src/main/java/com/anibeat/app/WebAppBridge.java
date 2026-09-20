@@ -67,6 +67,7 @@ public class WebAppBridge {
             String album = o.optString("album", "");
             String art = "";
             JSONArray artwork = o.optJSONArray("artwork");
+            Log.d(TAG, "metadata: " + title + " — " + artist);
             if (artwork != null && artwork.length() > 0) {
                 art = artwork.getJSONObject(artwork.length() - 1).optString("src", "");
                 if (art.isEmpty()) art = artwork.getJSONObject(0).optString("src", "");
@@ -85,6 +86,7 @@ public class WebAppBridge {
             long position = (long) (o.optDouble("position", 0) * 1000);
             long duration = (long) (o.optDouble("duration", 0) * 1000);
             activity.setPlaying(playing);
+            if (playing) activity.requestNotificationPermission();
             PlaybackService.updateState(activity, playing, position, duration);
         } catch (Exception e) {
             Log.w(TAG, "state " + e);
