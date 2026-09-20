@@ -1,0 +1,9 @@
++ echo 'run: 35534536639'
+run: 35534536639
++ git log --oneline -3
+694da27 ci: полный clone для пуша из workflow
+5a03685 ci: исправлен пуш из CI (detached HEAD) и установка Android SDK/Gradle
+977604a chore(android): release keystore [skip ci]
++ ls docs/screenshots
++ wc -l
+24
