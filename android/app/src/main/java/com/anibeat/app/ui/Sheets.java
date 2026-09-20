@@ -628,7 +628,9 @@ public class Sheets extends FrameLayout {
         LinearLayout storageGroup = Ui.listGroup(c, "Хранилище", null);
         LinearLayout storage = Ui.groupBody(storageGroup);
         storage.addView(Ui.listRow(c, "storage", "Офлайн-треки", null, true, null,
-                () -> Downloads.offlineTracks().size() + " · " + Downloads.formatBytes(Downloads.offlineTotalSize())));
+                () -> Downloads.offlineTracks().size() + " · " + Downloads.formatBytes(Downloads.offlineTotalSize()),
+                false, 0xFF5E5CE6));
+        storage.addView(storageRow(c));
         storage.addView(Ui.listRow(c, "cached", "Очистить кэш", null, false, () -> {
             Net.clearCache();
             activity.toaster().show("Кэш очищен");
@@ -639,7 +641,7 @@ public class Sheets extends FrameLayout {
         }, null, true));
         box.addView(storageGroup);
 
-        TextView footer = Ui.text(c, "AniBeat · нативное приложение", 12f, Theme.ON_DIM);
+        TextView footer = Ui.text(c, "AniBeat · Space — пауза, ←/→ — перемотка, Shift+←/→ — треки", 12f, Theme.ON_DIM);
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(Theme.dp(c, 28), Theme.dp(c, 14), Theme.dp(c, 28), 0);
         box.addView(footer);
@@ -650,6 +652,33 @@ public class Sheets extends FrameLayout {
     /* ------------------------------------------------------------------ */
     /* Мелкие элементы                                                     */
     /* ------------------------------------------------------------------ */
+
+    /** Полоса занятого места (аналог storage.estimate() на сайте). */
+    private static LinearLayout storageRow(Context c) {
+        LinearLayout box = Ui.column(c);
+        box.setPadding(Theme.dp(c, 16), Theme.dp(c, 12), Theme.dp(c, 16), Theme.dp(c, 12));
+        box.setBackground(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{
+                Ui.rounded(0x00000000, 0),
+                divider(c)
+        }));
+        long total = 0L;
+        long free = 0L;
+        try {
+            android.os.StatFs stat = new android.os.StatFs(c.getFilesDir().getPath());
+            total = stat.getTotalBytes();
+            free = stat.getAvailableBytes();
+        } catch (Exception ignored) {
+        }
+        long used = Math.max(0L, total - free);
+        int percent = total > 0 ? (int) Math.min(100L, Math.round(used * 100.0 / total)) : 0;
+        FrameLayout bar = Ui.progressBar(c, 4f);
+        box.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(c, 4)));
+        bar.post(() -> Ui.setProgress(bar, percent));
+        TextView tv = Ui.text(c, Format.bytes(used) + " из " + Format.bytes(total), 12.5f, Theme.ON_VARIANT);
+        tv.setPadding(0, Theme.dp(c, 6), 0, 0);
+        box.addView(tv);
+        return box;
+    }
 
     private static TextView label(Context c, String text) {
         TextView tv = Ui.text(c, text.toUpperCase(), 13f, Theme.ON_VARIANT, true);

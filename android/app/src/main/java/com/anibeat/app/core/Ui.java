@@ -432,6 +432,11 @@ public final class Ui {
     }
 
     public static LinearLayout listRow(Context c, String iconName, String label, String sub, boolean first, Click click) {
+        return listRow(c, iconName, label, sub, first, click, 0x14FFFFFF);
+    }
+
+    /** Как ListRow на сайте: иконка в квадрате 28×28 r8, без шеврона. */
+    public static LinearLayout listRow(Context c, String iconName, String label, String sub, boolean first, Click click, int iconColor) {
         LinearLayout row = row(c);
         row.setPadding(dp(c, 16), dp(c, 12), dp(c, 16), dp(c, 12));
         if (!first) {
@@ -442,8 +447,8 @@ public final class Ui {
         }
         if (iconName != null) {
             FrameLayout box = new FrameLayout(c);
-            box.setBackground(rounded(0x14FFFFFF, dpF(c, 8)));
-            ImageView iv = icon(c, iconName, 16, Theme.ON);
+            box.setBackground(rounded(danger ? 0x26FF6B62 : iconColor, dpF(c, 8)));
+            ImageView iv = icon(c, iconName, 16, danger ? Theme.ERROR : Theme.ON);
             FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(dp(c, 16), dp(c, 16));
             ip.gravity = Gravity.CENTER;
             box.addView(iv, ip);
@@ -453,14 +458,14 @@ public final class Ui {
             box.setLayoutParams(boxLp);
         }
         LinearLayout texts = column(c);
-        texts.addView(text(c, label, 15.5f, Theme.ON));
+        texts.addView(text(c, label, 15.5f, danger ? Theme.ERROR : Theme.ON));
         if (sub != null) {
             TextView s = text(c, sub, 12.5f, Theme.ON_VARIANT);
             s.setPadding(0, dp(c, 2), 0, 0);
             texts.addView(s);
         }
         row.addView(texts, lpw(1f));
-        row.addView(icon(c, "chevron_right", 16, Theme.ON_DIM));
+        row.setTag(new Object[]{iconName, texts, null});
         if (click != null) {
             row.setOnClickListener(v -> click.onClick());
             row.setClickable(true);
@@ -475,22 +480,22 @@ public final class Ui {
     }
 
     public static LinearLayout listRow(Context c, String iconName, String label, String sub, boolean first, Click click, java.util.function.Supplier<String> value, boolean danger) {
-        LinearLayout row = listRow(c, iconName, label, sub, first, click);
+        LinearLayout row = listRow(c, iconName, label, sub, first, click, danger ? 0x26FF6B62 : 0x14FFFFFF);
+        annotate(row, c, value, danger);
+        return row;
+    }
+
+    /** Строка со значением и цветом иконки (Storage-группа настроек). */
+    public static LinearLayout listRow(Context c, String iconName, String label, String sub, boolean first, Click click, java.util.function.Supplier<String> value, boolean danger, int iconColor) {
+        LinearLayout row = listRow(c, iconName, label, sub, first, click, iconColor);
         annotate(row, c, value, danger);
         return row;
     }
 
     private static void annotate(LinearLayout row, Context c, java.util.function.Supplier<String> value, boolean danger) {
-        if (row.getChildCount() < 2) return;
-        View last = row.getChildAt(row.getChildCount() - 1);
-        if (last instanceof ImageView) row.removeView(last);
         if (value != null) {
             TextView tv = text(c, value.get(), 14.5f, Theme.ON_VARIANT);
             row.addView(tv);
-        }
-        if (danger) {
-            LinearLayout texts = (LinearLayout) row.getChildAt(row.getChildCount() > 1 ? 1 : 0);
-            if (texts.getChildAt(0) instanceof TextView) ((TextView) texts.getChildAt(0)).setTextColor(Theme.ERROR);
         }
     }
 
