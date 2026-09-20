@@ -164,7 +164,7 @@ public class Sheets extends FrameLayout {
             float from = sheet.getHeight();
             sheet.setTranslationY(from);
             scrim.animate().alpha(1f).setDuration(Theme.DUR).start();
-            sheet.animate().translationY(0f).setDuration(Theme.DUR_SHEET).setInterpolator(Theme.EASE_OUT).start();
+            sheet.animate().translationY(0f).setDuration(Theme.DUR_SHEET).setInterpolator(Theme.EASE_SHEET).start();
         });
         bringToFront();
     }
@@ -175,7 +175,7 @@ public class Sheets extends FrameLayout {
         Runnable dismiss = onDismiss;
         onDismiss = null;
         scrim.animate().alpha(0f).setDuration(Theme.DUR_FAST).start();
-        sheet.animate().translationY(sheet.getHeight()).setDuration(Theme.DUR_SHEET).setInterpolator(Theme.EASE_OUT)
+        sheet.animate().translationY(sheet.getHeight()).setDuration(Theme.DUR_SHEET).setInterpolator(Theme.EASE_SHEET)
                 .withEndAction(() -> {
                     setVisibility(GONE);
                     scrim.setVisibility(GONE);

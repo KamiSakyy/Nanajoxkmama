@@ -422,7 +422,7 @@ public class NowPlaying extends FrameLayout {
         if (Player.current() == null) return;
         open = true;
         setVisibility(VISIBLE);
-        animate().translationY(0f).setDuration(420).setInterpolator(Theme.EASE_OUT).start();
+        animate().translationY(0f).setDuration(Theme.DUR_NOWPLAYING).setInterpolator(Theme.EASE_SHEET).start();
         activity.updateBars();
         handler.removeCallbacks(tick);
         handler.post(tick);
@@ -436,7 +436,7 @@ public class NowPlaying extends FrameLayout {
         videoView.setPlayer(null);
         open = false;
         handler.removeCallbacks(tick);
-        animate().translationY(getHeight()).setDuration(420).setInterpolator(Theme.EASE_OUT)
+        animate().translationY(getHeight()).setDuration(Theme.DUR_NOWPLAYING).setInterpolator(Theme.EASE_SHEET)
                 .withEndAction(() -> setVisibility(GONE)).start();
         activity.updateBars();
     }

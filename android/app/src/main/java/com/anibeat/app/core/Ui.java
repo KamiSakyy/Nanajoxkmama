@@ -373,8 +373,8 @@ public final class Ui {
             }
             int start = indicator.getLeft();
             ValueAnimator anim = ValueAnimator.ofFloat(start, target);
-            anim.setDuration(250);
-            anim.setInterpolator(Theme.EASE_OUT);
+            anim.setDuration(Theme.DUR_SEGMENT);
+            anim.setInterpolator(Theme.EASE_SHEET);
             anim.addUpdateListener(a -> {
                 float value = (float) a.getAnimatedValue();
                 FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) indicator.getLayoutParams();

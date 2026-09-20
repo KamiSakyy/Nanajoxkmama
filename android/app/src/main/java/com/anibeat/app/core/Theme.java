@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.drawable.RippleDrawable;
 import android.util.TypedValue;
 import android.view.View;
-import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 
 import androidx.core.content.ContextCompat;
@@ -43,12 +42,40 @@ public final class Theme {
     public static final int WARNING = 0xFFFFB340;
     public static final int LIVE = 0xFFFF5F57;
 
-    /* motion — cubic-bezier(0.2, 0, 0, 1) ≈ «ease-out» сайта */
-    public static final Interpolator EASE_OUT = new DecelerateInterpolator(1.6f);
-    public static final Interpolator EASE_STANDARD = new DecelerateInterpolator(1.2f);
+    /* motion — кривые сайта из index.css / tailwind */
+    public static final Interpolator EASE_OUT = bezier(0.2f, 0f, 0f, 1f);
+    public static final Interpolator EASE_SPRING = bezier(0.2f, 0f, 0f, 1.2f);
+    public static final Interpolator EASE_STANDARD = bezier(0.25f, 0.1f, 0.25f, 1f);
+    /** cubic-bezier(0.32,0.72,0,1) — шторки, сегменты, мини-плеер, NowPlaying. */
+    public static final Interpolator EASE_SHEET = bezier(0.32f, 0.72f, 0f, 1f);
     public static final long DUR_FAST = 200;
     public static final long DUR = 300;
+    public static final long DUR_SEGMENT = 250;
     public static final long DUR_SHEET = 320;
+    public static final long DUR_NOWPLAYING = 420;
+
+    /** Кубическая кривая Безье как Android-интерполятор (порт CSS cubic-bezier). */
+    public static Interpolator bezier(final float x1, final float y1, final float x2, final float y2) {
+        return new Interpolator() {
+            @Override
+            public float getInterpolation(float t) {
+                if (t <= 0f) return 0f;
+                if (t >= 1f) return 1f;
+                float lo = 0f, hi = 1f, u = t;
+                for (int i = 0; i < 12; i++) {
+                    u = (lo + hi) / 2f;
+                    float x = curve(x1, x2, u);
+                    if (x < t) lo = u; else hi = u;
+                }
+                return curve(y1, y2, u);
+            }
+
+            private float curve(float p1, float p2, float u) {
+                float v = 1f - u;
+                return 3f * v * v * u * p1 + 3f * v * u * u * p2 + u * u * u;
+            }
+        };
+    }
 
     private Theme() {
     }
