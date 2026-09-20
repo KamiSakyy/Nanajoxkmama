@@ -64,10 +64,13 @@ public final class Player {
         SessionToken token = new SessionToken(context, new ComponentName(context, PlaybackService.class));
         MediaController.Builder builder = new MediaController.Builder(context, token);
         com.google.common.util.concurrent.ListenableFuture<MediaController> future = builder.buildAsync();
+        // Подключение уже идёт: повторные init() не должны создавать новые контроллеры.
+        ready = true;
         future.addListener(() -> {
             try {
                 controller = future.get();
             } catch (Exception e) {
+                ready = false;
                 return;
             }
             controller.addListener(new androidx.media3.common.Player.Listener() {

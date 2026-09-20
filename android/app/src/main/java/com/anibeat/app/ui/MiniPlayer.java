@@ -83,7 +83,8 @@ public class MiniPlayer extends FrameLayout {
 
         playIcon = Ui.iconButton(c, "play_arrow", 26, Theme.ON, Player::toggle);
         ((LinearLayout) card).addView(playIcon);
-        FrameLayout next = Ui.iconButton(c, "skip_next", 24, Theme.ON, () -> Player.next(false));
+        FrameLayout next = Ui.iconButton(c, "skip_next", 24, Theme.ON,
+                () -> { if (Player.queue().size() > 1) Player.next(false); });
         ((LinearLayout) card).addView(next);
 
         progress = new View(c);
@@ -93,6 +94,35 @@ public class MiniPlayer extends FrameLayout {
         ((LinearLayout) card).addView(progress, pp);
 
         card.setOnClickListener(v -> open());
+        // Свайп вверх по карточке открывает полноэкранный плеер (как на сайте).
+        card.setOnTouchListener(new View.OnTouchListener() {
+            private float startY;
+            private boolean moved;
+
+            @Override
+            public boolean onTouch(View view, android.view.MotionEvent e) {
+                switch (e.getActionMasked()) {
+                    case android.view.MotionEvent.ACTION_DOWN:
+                        startY = e.getRawY();
+                        moved = false;
+                        return false;
+                    case android.view.MotionEvent.ACTION_MOVE:
+                        if (startY - e.getRawY() > Theme.dp(getContext(), 10)) moved = true;
+                        return false;
+                    case android.view.MotionEvent.ACTION_UP:
+                    case android.view.MotionEvent.ACTION_CANCEL:
+                        if (moved && startY - e.getRawY() > Theme.dp(getContext(), 36)) {
+                            moved = false;
+                            open();
+                            return true;
+                        }
+                        moved = false;
+                        return false;
+                    default:
+                        return false;
+                }
+            }
+        });
     }
 
     private void open() {
