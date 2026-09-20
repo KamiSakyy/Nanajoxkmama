@@ -83,7 +83,10 @@ public final class Player {
                 public void onMediaItemTransition(MediaItem mediaItem, int reason) {
                     syncIndexFromController();
                     Models.Track track = current();
-                    if (track != null && isPlaying()) Library.addToHistory(track);
+                    // История пополняется при автопереходе (как на сайте: applySource с autoplay).
+                    if (track != null && controller != null && controller.getPlayWhenReady() && reason != androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
+                        Library.addToHistory(track);
+                    }
                     emit();
                 }
 

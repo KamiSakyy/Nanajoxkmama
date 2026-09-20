@@ -389,7 +389,7 @@ public class AnimeScreen extends ScreenBase {
                 StringBuilder sb = new StringBuilder();
                 for (String[] s : detail.studios) {
                     if (sb.length() > 0) sb.append(", ");
-                    sb.append(s[1] != null && !s[1].isEmpty() ? s[1] : s[0]);
+                    sb.append(s[0]);
                 }
                 foot.addView(Ui.text(c, sb.toString(), 12.5f, Theme.ON_DIM));
             }
@@ -397,7 +397,7 @@ public class AnimeScreen extends ScreenBase {
                 StringBuilder sb = new StringBuilder();
                 for (String[] s : detail.series) {
                     if (sb.length() > 0) sb.append(", ");
-                    sb.append(s[1] != null && !s[1].isEmpty() ? s[1] : s[0]);
+                    sb.append(s[0]);
                 }
                 foot.addView(Ui.text(c, sb.toString(), 12.5f, Theme.ON_DIM));
             }

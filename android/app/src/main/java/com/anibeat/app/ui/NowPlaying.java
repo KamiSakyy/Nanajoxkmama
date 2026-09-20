@@ -86,7 +86,7 @@ public class NowPlaying extends FrameLayout {
         Context c = activity;
 
         tint = new View(c);
-        tint.setBackgroundColor(0xFF141416);
+        tint.setBackgroundColor(BASE_BG);
         addView(tint, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
         LinearLayout root = Ui.column(c);
@@ -450,12 +450,111 @@ public class NowPlaying extends FrameLayout {
     /* Обновление                                                          */
     /* ------------------------------------------------------------------ */
 
+    /** Фон: чёрный в режиме видео, иначе производный от обложки цвет (как на сайте). */
+    private void applyAccent(Display d) {
+        if (Player.videoMode()) {
+            tint.setBackgroundColor(Color.BLACK);
+            return;
+        }
+        String metaColor = d != null ? d.color : null;
+        String url = d != null ? (d.cover != null ? d.cover : d.thumb) : null;
+        if (metaColor != null && metaColor.startsWith("#")) tint.setBackgroundColor(mix(parseHex(metaColor)));
+        else tint.setBackgroundColor(BASE_BG);
+        if (url == null) return;
+        final String key = url;
+        Integer cached = ACCENTS.get(key);
+        if (cached != null) {
+            tint.setBackgroundColor(cached);
+            return;
+        }
+        accentLoading = key;
+        Image.load(key, 28, new com.anibeat.app.core.Image.Listener() {
+            @Override
+            public void onBitmap(android.graphics.Bitmap bitmap) {
+                if (bitmap == null || !key.equals(accentLoading)) return;
+                int mixed = mix(dominant(bitmap));
+                ACCENTS.put(key, mixed);
+                if (!Player.videoMode()) tint.setBackgroundColor(mixed);
+            }
+
+            @Override
+            public void onError() {
+            }
+        });
+    }
+
+    private static final java.util.Map<String, Integer> ACCENTS = new java.util.HashMap<>();
+    private static final int BASE_BG = 0xFF141416;
+    private String accentLoading;
+
+    /** Средневзвешенный цвет битмапа — порт extractColor() из lib/utils.ts. */
+    private static int dominant(android.graphics.Bitmap bmp) {
+        int w = bmp.getWidth();
+        int h = bmp.getHeight();
+        double r = 0, g = 0, b = 0, weight = 0;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int px = bmp.getPixel(x, y);
+                int a = Color.alpha(px);
+                if (a < 128) continue;
+                int R = Color.red(px), G = Color.green(px), B = Color.blue(px);
+                int max = Math.max(R, Math.max(G, B));
+                int min = Math.min(R, Math.min(G, B));
+                double sat = max == 0 ? 0 : (max - min) / (double) max;
+                double lum = (max + min) / 2.0 / 255.0;
+                double wgt = 0.15 + sat * 2 + (lum > 0.15 && lum < 0.85 ? 0.6 : 0);
+                r += R * wgt;
+                g += G * wgt;
+                b += B * wgt;
+                weight += wgt;
+            }
+        }
+        if (weight == 0) return BASE_BG;
+        return Color.rgb((int) Math.round(r / weight), (int) Math.round(g / weight), (int) Math.round(b / weight));
+    }
+
+    /** color-mix(in srgb, accent 34%, #0a0a0c). */
+    private static int mix(int accent) {
+        float k = 0.34f;
+        int r = Math.round(Color.red(accent) * k + 0x0a * (1 - k));
+        int g = Math.round(Color.green(accent) * k + 0x0a * (1 - k));
+        int b = Math.round(Color.blue(accent) * k + 0x0c * (1 - k));
+        return Color.rgb(r, g, b);
+    }
+
+    private static int parseHex(String value) {
+        try {
+            String v = value.trim();
+            if (v.startsWith("#")) v = v.substring(1);
+            if (v.length() == 3) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < 3; i++) sb.append(v.charAt(i)).append(v.charAt(i));
+                v = sb.toString();
+            }
+            return (int) Long.parseLong(v, 16) | 0xFF000000;
+        } catch (Exception e) {
+            return BASE_BG;
+        }
+    }
+
+    /** Обложка уменьшается на паузе (scale-[0.86], 500мс) — как на сайте. */
+    private void applyStageScale() {
+        if (Player.videoMode()) {
+            stage.animate().scaleX(1f).scaleY(1f).setDuration(500).start();
+            return;
+        }
+        float target = Player.isPlaying() ? 1f : 0.86f;
+        stage.animate().scaleX(target).scaleY(target).setDuration(500).setInterpolator(Theme.EASE_SHEET).start();
+    }
+
     public void refresh() {
         Models.Track t = Player.current();
         if (t == null) return;
         Display d = Display.track(t);
         art.setUrl(d.cover, d.thumb);
         art.setVisibility(Player.videoMode() ? GONE : VISIBLE);
+        applyAccent(d);
+        applyStageScale();
 
         title.setText(t.title);
         artistsRow.removeAllViews();
