@@ -2,7 +2,7 @@ name: android
 
 # Builds the signed APK of the AniBeat Android app (Java + Android SDK) and
 # publishes it to handoff/ and to a GitHub Release, then verifies the app on
-# a real Android emulator and stores device screenshots (docs/android-screenshots) plus the device logcat (ci-logs/).
+# verifies the signature and publishes everything to handoff/ + a GitHub Release.
 on:
   workflow_dispatch:
   push:
