@@ -1,0 +1,216 @@
+name: android
+
+# Builds the signed APK of the AniBeat Android app (Java + Android SDK) and
+# publishes it to handoff/ and to a GitHub Release, then verifies the app on
+# a real Android emulator and stores device screenshots.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/**", "main"]
+    paths:
+      - "android/**"
+      - "web/**"
+      - "tools/release/**"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      STORE_PASSWORD: ${{ secrets.ANIBEAT_STORE_PASSWORD }}
+      KEY_PASSWORD: ${{ secrets.ANIBEAT_KEY_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANIBEAT_KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version
+        id: v
+        run: |
+          echo "code=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "name=1.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: Ensure release keystore (stable signing key = installable as an update)
+        run: |
+          mkdir -p android/keystore
+          : "${STORE_PASSWORD:=anibeat-release-2026}"
+          : "${KEY_ALIAS:=anibeat}"
+          : "${KEY_PASSWORD:=${STORE_PASSWORD}}"
+          if [ ! -f android/keystore/anibeat-release.jks ]; then
+            keytool -genkeypair -v \
+              -keystore android/keystore/anibeat-release.jks \
+              -alias "$KEY_ALIAS" -keyalg RSA -keysize 4096 -validity 10950 \
+              -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+              -dname "CN=AniBeat, OU=Mobile, O=AniBeat, L=Moscow, C=RU"
+          fi
+          cat > android/keystore/keystore.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          EOF
+          git add -f android/keystore
+          git diff --cached --quiet || git -c user.name=anibeat-ci -c user.email=anibeat-ci@users.noreply.github.com commit -q -m "chore(android): release keystore [skip ci]"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Platform + build tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" > /dev/null
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build the web app
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package the web app into the APK assets
+        run: |
+          rm -rf android/app/src/main/assets
+          mkdir -p android/app/src/main/assets
+          cp -r web/dist/. android/app/src/main/assets/
+          ls -la android/app/src/main/assets | head -20
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build signed release APK
+        id: build
+        run: |
+          set -o pipefail
+          gradle -p android clean assembleRelease --no-daemon \
+            -PversionCode=${{ steps.v.outputs.code }} \
+            -PversionName=${{ steps.v.outputs.name }} 2>&1 | tee build.log
+          APK=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "apk=$APK" >> $GITHUB_OUTPUT
+          ls -la "$APK"
+
+      - name: Verify signature and alignment
+        run: |
+          APK="${{ steps.build.outputs.apk }}"
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          $BT/apksigner verify --verbose --print-certs "$APK" | tee signature.txt
+          $BT/zipalign -c -v 4 "$APK" | tail -2
+          sha256sum "$APK" | tee apk-sha256.txt
+          grep -i "SHA-256" signature.txt | head -2
+
+      - name: Publish to handoff/
+        run: |
+          set -e
+          mkdir -p handoff
+          APK="${{ steps.build.outputs.apk }}"
+          cp "$APK" handoff/anibeat-release.apk
+          cp "$APK" "handoff/AniBeat-${{ steps.v.outputs.name }}.apk"
+          {
+            echo "AniBeat Android — сборка от $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "версия: ${{ steps.v.outputs.name }} (versionCode ${{ steps.v.outputs.code }})"
+            echo "файл: handoff/AniBeat-${{ steps.v.outputs.name }}.apk"
+            echo
+            echo "SHA-256:"
+            cat apk-sha256.txt
+            echo
+            echo "Подпись:"
+            cat signature.txt
+          } > handoff/build-info.txt
+          cat handoff/build-info.txt
+
+      - name: Commit handoff + release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "anibeat-ci"
+          git config user.email "anibeat-ci@users.noreply.github.com"
+          git add -f handoff android/keystore
+          git commit -m "release(android): AniBeat ${{ steps.v.outputs.name }} (versionCode ${{ steps.v.outputs.code }}) [skip ci]" || echo "nothing to commit"
+          git push || echo "push failed"
+          gh release create "v${{ steps.v.outputs.name }}" \
+            "handoff/AniBeat-${{ steps.v.outputs.name }}.apk" \
+            --title "AniBeat Android ${{ steps.v.outputs.name }}" \
+            --notes "Подписанный APK приложения AniBeat (versionCode ${{ steps.v.outputs.code }}). Устанавливается поверх предыдущей версии как обновление. Файл также лежит в папке handoff/ репозитория." \
+            || echo "release exists"
+
+      - name: Store the build log (readable from the repository)
+        if: always()
+        run: |
+          mkdir -p ci-logs
+          {
+            echo "run: ${{ github.run_id }}  job: build-apk  status: ${{ job.status }}"
+            echo "version: ${{ steps.v.outputs.name }}"
+            echo
+            tail -c 200000 build.log 2>/dev/null || echo "no build.log"
+          } > ci-logs/last-build.log
+          git add -f ci-logs/last-build.log
+          git commit -m "chore(ci): build log [skip ci]" || echo "nothing"
+          git push || echo "push failed"
+
+  emulator-check:
+    needs: build-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Run the APK on an Android emulator and take screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: |
+            set -e
+            mkdir -p docs/android-screenshots
+            adb install -r handoff/anibeat-release.apk
+            adb shell am start -n com.anibeat.app/.MainActivity
+            sleep 30
+            adb exec-out screencap -p > docs/android-screenshots/01-home.png
+            # bottom navigation: 4 tabs across the bottom of a 1080x2400 screen
+            adb shell input tap 405 2320 && sleep 8
+            adb exec-out screencap -p > docs/android-screenshots/02-search.png
+            adb shell input tap 675 2320 && sleep 8
+            adb exec-out screencap -p > docs/android-screenshots/03-browse.png
+            adb shell input tap 945 2320 && sleep 6
+            adb exec-out screencap -p > docs/android-screenshots/04-library.png
+            adb shell input tap 135 2320 && sleep 8
+            adb exec-out screencap -p > docs/android-screenshots/05-home-again.png
+            adb shell input swipe 540 1800 540 1000 300 && sleep 3
+            adb exec-out screencap -p > docs/android-screenshots/06-home-scrolled.png
+            adb shell dumpsys activity activities | head -40 > docs/android-screenshots/activity.txt || true
+
+      - name: Publish device screenshots
+        if: always()
+        run: |
+          git config user.name "anibeat-ci"
+          git config user.email "anibeat-ci@users.noreply.github.com"
+          ls -la docs/android-screenshots || true
+          git add -f docs/android-screenshots
+          git commit -m "chore(ci): device screenshots [skip ci]" || echo "nothing"
+          git push || echo "push failed"

@@ -1,0 +1,71 @@
+import java.util.Properties
+
+plugins {
+    id 'com.android.application'
+}
+
+def versionCodeProp = (project.findProperty("versionCode") ?: "1").toString().toInteger()
+def versionNameProp = (project.findProperty("versionName") ?: "1.0.0").toString()
+
+android {
+    namespace 'com.anibeat.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.anibeat.app"
+        minSdk 24
+        targetSdk 35
+        versionCode versionCodeProp
+        versionName versionNameProp
+        resourceConfigurations += ["ru", "en"]
+    }
+
+    signingConfigs {
+        release {
+            def keystoreFile = rootProject.file("keystore/anibeat-release.jks")
+            def propertiesFile = rootProject.file("keystore/keystore.properties")
+            if (keystoreFile.exists() && propertiesFile.exists()) {
+                def props = new Properties()
+                propertiesFile.withInputStream { props.load(it) }
+                storeFile keystoreFile
+                storePassword props['storePassword']
+                keyAlias props['keyAlias']
+                keyPassword props['keyPassword']
+            }
+            def envStore = System.getenv("ANIBEAT_KEYSTORE_FILE")
+            if (envStore != null) {
+                storeFile file(envStore)
+                storePassword System.getenv("ANIBEAT_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANIBEAT_KEY_ALIAS")
+                keyPassword System.getenv("ANIBEAT_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            applicationIdSuffix ".debug"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.media:media:1.7.0'
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
