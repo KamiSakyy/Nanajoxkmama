@@ -156,7 +156,7 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
         return col;
     }
 
-    protected View gridRow(java.util.List<View> cards, int columns) {
+    protected LinearLayout gridRow(java.util.List<View> cards, int columns) {
         LinearLayout row = Ui.row(ctx());
         row.setPadding(0, 0, 0, 0);
         row.setBaselineAligned(false);

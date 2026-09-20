@@ -88,7 +88,7 @@ public final class Downloads {
     }
 
     private static void emit() {
-        for (Listener l : new ArrayList<>(LISTENERS)) l.onChanged();
+        for (Listener l : new ArrayList<>(LISTENERS)) l.onJobsChanged();
     }
 
     private static File offlineDir() {

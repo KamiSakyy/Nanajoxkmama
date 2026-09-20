@@ -134,7 +134,7 @@ public class HomeScreen extends ScreenBase {
                 rebuild();
                 return;
             }
-            int[] prev = Api.prevSeason(cur[0], Api.SEASONS[cur[1]]);
+            int[] prev = Api.prevSeason(cur[0], cur[1]);
             Api.getSeasonAnime(prev[0], Api.SEASONS[prev[1]], 1, (items2, error2) -> {
                 seasonLoading = false;
                 if (items2 != null && items2.size() > (items == null ? 0 : items.size())) {
@@ -529,21 +529,28 @@ public class HomeScreen extends ScreenBase {
     private View mixesRow() {
         List<View> cards = new ArrayList<>();
         for (Models.Mix mix : Api.MIXES) {
-            cards.add(Cards.mixCard(activity, mix, () -> {
-                activity.toaster().show("Собираем микс…");
-                Api.getTracksForAnimeSlugs(mix.slugs, (tracks, error) -> {
-                    if (tracks == null || tracks.isEmpty()) {
-                        activity.toaster().show("Микс пуст — попробуйте ещё раз");
-                        return;
-                    }
-                    Player.playTracks(Settings.filterMature(tracks), 0, true);
-                    activity.nowPlaying().open();
-                });
-            }, mix.id.equals(busy)));
+            cards.add(Cards.mixCard(activity, mix, () -> playMix(mix), mix.id.equals(busy)));
         }
         LinearLayout holder = Ui.column(ctx());
         addCardRow(holder, cards);
         return holder;
+    }
+
+    private void playMix(Models.Mix mix) {
+        if (busy != null) return;
+        busy = mix.id;
+        rebuild();
+        Api.getTracksForAnimeSlugs(mix.slugs, (tracks, error) -> {
+            busy = null;
+            if (tracks == null || tracks.isEmpty()) {
+                activity.toaster().show("Микс пуст — попробуйте ещё раз");
+                rebuild();
+                return;
+            }
+            Player.playTracks(Settings.filterMature(tracks), 0, true);
+            activity.nowPlaying().open();
+            rebuild();
+        });
     }
 
     private View randomRow() {

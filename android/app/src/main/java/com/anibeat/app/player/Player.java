@@ -6,7 +6,6 @@ import android.net.Uri;
 
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
-import androidx.media3.common.Player;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 
@@ -61,7 +60,7 @@ public final class Player {
         MediaController.Builder builder = new MediaController.Builder(context, token);
         builder.buildAsync().addListener(() -> {
             controller = builder.get();
-            controller.addListener(new Player.Listener() {
+            controller.addListener(new androidx.media3.common.Player.Listener() {
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
                     emit();
@@ -135,7 +134,7 @@ public final class Player {
     }
 
     public static boolean isBuffering() {
-        return controller != null && controller.getPlaybackState() == Player.STATE_BUFFERING;
+        return controller != null && controller.getPlaybackState() == androidx.media3.common.Player.STATE_BUFFERING;
     }
 
     public static boolean shuffle() {
@@ -394,7 +393,7 @@ public final class Player {
     public static void cycleRepeat() {
         repeat = "off".equals(repeat) ? "all" : "all".equals(repeat) ? "one" : "off";
         if (controller != null) {
-            controller.setRepeatMode("one".equals(repeat) ? Player.REPEAT_MODE_ONE : "all".equals(repeat) ? Player.REPEAT_MODE_ALL : Player.REPEAT_MODE_OFF);
+            controller.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
         }
         save();
         emit();
@@ -440,7 +439,7 @@ public final class Player {
         List<MediaItem> items = new ArrayList<>();
         for (Models.Track t : QUEUE) items.add(toMediaItem(t));
         controller.setMediaItems(items, Math.max(0, Math.min(startIndex, Math.max(0, items.size() - 1))), 0);
-        controller.setRepeatMode("one".equals(repeat) ? Player.REPEAT_MODE_ONE : "all".equals(repeat) ? Player.REPEAT_MODE_ALL : Player.REPEAT_MODE_OFF);
+        controller.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
         controller.setVolume(muted ? 0f : volume);
         controller.prepare();
         if (play) {
@@ -457,7 +456,7 @@ public final class Player {
         MediaMetadata.Builder meta = new MediaMetadata.Builder()
                 .setTitle(t.title)
                 .setArtist(t.artistNames())
-                .setAlbum(t.anime.name + " · " + t.themeSlug);
+                .setAlbumTitle(t.anime.name + " · " + t.themeSlug);
         String art = t.cover != null ? t.cover : t.coverSmall;
         if (art != null) meta.setArtworkUri(Uri.parse(art));
         return new MediaItem.Builder()

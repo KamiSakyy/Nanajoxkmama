@@ -275,7 +275,7 @@ public final class Api {
             if (done != null) done.run();
             return;
         }
-        resolveIds(need, map -> {
+        resolveIds(need, (map, err) -> {
             for (Models.Track t : tracks) {
                 if (t.anime.malId != null) continue;
                 int[] ids = map.get(t.anime.slug);

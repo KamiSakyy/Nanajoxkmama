@@ -21,7 +21,6 @@ public final class Display {
 
     public static Display of(Models.AnimeRef anime, String fallbackCover, String fallbackSmall) {
         Display d = new Display();
-        Settings.Thread.ensure();
         d.malId = anime == null ? null : anime.malId;
         Models.AnimeMeta meta = Meta.get(d.malId);
         String name = anime == null || anime.name == null ? "" : anime.name;

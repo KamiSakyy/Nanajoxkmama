@@ -465,12 +465,6 @@ public final class Meta {
         return s.isEmpty() ? null : s;
     }
 
-    private static String shikiImg(String original) {
-        if (original == null || original.isEmpty()) return null;
-        String fixed = fixShikiHost(original);
-        return fixed != null && !fixed.isEmpty() && !fixed.startsWith("http") ? "https://shikimori.one" + fixed : fixed;
-    }
-
     /** Поиск аниме по названию (русскому или латиницей). */
     public static void searchShikimori(String query, Api.Cb<List<ShikiHit>> cb) {
         if (query == null || query.trim().isEmpty()) {

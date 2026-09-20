@@ -14,6 +14,7 @@ import com.anibeat.app.MainActivity;
 import com.anibeat.app.core.BarsView;
 import com.anibeat.app.core.CoverView;
 import com.anibeat.app.core.Theme;
+import com.anibeat.app.core.Spinner;
 import com.anibeat.app.core.Ui;
 import com.anibeat.app.data.Api;
 import com.anibeat.app.data.Downloads;
@@ -344,15 +345,25 @@ public final class Cards {
         card.addView(texts, tp);
 
         FrameLayout play = new FrameLayout(c);
+        FrameLayout.LayoutParams pp = new FrameLayout.LayoutParams(Theme.dp(c, 36), Theme.dp(c, 36));
+        pp.gravity = Gravity.BOTTOM | Gravity.END;
+        pp.rightMargin = Theme.dp(c, 14);
+        pp.bottomMargin = Theme.dp(c, 12);
+        if (loading) {
+            Spinner spinner = new Spinner(c);
+            spinner.setColors(0x33FFFFFF, Theme.ON);
+            FrameLayout.LayoutParams sclp = new FrameLayout.LayoutParams(Theme.dp(c, 18), Theme.dp(c, 18));
+            sclp.gravity = Gravity.CENTER;
+            play.addView(spinner, sclp);
+            spinner.start();
+            card.addView(play, pp);
+            return card;
+        }
         play.setBackground(Ui.rounded(Theme.ON, Theme.dpF(c, 18f)));
         ImageView playIcon = Ui.icon(c, "play_arrow", 18, 0xFF000000);
         FrameLayout.LayoutParams pip = new FrameLayout.LayoutParams(Theme.dp(c, 18), Theme.dp(c, 18));
         pip.gravity = Gravity.CENTER;
         play.addView(playIcon, pip);
-        FrameLayout.LayoutParams pp = new FrameLayout.LayoutParams(Theme.dp(c, 36), Theme.dp(c, 36));
-        pp.gravity = Gravity.BOTTOM | Gravity.END;
-        pp.rightMargin = Theme.dp(c, 14);
-        pp.bottomMargin = Theme.dp(c, 12);
         card.addView(play, pp);
 
         card.setOnClickListener(v -> onPlay.run());

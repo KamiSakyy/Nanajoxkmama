@@ -158,12 +158,16 @@ jobs:
           } > ci-logs/last-build.log
           # Публикуем ошибку сборки как аннотацию — её видно через API даже там, где нет логов.
           if [ "${{ job.status }}" != "success" ]; then
-            ERR=$(grep -E "error:|^e: |FAILURE:|What went wrong|Caused by|Execution failed|> " build.log 2>/dev/null | head -60 | tr '\r' ' ' | tr '\n' '~' | sed 's/%/%25/g' | cut -c1-2500)
+            ERR=$(grep -E "error:|^e: |FAILURE:|What went wrong|Caused by|Execution failed|> " build.log 2>/dev/null | head -80 | tr '\r' ' ' | tr '\n' '~' | sed 's/%/%25/g' | cut -c1-3000)
             echo "::error title=Gradle build output::${ERR}"
-            SIG=$(grep -E "^> |error:" build.log 2>/dev/null | head -6 | tr '\n' '~' | sed 's/%/%25/g' | cut -c1-900)
-            echo "::warning title=Summary::${SIG}"
+            # Каждая ошибка компиляции — отдельной аннотацией (до 10 штук).
+            grep -E "\.java:[0-9]+: error:" build.log 2>/dev/null | head -10 | while IFS= read -r line; do
+              short=$(echo "$line" | sed 's|/home/runner/work/[^ ]*/android/app/src/main/java/com/anibeat/app/||' | tr '\r' ' ' | sed 's/%/%25/g' | cut -c1-900)
+              echo "::error title=javac::${short}"
+            done
+            grep -E "error:|Execution failed" build.log 2>/dev/null | head -140 > ci-logs/errors.txt || true
           fi
-          git add -f ci-logs/last-build.log
+          git add -f ci-logs/last-build.log ci-logs/errors.txt 2>/dev/null || git add -f ci-logs/last-build.log
           git commit -m "chore(ci): build log [skip ci]" || echo "nothing"
           for i in 1 2 3 4 5; do
             git pull --rebase --autostash -q || true
