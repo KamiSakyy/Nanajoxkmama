@@ -267,10 +267,7 @@ public class HomeScreen extends ScreenBase {
 
         List<Models.Track> offline = offlineTracks();
         if (!offline.isEmpty()) {
-            scrollContent.addView(sectionTitle("Офлайн", "Все", () -> {
-                activity.showTab(3, true);
-                if (activity.tabIndex() == 3) activity.sheets().openDownloadsSheet();
-            }));
+            scrollContent.addView(sectionTitle("Офлайн", "Все", () -> activity.showLibraryTab(1)));
             List<View> cards = new ArrayList<>();
             for (int i = 0; i < Math.min(12, offline.size()); i++) {
                 cards.add(Cards.trackCard(activity, offline.get(i), offline));
@@ -284,7 +281,7 @@ public class HomeScreen extends ScreenBase {
         scrollContent.addView(animeRow(legendPick));
         List<Models.Track> history = Library.history();
         if (!history.isEmpty()) {
-            scrollContent.addView(sectionTitle("Недавние", "Все", () -> activity.showTab(3, true)));
+            scrollContent.addView(sectionTitle("Недавние", "Все", () -> activity.showLibraryTab(3)));
             List<View> cards = new ArrayList<>();
             for (int i = 0; i < Math.min(12, history.size()); i++) {
                 cards.add(Cards.trackCard(activity, history.get(i), history));

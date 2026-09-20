@@ -106,7 +106,7 @@ public class Sheets extends FrameLayout {
 
     /** true, если касание попало в сам лист шторки, а не в затемнение. */
     private boolean insideSheet(MotionEvent e) {
-        float[] loc = new float[2];
+        int[] loc = new int[2];
         sheet.getLocationOnScreen(loc);
         return e.getRawY() >= loc[1];
     }

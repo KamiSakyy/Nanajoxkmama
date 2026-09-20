@@ -35,6 +35,11 @@ public class LibraryScreen extends ScreenBase {
         super(activity);
     }
 
+    /** Открыть конкретную вкладку (вызывается из переходов с других экранов). */
+    public void openTab(int index) {
+        setTab(index);
+    }
+
     private void setTab(int index) {
         tab = index;
         fillBody();

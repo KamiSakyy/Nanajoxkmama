@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
     private FrameLayout root;
     private FrameLayout content;
     /** Мини-плеер и отступы контента пересчитываются при любом изменении плеера. */
-    private final com.anibeat.app.player.Player.Listener playerListener = () -> post(this::updateBars);
+    private final com.anibeat.app.player.Player.Listener playerListener = () -> runOnUiThread(this::updateBars);
     private Nav nav;
     private MiniPlayer miniPlayer;
     private NowPlaying nowPlaying;
@@ -209,6 +209,15 @@ public class MainActivity extends Activity {
 
     public void open(Screen screen) {
         push(screen, true);
+    }
+
+    /** Медиатека на конкретной вкладке (site: /library?tab=downloads|history). */
+    public void showLibraryTab(int tab) {
+        showTab(3, true);
+        Screen screen = tabs[3];
+        if (screen instanceof com.anibeat.app.ui.screens.LibraryScreen) {
+            ((com.anibeat.app.ui.screens.LibraryScreen) screen).openTab(tab);
+        }
     }
 
     public void openAnime(String slug) {
