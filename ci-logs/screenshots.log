@@ -1,9 +1,9 @@
-+ echo 'run: 35534536639'
-run: 35534536639
++ echo 'run: 35536505676'
+run: 35536505676
 + git log --oneline -3
-694da27 ci: полный clone для пуша из workflow
-5a03685 ci: исправлен пуш из CI (detached HEAD) и установка Android SDK/Gradle
-977604a chore(android): release keystore [skip ci]
+c1dd66c test(shots): полный обход всех экранов (плеер, очередь, видео, мини-плеер, меню трека, медиатека, настройки) и отчёт об ошибках
+392eed6 chore(ci): build log [skip ci]
+327401b release(android): AniBeat 1.0.5 (versionCode 5) [skip ci]
 + ls docs/screenshots
 + wc -l
-24
+27
