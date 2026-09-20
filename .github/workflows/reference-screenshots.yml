@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -63,10 +64,13 @@ jobs:
       - name: Publish screenshots to the branch
         if: always()
         run: |
+          set -x
           git config user.name "anibeat-ci"
           git config user.email "anibeat-ci@users.noreply.github.com"
-          ls -la docs/screenshots || true
-          git add -f docs/screenshots
+          ls -la docs/screenshots | head -40 || true
+          mkdir -p ci-logs
+          { echo "run: ${{ github.run_id }}"; git log --oneline -3; ls docs/screenshots | wc -l; } > ci-logs/screenshots.log 2>&1
+          git add -f docs/screenshots ci-logs/screenshots.log
           git commit -m "chore(ci): reference screenshots [skip ci]" || echo "nothing to commit"
           for i in 1 2 3 4 5; do
             git pull --rebase --autostash -q || true
