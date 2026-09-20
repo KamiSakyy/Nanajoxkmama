@@ -1,5 +1,5 @@
-run: 35539386440  job: build-apk  status: success
-version: 1.0.15
+run: 35539405332  job: build-apk  status: success
+version: 1.0.16
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -36,8 +36,9 @@ Daemon will be stopped at the end of the build
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseJavaRes NO-SOURCE
 > Task :app:processReleaseResources
-> Task :app:mergeReleaseJavaResource
+> Task :app:collectReleaseDependencies
 > Task :app:mergeExtDexRelease
+> Task :app:mergeReleaseJavaResource
 
 > Task :app:compileReleaseJavaWithJavac
 Note: Some input files use or override a deprecated API.
@@ -45,7 +46,6 @@ Note: Recompile with -Xlint:deprecation for details.
 
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
-> Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
@@ -57,5 +57,5 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 1m 17s
+BUILD SUCCESSFUL in 1m 22s
 39 actionable tasks: 38 executed, 1 up-to-date
