@@ -32,6 +32,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.ref_name }}
 
       - name: Version
         id: v
@@ -65,13 +66,19 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Platform + build tools
+      - name: Android SDK (platform 35 + build tools)
         run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" > /dev/null
+          set -e
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME" || true
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER=$(find "$ANDROID_HOME" -name sdkmanager -type f | head -1)
+          fi
+          echo "sdkmanager=$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
 
       - uses: actions/setup-node@v4
         with:
@@ -90,9 +97,13 @@ jobs:
           cp -r web/dist/. android/app/src/main/assets/
           ls -la android/app/src/main/assets | head -20
 
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
+      - name: Gradle 8.9
+        run: |
+          set -e
+          curl -sSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle.zip -d /opt/gradle
+          echo "/opt/gradle/gradle-8.9/bin" >> $GITHUB_PATH
+          /opt/gradle/gradle-8.9/bin/gradle -v
 
       - name: Build signed release APK
         id: build
@@ -142,7 +153,11 @@ jobs:
           git config user.email "anibeat-ci@users.noreply.github.com"
           git add -f handoff android/keystore
           git commit -m "release(android): AniBeat ${{ steps.v.outputs.name }} (versionCode ${{ steps.v.outputs.code }}) [skip ci]" || echo "nothing to commit"
-          git push || echo "push failed"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash -q || true
+            if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
+            sleep 5
+          done
           gh release create "v${{ steps.v.outputs.name }}" \
             "handoff/AniBeat-${{ steps.v.outputs.name }}.apk" \
             --title "AniBeat Android ${{ steps.v.outputs.name }}" \
@@ -161,7 +176,11 @@ jobs:
           } > ci-logs/last-build.log
           git add -f ci-logs/last-build.log
           git commit -m "chore(ci): build log [skip ci]" || echo "nothing"
-          git push || echo "push failed"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash -q || true
+            if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
+            sleep 5
+          done
 
   emulator-check:
     needs: build-apk
@@ -170,6 +189,8 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-java@v4
         with:
@@ -213,4 +234,8 @@ jobs:
           ls -la docs/android-screenshots || true
           git add -f docs/android-screenshots
           git commit -m "chore(ci): device screenshots [skip ci]" || echo "nothing"
-          git push || echo "push failed"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash -q || true
+            if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
+            sleep 5
+          done

@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -66,4 +68,8 @@ jobs:
           ls -la docs/screenshots || true
           git add -f docs/screenshots
           git commit -m "chore(ci): reference screenshots [skip ci]" || echo "nothing to commit"
-          git push || echo "push failed"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash -q || true
+            if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
+            sleep 5
+          done
