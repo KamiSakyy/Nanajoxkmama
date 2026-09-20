@@ -64,11 +64,38 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
         return content;
     }
 
-    /** Пересборка содержимого при внешних изменениях (метаданные, настройки, очередь). */
+    /** Пересборка содержимого при внешних обновлениях — позиция скролла сохраняется. */
     public void rebuild() {
+        int scrollY = currentScrollY();
         removeAllViews();
         content = build();
         addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (scrollY > 0) restoreScrollY(scrollY);
+    }
+
+    /** Текущая позиция вертикального скролла (0, если прокрутки нет). */
+    protected int currentScrollY() {
+        android.widget.ScrollView sv = findScrollView(this);
+        return sv == null ? 0 : sv.getScrollY();
+    }
+
+    protected void restoreScrollY(final int y) {
+        post(() -> {
+            android.widget.ScrollView sv = findScrollView(ScreenBase.this);
+            if (sv != null) sv.scrollTo(0, y);
+        });
+    }
+
+    private static android.widget.ScrollView findScrollView(View root) {
+        if (root instanceof android.widget.ScrollView) return (android.widget.ScrollView) root;
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                android.widget.ScrollView found = findScrollView(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     protected void scheduleRefresh() {

@@ -43,6 +43,10 @@ public final class Player {
     private static boolean muted;
     private static float volume = 1f;
     private static boolean ready;
+    private static Context appContext;
+    /** Отложенный запуск: пользователь нажал play раньше, чем подключился сервис. */
+    private static int pendingIndex = -1;
+    private static boolean pendingPlay;
     private static final List<Listener> LISTENERS = new ArrayList<>();
     private static final Random RANDOM = new Random();
 
@@ -54,6 +58,7 @@ public final class Player {
     /* ------------------------------------------------------------------ */
 
     public static void init(Context context) {
+        if (context != null) appContext = context.getApplicationContext();
         if (ready) return;
         restore(context);
         SessionToken token = new SessionToken(context, new ComponentName(context, PlaybackService.class));
@@ -96,6 +101,13 @@ public final class Player {
             });
             if (!QUEUE.isEmpty()) {
                 applyQueue(index, false);
+            }
+            if (pendingIndex >= 0) {
+                int pIndex = pendingIndex;
+                boolean pPlay = pendingPlay;
+                pendingIndex = -1;
+                pendingPlay = false;
+                applyQueue(pIndex, pPlay);
             }
             emit();
         }, com.google.common.util.concurrent.MoreExecutors.directExecutor());
@@ -234,7 +246,13 @@ public final class Player {
     }
 
     public static void toggle() {
-        if (controller == null) return;
+        if (controller == null) {
+            if (QUEUE.isEmpty()) return;
+            pendingIndex = index;
+            pendingPlay = true;
+            if (appContext != null) init(appContext);
+            return;
+        }
         if (controller.isPlaying()) controller.pause();
         else {
             controller.play();
@@ -245,7 +263,16 @@ public final class Player {
     }
 
     public static void play() {
-        if (controller != null) controller.play();
+        if (controller == null) {
+            if (QUEUE.isEmpty()) return;
+            pendingIndex = index;
+            pendingPlay = true;
+            if (appContext != null) init(appContext);
+            return;
+        }
+        controller.play();
+        Models.Track t = current();
+        if (t != null) Library.addToHistory(t);
         emit();
     }
 
@@ -440,7 +467,13 @@ public final class Player {
     }
 
     private static void applyQueue(int startIndex, boolean play) {
-        if (controller == null) return;
+        if (controller == null) {
+            // Сервис ещё поднимается — запомним и выполним сразу после подключения.
+            pendingIndex = startIndex;
+            pendingPlay = play;
+            if (appContext != null) init(appContext);
+            return;
+        }
         List<MediaItem> items = new ArrayList<>();
         for (Models.Track t : QUEUE) items.add(toMediaItem(t));
         controller.setMediaItems(items, Math.max(0, Math.min(startIndex, Math.max(0, items.size() - 1))), 0);

@@ -65,6 +65,8 @@ public class MainActivity extends Activity {
 
     private FrameLayout root;
     private FrameLayout content;
+    /** Мини-плеер и отступы контента пересчитываются при любом изменении плеера. */
+    private final com.anibeat.app.player.Player.Listener playerListener = () -> post(this::updateBars);
     private Nav nav;
     private MiniPlayer miniPlayer;
     private NowPlaying nowPlaying;
@@ -127,6 +129,7 @@ public class MainActivity extends Activity {
 
         setContentView(root);
 
+        Player.addListener(playerListener);
         showTab(0, false);
         requestNotificationPermissionIfNeeded();
     }
@@ -232,7 +235,12 @@ public class MainActivity extends Activity {
     }
 
     public void updateBars() {
-        miniPlayer.getView().setVisibility(Player.current() != null && !nowPlaying.isOpen() ? View.VISIBLE : View.GONE);
+        boolean mini = Player.current() != null && !nowPlaying.isOpen();
+        miniPlayer.getView().setVisibility(mini ? View.VISIBLE : View.GONE);
+        if (currentView != null) {
+            int bottom = Nav.BAR_HEIGHT_DP + 8 + (mini ? MiniPlayer.HEIGHT_DP + 8 : 0);
+            currentView.setPadding(0, 0, 0, Theme.dp(this, bottom));
+        }
         miniPlayer.refresh();
         toaster.bringToFront();
         sheets.bringToFront();

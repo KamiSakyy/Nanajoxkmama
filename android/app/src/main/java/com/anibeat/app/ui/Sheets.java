@@ -45,6 +45,7 @@ public class Sheets extends FrameLayout {
     private boolean open;
     private float touchStartY;
     private boolean dragging;
+    private boolean swallowing;
     private Runnable onDismiss;
 
     private Models.Track menuTrack;
@@ -68,6 +69,7 @@ public class Sheets extends FrameLayout {
         cp.gravity = Gravity.BOTTOM;
         addView(container, cp);
 
+        setVisibility(GONE);
         sheet = new LinearLayout(c);
         sheet.setOrientation(LinearLayout.VERTICAL);
         sheet.setBackground(Ui.rounded(Theme.SURFACE_2, Theme.dpF(c, 16f)));
@@ -102,16 +104,27 @@ public class Sheets extends FrameLayout {
 
     }
 
+    /** true, если касание попало в сам лист шторки, а не в затемнение. */
+    private boolean insideSheet(MotionEvent e) {
+        float[] loc = new float[2];
+        sheet.getLocationOnScreen(loc);
+        return e.getRawY() >= loc[1];
+    }
+
     @Override
     public boolean onInterceptTouchEvent(MotionEvent e) {
         if (!open) return false;
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 touchStartY = e.getRawY();
-                dragging = ((ScrollView) scroller).getScrollY() <= 0;
+                swallowing = false;
+                dragging = insideSheet(e) && ((ScrollView) scroller).getScrollY() <= 0;
                 return false;
             case MotionEvent.ACTION_MOVE:
-                if (dragging && e.getRawY() - touchStartY > Theme.dp(getContext(), 12)) return true;
+                if (dragging && !swallowing && e.getRawY() - touchStartY > Theme.dp(getContext(), 12)) {
+                    swallowing = true;
+                    return true;
+                }
                 return false;
             default:
                 return false;
@@ -120,6 +133,7 @@ public class Sheets extends FrameLayout {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
+        if (!open || !swallowing) return false;
         switch (e.getActionMasked()) {
             case MotionEvent.ACTION_MOVE:
                 if (dragging) {
@@ -132,6 +146,7 @@ public class Sheets extends FrameLayout {
                 if (dragging && sheet.getTranslationY() > Theme.dp(getContext(), 90)) close();
                 else sheet.animate().translationY(0f).setDuration(Theme.DUR_FAST).start();
                 dragging = false;
+                swallowing = false;
                 return true;
             default:
                 return true;

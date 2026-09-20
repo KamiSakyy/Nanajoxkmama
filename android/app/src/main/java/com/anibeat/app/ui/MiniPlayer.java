@@ -22,7 +22,7 @@ import com.anibeat.app.player.Player;
 /** Мини-плеер — плавающая карточка над таб-баром (58dp, как на сайте). */
 public class MiniPlayer extends FrameLayout {
 
-    private static final int HEIGHT_DP = 58;
+    public static final int HEIGHT_DP = 58;
 
     private final MainActivity activity;
     private final CoverView cover;
@@ -47,6 +47,7 @@ public class MiniPlayer extends FrameLayout {
         this.activity = activity;
         Context c = activity;
         setPadding(Theme.dp(c, 8), 0, Theme.dp(c, 8), 0);
+        setVisibility(GONE);
 
         card = Ui.row(c);
         ((LinearLayout) card).setPadding(Theme.dp(c, 8), 0, Theme.dp(c, 4), 0);

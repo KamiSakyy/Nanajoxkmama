@@ -251,8 +251,6 @@ public final class Cards {
             scp.topMargin = Theme.dp(c, 6);
             art.addView(score, scp);
         }
-        art.setOnClickListener(v -> a.openAnime(anime.slug));
-        Ui.tapScale(art);
         card.addView(art);
 
         TextView title = Ui.text(c, d.title == null ? "" : d.title, 13.5f, Theme.ON, true);
@@ -269,6 +267,8 @@ public final class Cards {
             yp.topMargin = Theme.dp(c, 4);
             card.addView(year, yp);
         }
+        card.setOnClickListener(v -> a.openAnime(anime.slug));
+        Ui.tapScale(card);
         return card;
     }
 
@@ -299,8 +299,6 @@ public final class Cards {
             holder.addView(mic, mp);
             circle.addView(holder, new FrameLayout.LayoutParams(size, size));
         }
-        circle.setOnClickListener(v -> a.openArtist(artist.slug));
-        Ui.tapScale(circle);
         card.addView(circle);
 
         TextView name = Ui.text(c, artist.name, 13f, Theme.ON, true);
@@ -309,6 +307,8 @@ public final class Cards {
         LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         np.topMargin = Theme.dp(c, 8);
         card.addView(name, np);
+        card.setOnClickListener(v -> a.openArtist(artist.slug));
+        Ui.tapScale(card);
         return card;
     }
 
