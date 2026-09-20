@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import com.anibeat.app.MainActivity;
 import com.anibeat.app.core.CoverView;
+import com.anibeat.app.core.Image;
 import com.anibeat.app.core.SliderView;
 import com.anibeat.app.core.Theme;
 import com.anibeat.app.core.Ui;
@@ -468,7 +469,7 @@ public class NowPlaying extends FrameLayout {
             return;
         }
         accentLoading = key;
-        Image.load(key, 28, new com.anibeat.app.core.Image.Listener() {
+        Image.load(key, 28, new Image.Listener() {
             @Override
             public void onBitmap(android.graphics.Bitmap bitmap) {
                 if (bitmap == null || !key.equals(accentLoading)) return;
