@@ -1,1 +1,1 @@
-a00a55b44d8189896a5eabd53095b8e5f6f4ebeaf4f2ecc86842b4f54b214605  handoff/AniBeat-release.apk
+d39442d390f76e3457b717699e3a589f6316cc17a5692c7e0dc5fe6dbb1f7189  handoff/AniBeat-release.apk
