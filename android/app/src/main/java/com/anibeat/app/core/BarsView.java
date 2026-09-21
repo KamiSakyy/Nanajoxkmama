@@ -20,6 +20,7 @@ public class BarsView extends android.view.View {
     private final float[] progress = new float[DURATIONS.length];
     private int color = Theme.ON;
     private boolean paused;
+    private boolean visibleOnScreen;
     private float barWidth;
     private float gap;
 
@@ -51,24 +52,38 @@ public class BarsView extends android.view.View {
 
     public void setPaused(boolean value) {
         paused = value;
+        sync();
+    }
+
+    public void start() {
+        paused = false;
+        sync();
+    }
+
+    /** Полосы двигаются только тогда, когда видны на экране и трек играет: без лишней работы. */
+    private void sync() {
+        boolean run = !paused && visibleOnScreen;
         for (ValueAnimator a : animators) {
-            if (value) a.pause();
-            else if (!a.isRunning()) a.resume();
+            if (run) {
+                if (!a.isStarted()) a.start();
+                else if (a.isPaused()) a.resume();
+            } else if (a.isStarted() && !a.isPaused()) {
+                a.pause();
+            }
         }
         invalidate();
     }
 
-    public void start() {
-        for (ValueAnimator a : animators) {
-            if (!a.isRunning()) a.start();
-        }
+    @Override
+    protected void onVisibilityAggregated(boolean isVisible) {
+        super.onVisibilityAggregated(isVisible);
+        visibleOnScreen = isVisible;
+        sync();
     }
 
     @Override
     protected void onMeasure(int widthSpec, int heightSpec) {
         int width = (int) (barWidth * SCALES.length + gap * (SCALES.length - 1));
-        int height = 0;
-        for (float s : SCALES) height = Math.max(height, (int) (Theme.dpF(getContext(), s * 0f + 15f)));
         setMeasuredDimension(resolveSize(width, widthSpec), resolveSize((int) Theme.dpF(getContext(), 15f), heightSpec));
     }
 
@@ -90,6 +105,7 @@ public class BarsView extends android.view.View {
 
     @Override
     protected void onDetachedFromWindow() {
+        visibleOnScreen = false;
         for (ValueAnimator a : animators) a.cancel();
         super.onDetachedFromWindow();
     }
