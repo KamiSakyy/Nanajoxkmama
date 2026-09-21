@@ -274,7 +274,7 @@ class AnimeThemesApi @Inject constructor(
         val d = http.getJson(url("/search", mapOf(
             "q" to q,
             "fields[search]" to "anime,animethemes,artists",
-            "page[limit]" to 12,
+            "page[limit]" to 20,
             "include[anime]" to ANIME_LIST_INCLUDE,
             "include[animetheme]" to THEME_INCLUDE,
             "include[artist]" to "images",

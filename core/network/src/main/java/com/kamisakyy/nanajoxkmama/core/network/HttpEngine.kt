@@ -8,21 +8,20 @@ import com.kamisakyy.nanajoxkmama.core.common.MINUTE_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import java.io.ByteArrayInputStream
 import java.io.File
-import java.security.MessageDigest
-import java.util.concurrent.ConcurrentHashMap
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Browser-grade HTTP layer (website `src/api/http.ts` port):
- *  • Transport: platform HttpURLConnection (proven v1.x semantics)
- *  • two-tier cache — memory hot + disk, stale-while-revalidate
- *  • request de-duplication (identical inflight calls share one call)
- *  • retries with exponential backoff + Retry-After on 429 / 5xx / network errors
- *  • per-request timeouts
+ * API transport — VERBATIM port of the proven v1.x ApiClient.requestText:
+ * platform HttpURLConnection, plain UTF-8 stream, fixed timeouts,
+ * Accept: application/json, User-Agent: AniBeat/1.0 (Android; Anime music player).
+ * Requests are clean — Accept-Encoding: identity (no compression negotiation).
+ * The old versions had NO cache layer — neither has this.
+ * If a hop wraps the body anyway, it is decoded manually exactly like the
+ * website (src/api/http.ts): gzip / brotli / deflate / zip, magic-byte sniffed.
  */
 object HttpCachePolicy {
     data class Policy(
@@ -54,141 +53,128 @@ object HttpCachePolicy {
 class HttpEngine @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    private data class Entry(val ts: Long, val raw: String)
+    init {
+        // Purge every cache directory ever written by older builds —
+        // poisoned entries there were serving garbage long after updates.
+        purgeOldCaches()
+    }
 
-    private val mem = ConcurrentHashMap<String, Entry>()
-    private val inflight = ConcurrentHashMap<String, kotlinx.coroutines.Deferred<String>>()
-    private val diskDir: File = File(context.cacheDir, "http-cache-v2").apply { mkdirs() }
-    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
+    private fun purgeOldCaches() {
+        try {
+            val base = context.cacheDir ?: return
+            base.listFiles()?.forEach { f ->
+                if (f.isDirectory && f.name.startsWith("http-cache")) f.deleteRecursively()
+            }
+        } catch (_: Throwable) { }
+    }
 
     fun buildUrl(base: String, path: String, params: Map<String, Any?>): String {
         val sb = StringBuilder(base).append(path)
-        val entries = params.filterValues { it != null && "$it".isNotEmpty() }.toList().sortedBy { it.first }
+        val entries = params.filterValues { it != null && "$it".isNotEmpty() }
         if (entries.isNotEmpty()) {
             sb.append('?')
-            entries.forEachIndexed { i, (k, v) ->
-                if (i > 0) sb.append('&')
+            var first = true
+            for ((k, v) in entries) {
+                if (!first) sb.append('&')
+                first = false
                 sb.append(urlEncode(k)).append('=').append(urlEncode("$v"))
             }
         }
         return sb.toString()
     }
 
-    private fun urlEncode(s: String): String =
-        java.net.URLEncoder.encode(s, "UTF-8").replace("+", "%20")
-
-    private fun key(url: String, policy: HttpCachePolicy.Policy): String =
-        policy.cacheKey ?: if (policy.body != null) "$url#${policy.body}" else url
-
-    private fun diskFile(key: String): File =
-        File(diskDir, MessageDigest.getInstance("SHA-1").digest(key.toByteArray()).joinToString("") { "%02x".format(it) })
+    private fun urlEncode(s: String): String = java.net.URLEncoder.encode(s, "UTF-8")
 
     suspend fun getJson(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): JSONObject {
-        val k = key(url, policy)
-        return try {
-            JSONObject(getString(url, policy))
+        try {
+            return JSONObject(getString(url, policy))
         } catch (e: Exception) {
-            invalidate(k)
-            JSONObject(getString(url, policy.copy(refresh = true, cacheKey = policy.cacheKey)))
+            if (e is ApiException) throw e
+            // one clean refetch before giving up
+            try {
+                return JSONObject(getString(url, policy))
+            } catch (e2: Exception) {
+                if (e2 is ApiException) throw e2
+                throw ApiException("Неверный ответ сервера")
+            }
         }
     }
 
     suspend fun getArray(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): JSONArray {
-        val k = key(url, policy)
-        return try {
-            JSONArray(getString(url, policy))
+        try {
+            return JSONArray(getString(url, policy))
         } catch (e: Exception) {
-            invalidate(k)
-            JSONArray(getString(url, policy.copy(refresh = true, cacheKey = policy.cacheKey)))
-        }
-    }
-
-    private fun invalidate(k: String) {
-        mem.remove(k)
-        try { diskFile(k).delete() } catch (_: Exception) { }
-    }
-
-    suspend fun getString(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): String {
-        val k = key(url, policy)
-        val now = System.currentTimeMillis()
-
-        if (!policy.refresh) {
-            mem[k]?.let { if (now - it.ts < policy.ttl) return it.raw }
-            inflight[k]?.let { return it.await() }
-        }
-
-        val job = scope.async {
-            if (!policy.refresh && !policy.noStore) {
-                val disk = readDisk(k)
-                if (disk != null) {
-                    val age = System.currentTimeMillis() - disk.ts
-                    if (age < policy.maxAge) {
-                        mem[k] = disk
-                        if (age >= policy.fresh) {
-                            // stale-while-revalidate: paint instantly, refresh quietly
-                            launch {
-                                runCatching {
-                                    val fresh = fetch(url, policy)
-                                    val e = Entry(System.currentTimeMillis(), fresh)
-                                    mem[k] = e
-                                    writeDisk(k, fresh)
-                                }
-                            }
-                        }
-                        return@async disk.raw
-                    }
-                }
+            if (e is ApiException) throw e
+            try {
+                return JSONArray(getString(url, policy))
+            } catch (e2: Exception) {
+                if (e2 is ApiException) throw e2
+                throw ApiException("Неверный ответ сервера")
             }
-            val result = fetch(url, policy)
-            val e = Entry(System.currentTimeMillis(), result)
-            mem[k] = e
-            if (!policy.noStore) writeDisk(k, result)
-            result
-        }
-        inflight[k] = job
-        try {
-            return job.await()
-        } finally {
-            inflight.remove(k, job)
         }
     }
 
-    /**
-     * Servers/middleboxes can deliver compressed bodies the HTTP layer does not
-     * transparently unwrap — the website decompresses gzip/deflate/zip manually
-     * in its http.ts; same here (magic-byte sniffing).
-     */
-    private fun decodeBody(bytes: ByteArray, encoding: String?): String {
+    suspend fun getString(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): String =
+        fetch(url, policy)
+
+    /* ---------------- site http.ts parity: manual decompression ---------------- */
+
+    private fun looksLikeJson(t: String): Boolean {
+        var i = 0
+        while (i < t.length && (t[i] == ' ' || t[i] == '\t' || t[i] == '\r' || t[i] == '\n' || t[i] == '\uFEFF')) i++
+        return i < t.length && (t[i] == '{' || t[i] == '[')
+    }
+
+    private fun isGzip(d: ByteArray) = d.size > 2 && d[0] == 0x1f.toByte() && d[1] == 0x8b.toByte()
+    private fun isBrotli(d: ByteArray) = d.size > 2 && d[0] == 0x42.toByte() && d[1] == 0x7a.toByte()
+    private fun isZip(d: ByteArray) = d.size > 3 && d[0] == 0x50.toByte() && d[1] == 0x4b.toByte() && d[2] == 0x03.toByte()
+    private fun isZlib(d: ByteArray) = d.size > 1 && d[0] == 0x78.toByte()
+
+    private fun decodeLayer(data: ByteArray): ByteArray? = try {
+        when {
+            isGzip(data) ->
+                java.util.zip.GZIPInputStream(ByteArrayInputStream(data)).use { it.readBytes() }
+            isBrotli(data) ->
+                org.brotli.dec.BrotliInputStream(ByteArrayInputStream(data)).use { it.readBytes() }
+            isZip(data) ->
+                java.util.zip.ZipInputStream(ByteArrayInputStream(data)).use { z -> z.nextEntry; z.readBytes() }
+            isZlib(data) ->
+                java.util.zip.InflaterInputStream(ByteArrayInputStream(data)).use { it.readBytes() }
+            else -> null
+        }
+    } catch (_: Throwable) { null }
+
+    /** Magic-byte sniffed multi-layer decode — gzip / brotli / zip / deflate, like the website. */
+    private fun decodeChain(bytes: ByteArray, encoding: String?): String? {
         var data = bytes
-        try {
-            val enc = encoding?.lowercase(java.util.Locale.US) ?: ""
-            // gzip — up to 3 layers (some middleboxes double-wrap)
-            if (enc.contains("gzip") || (data.size > 2 && data[0] == 0x1f.toByte() && data[1] == 0x8b.toByte())) {
-                var d = data
-                repeat(3) {
-                    if (d.size > 2 && d[0] == 0x1f.toByte() && d[1] == 0x8b.toByte()) {
-                        d = java.util.zip.GZIPInputStream(d.inputStream()).use { it.readBytes() }
-                    }
-                }
-                data = d
-            } else if (enc.contains("deflate")) {
-                data = java.util.zip.InflaterInputStream(data.inputStream()).use { it.readBytes() }
-            } else if (data.size > 3 && data[0] == 0x50.toByte() && data[1] == 0x4b.toByte() && data[2] == 0x03.toByte()) {
-                data = java.util.zip.ZipInputStream(data.inputStream()).use { z ->
-                    z.nextEntry
-                    z.readBytes()
-                }
-            }
-        } catch (_: Exception) {
+        for (i in 0 until 4) {
+            val next = decodeLayer(data) ?: break
+            if (next.isEmpty()) break
+            data = next
         }
-        return String(data, Charsets.UTF_8)
+        if (!looksLikeJson(String(data, Charsets.UTF_8)) &&
+            (encoding ?: "").lowercase(Locale.US).contains("deflate")
+        ) {
+            try {
+                data = java.util.zip.InflaterInputStream(ByteArrayInputStream(data), java.util.zip.Inflater(true))
+                    .use { it.readBytes() }
+            } catch (_: Throwable) { }
+        }
+        val text = String(data, Charsets.UTF_8)
+        return if (looksLikeJson(text)) text else null
     }
 
-    /**
-     * Transport is a VERBATIM port of the proven v1.x ApiClient.requestText
-     * (HttpURLConnection, plain UTF-8 stream, no compression negotiation) —
-     * exactly what worked on this device, plus multi-layer decode safety net.
-     */
+    /** v1 plain read semantics first; manual decode only if the body is wrapped. */
+    private fun readPlain(input: java.io.InputStream?, encoding: String?): String {
+        if (input == null) return ""
+        val bytes = input.use { it.readBytes() }
+        val v1 = String(bytes, Charsets.UTF_8)
+        if (looksLikeJson(v1)) return v1
+        return decodeChain(bytes, encoding) ?: v1
+    }
+
+    /* --------- v1 ApiClient.requestText VERBATIM + retry / clear errors -------- */
+
     private fun fetch(url: String, policy: HttpCachePolicy.Policy): String {
         var attempt = 0
         val maxRetries = policy.retries.coerceAtMost(RETRY_DELAYS.size)
@@ -201,7 +187,8 @@ class HttpEngine @Inject constructor(
                 connection.readTimeout = 22000
                 connection.useCaches = true
                 connection.setRequestProperty("Accept", "application/json")
-                connection.setRequestProperty("User-Agent", "AniBeat/2.0 (Android; Anime music player)")
+                connection.setRequestProperty("User-Agent", "AniBeat/1.0 (Android; Anime music player)")
+                connection.setRequestProperty("Accept-Encoding", "identity")
                 val body = policy.body
                 if (body != null) {
                     val payload = body.toByteArray(Charsets.UTF_8)
@@ -248,40 +235,11 @@ class HttpEngine @Inject constructor(
         }
     }
 
-    /** v1 read() semantics + safety-net decode if a hop compressed the body anyway. */
-    private fun readPlain(input: java.io.InputStream?, encoding: String?): String {
-        if (input == null) return ""
-        val bytes = input.use { it.readBytes() }
-        return decodeBody(bytes, encoding)
-    }
+    fun clear() = purgeOldCaches()
 
-    private fun readDisk(key: String): Entry? = try {
-        val f = diskFile(key)
-        if (!f.exists() || System.currentTimeMillis() - f.lastModified() > 30 * DAY_MS) null
-        else {
-            val head = f.readLines()
-            if (head.size >= 2) {
-                val body = head.drop(1).joinToString("\n").trim()
-                if (body.startsWith("{") || body.startsWith("[")) Entry(head[0].toLongOrNull() ?: 0, body)
-                else { f.delete(); null }
-            } else null
-        }
-    } catch (_: Exception) { null }
+    suspend fun clearAsync() { clear() }
 
-    private fun writeDisk(key: String, raw: String) {
-        try {
-            diskFile(key).writeText(System.currentTimeMillis().toString() + "\n" + raw)
-        } catch (_: Exception) { }
-    }
-
-    fun clear() {
-        mem.clear()
-        diskDir.listFiles()?.forEach { it.delete() }
-    }
-
-    suspend fun clearAsync() = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { clear() }
-
-    fun diskBytes(): Long = diskDir.listFiles()?.sumOf { it.length() } ?: 0L
+    fun diskBytes(): Long = 0L
 
     private val RETRY_DELAYS = longArrayOf(600, 1500, 3200)
 }

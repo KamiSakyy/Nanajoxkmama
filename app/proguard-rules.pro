@@ -24,3 +24,5 @@
 -keep class dagger.hilt.** { *; }
 -keep class javax.inject.** { *; }
 -keep class * extends androidx.lifecycle.ViewModel { *; }
+
+-keep class org.brotli.** { *; }

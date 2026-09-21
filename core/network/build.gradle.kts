@@ -23,6 +23,7 @@ dependencies {
     api(libs.coroutines.core)
     implementation(libs.coroutines.android)
     api(libs.okhttp)
+    implementation(libs.brotli.dec)
     implementation(libs.javax.inject)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
