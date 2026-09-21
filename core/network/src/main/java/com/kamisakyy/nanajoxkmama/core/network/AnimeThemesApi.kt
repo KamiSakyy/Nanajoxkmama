@@ -262,9 +262,10 @@ class AnimeThemesApi @Inject constructor(
         val d = meta.detailsOf(t.anime.malId) ?: return t
         var a = t.anime
         if (a.ruName == null && d.ru != null) a = a.copy(ruName = d.ru)
-        if (a.coverSmall == null && d.poster != null) a = a.copy(coverSmall = d.poster)
-        if (a.cover == null && d.poster != null) a = a.copy(cover = d.poster)
-        return t.copy(anime = a)
+        var x = t.copy(anime = a)
+        if (x.coverSmall == null && d.poster != null) x = x.copy(coverSmall = d.poster)
+        if (x.cover == null && d.poster != null) x = x.copy(cover = d.poster)
+        return x
     }
 
     suspend fun attachIds(tracks: List<Track>): List<Track> {
@@ -281,7 +282,7 @@ class AnimeThemesApi @Inject constructor(
         // Греем Shikimori только для строк БЕЗ RU или БЕЗ обложки (лениво, параллельно).
         val need = out.mapNotNull { t ->
             val a = t.anime
-            if (a.ruName == null || (a.coverSmall == null && a.cover == null)) a.malId else null
+            if (a.ruName == null || (t.coverSmall == null && t.cover == null)) a.malId else null
         }.distinct()
         meta.warmNow(need)
         return out.map { applyMeta(it) }
