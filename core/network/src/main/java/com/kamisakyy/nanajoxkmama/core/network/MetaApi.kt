@@ -240,8 +240,8 @@ class MetaApi @Inject constructor(
     }
 
     /** ЛЕНИВО и ПАРАЛЛЕЛЬНО: максимум 3 Shikimori-запроса (для RU названий), без фоновой догрузки. */
-    suspend fun warmNow(malIds: List<Int?>, budgetMs: Long = 2500) {
-        val ids = malIds.filterNotNull().distinct().take(6)
+    suspend fun warmNow(malIds: List<Int?>, budgetMs: Long = 3000) {
+        val ids = malIds.filterNotNull().distinct().take(8)
         if (ids.isEmpty()) return
         kotlinx.coroutines.withTimeoutOrNull(budgetMs) {
             kotlinx.coroutines.coroutineScope {

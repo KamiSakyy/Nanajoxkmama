@@ -288,6 +288,20 @@ class AnimeThemesApi @Inject constructor(
         return out.map { applyMeta(it) }
     }
 
+    /** RU-названия + обложки для СЕТОК аниме (Browse/сезоны/поиск) — лениво из Shikimori. */
+    suspend fun enrichSummaries(items: List<AnimeSummary>): List<AnimeSummary> {
+        val need = items.filter { it.ruName == null && it.malId != null }.mapNotNull { it.malId }.distinct()
+        meta.warmNow(need)
+        return items.map { s ->
+            val d = meta.detailsOf(s.malId)
+            var x = s
+            if (x.ruName == null && d?.ru != null) x = x.copy(ruName = d.ru)
+            if (x.coverSmall == null && d?.poster != null) x = x.copy(coverSmall = d.poster)
+            if (x.cover == null && d?.poster != null) x = x.copy(cover = d.poster)
+            x
+        }
+    }
+
     /* ----------------------- public API ----------------------- */
 
     suspend fun searchAll(q: String): SearchResults {
@@ -317,7 +331,7 @@ class AnimeThemesApi @Inject constructor(
             val images = ar.optJSONArray("images")
             artists.add(ArtistSummary(ar.optInt("id"), ar.optString("name"), ar.optString("slug"), pickImage(images, "Large Cover"), pickImage(images, "Small Cover")))
         }
-        return SearchResults(anime, attachIds(merged), artists)
+        return SearchResults(enrichSummaries(anime), attachIds(merged), artists)
     }
 
     suspend fun getAnime(slug: String): AnimeDetail {
@@ -446,7 +460,7 @@ class AnimeThemesApi @Inject constructor(
         val items = ArrayList<AnimeSummary>()
         if (arr != null) for (i in 0 until arr.length()) arr.optJSONObject(i)?.let { items.add(toAnimeSummary(it)) }
         val hasMore = d.optJSONObject("links")?.opt("next") != null && !d.optJSONObject("links").isNull("next")
-        return Paged(items, hasMore, page)
+        return Paged(enrichSummaries(items), hasMore, page)
     }
 
     suspend fun getSeasonTracks(year: Int, season: String?): List<Track> {
