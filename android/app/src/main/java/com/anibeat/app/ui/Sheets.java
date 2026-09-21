@@ -398,7 +398,8 @@ public final class Sheets {
         final LinearLayout body = body(context);
         final Downloads.Listener[] listener = new Downloads.Listener[1];
         final BottomSheetDialog[] holder = new BottomSheetDialog[1];
-        final Runnable render = () -> Ui.safe(() -> {
+        final Runnable[] renderHolder = new Runnable[1];
+        renderHolder[0] = () -> Ui.safe(() -> {
             body.removeAllViews();
             List<Downloads.Job> jobs = Downloads.jobs();
             if (jobs.isEmpty()) {
@@ -423,7 +424,7 @@ public final class Sheets {
                 card.addView(actionRow(context, R.drawable.ic_close, job.status == Downloads.Status.DONE ? "Убрать из списка" : "Отменить", null, () -> {
                     if (job.status == Downloads.Status.DONE || job.status == Downloads.Status.ERROR) Downloads.dismiss(job.key);
                     else Downloads.cancel(job.key);
-                    render.run();
+                    renderHolder[0].run();
                 }));
                 body.addView(card);
             }
@@ -441,19 +442,19 @@ public final class Sheets {
                 body.addView(actionRow(context, R.drawable.ic_delete, "Удалить все скачанные", null, () -> {
                     Downloads.clearOffline();
                     host.toast("Скачанные файлы удалены");
-                    render.run();
+                    renderHolder[0].run();
                 }));
             }
             body.addView(actionRow(context, R.drawable.ic_close, "Убрать завершённые", null, () -> {
                 Downloads.clearFinished();
-                render.run();
+                renderHolder[0].run();
             }));
         });
-        listener[0] = render::run;
+        listener[0] = () -> renderHolder[0].run();
         Downloads.addListener(listener[0]);
         holder[0] = open(context, "Скачивания", body);
         holder[0].setOnDismissListener(d -> Downloads.removeListener(listener[0]));
-        render.run();
+        renderHolder[0].run();
     }
 
     private static void openTrackOffline(Context context, Models.Track track) {
