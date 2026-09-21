@@ -28,6 +28,8 @@ public class SmokeTest {
 
     @Test
     public void everythingIsClickableWithoutCrash() {
+        // В тестовой среде нет службы воспроизведения — проверяем интерфейс без неё.
+        com.anibeat.app.player.Player.setAutoConnect(false);
         ActivityController<MainActivity> controller;
         try {
             controller = Robolectric.buildActivity(MainActivity.class).setup();

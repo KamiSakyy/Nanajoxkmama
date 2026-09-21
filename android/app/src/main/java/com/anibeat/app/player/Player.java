@@ -58,9 +58,17 @@ public final class Player {
     /* Инициализация                                                       */
     /* ------------------------------------------------------------------ */
 
+    private static boolean autoConnect = true;
+
+    /** Отключает подключение к сервису воспроизведения (нужно только автотестам). */
+    public static void setAutoConnect(boolean value) {
+        autoConnect = value;
+    }
+
     public static void init(Context context) {
         if (context != null) appContext = context.getApplicationContext();
         if (ready) return;
+        if (!autoConnect) return;
         restore(context);
         SessionToken token = new SessionToken(context, new ComponentName(context, PlaybackService.class));
         MediaController.Builder builder = new MediaController.Builder(context, token);
