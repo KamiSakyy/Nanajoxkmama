@@ -75,8 +75,6 @@ dependencies {
     testImplementation 'androidx.test:core:1.6.1'
 
     implementation 'androidx.annotation:annotation:1.8.2'
-    implementation 'androidx.media3:media3-exoplayer:1.4.1'
-    implementation 'androidx.media3:media3-ui:1.4.1'
 }
 
 // Подробный вывод тестов: полный стек и вывод приложения.

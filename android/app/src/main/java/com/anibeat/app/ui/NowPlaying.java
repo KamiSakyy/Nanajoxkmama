@@ -29,7 +29,6 @@ import com.anibeat.app.data.Models;
 import com.anibeat.app.data.Settings;
 import com.anibeat.app.player.Player;
 
-import androidx.media3.ui.PlayerView;
 
 /** Полноэкранный плеер — порт components/NowPlaying.tsx. */
 public class NowPlaying extends FrameLayout {
@@ -38,7 +37,8 @@ public class NowPlaying extends FrameLayout {
     private final View tint;
     private final FrameLayout stage;
     private final CoverView art;
-    private final PlayerView videoView;
+    private final android.view.SurfaceView videoView;
+    private final FrameLayout videoBox;
     private final FrameLayout buffering;
     private final LinearLayout controls;
     private final View videoTopBar;
@@ -139,11 +139,31 @@ public class NowPlaying extends FrameLayout {
         art.setIconSizeDp(56f);
         stage.addView(art, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
-        videoView = new PlayerView(c);
-        videoView.setUseController(false);
-        videoView.setShutterBackgroundColor(Color.BLACK);
+        videoView = new android.view.SurfaceView(c);
         videoView.setVisibility(GONE);
-        stage.addView(videoView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        videoView.getHolder().setFormat(android.graphics.PixelFormat.OPAQUE);
+        videoView.getHolder().addCallback(new android.view.SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(android.view.SurfaceHolder holder) {
+                Player.setVideoSurface(holder.getSurface());
+            }
+
+            @Override
+            public void surfaceChanged(android.view.SurfaceHolder holder, int format, int width, int height) {
+                Player.setVideoSurface(holder.getSurface());
+            }
+
+            @Override
+            public void surfaceDestroyed(android.view.SurfaceHolder holder) {
+                Player.clearVideoSurface();
+            }
+        });
+        FrameLayout videoHolder = new FrameLayout(c);
+        videoHolder.setBackgroundColor(Color.BLACK);
+        videoHolder.setVisibility(GONE);
+        videoHolder.addView(videoView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        videoBox = videoHolder;
+        stage.addView(videoHolder, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
         buffering = new FrameLayout(c);
         com.anibeat.app.core.Spinner spinner = new com.anibeat.app.core.Spinner(c);
@@ -455,7 +475,7 @@ public class NowPlaying extends FrameLayout {
         if (!open) return;
         if (fullscreen) setFullscreen(false);
         if (Player.videoMode()) Player.setVideoMode(false);
-        videoView.setPlayer(null);
+        Player.clearVideoSurface();
         open = false;
         handler.removeCallbacks(tick);
         animate().translationY(getHeight()).setDuration(Theme.DUR_NOWPLAYING).setInterpolator(Theme.EASE_SHEET)
@@ -614,18 +634,17 @@ public class NowPlaying extends FrameLayout {
         setIcon(nextBtn, "skip_next", Theme.ON);
         setIcon(repeatBtn, "one".equals(Player.repeat()) ? "repeat_one" : "repeat", !"off".equals(Player.repeat()) ? Theme.PRIMARY : 0x8CFFFFFF);
 
-        PlayerView vv = videoView;
         if (Player.videoMode()) {
             art.setVisibility(GONE);
-            vv.setVisibility(VISIBLE);
-            vv.setPlayer(Player.controller());
+            videoBox.setVisibility(VISIBLE);
+            videoView.setVisibility(VISIBLE);
             controls.setVisibility(VISIBLE);
             fullButton.setVisibility(VISIBLE);
             hint.setVisibility(GONE);
             if (Player.isPlaying()) poke();
         } else {
-            vv.setVisibility(GONE);
-            vv.setPlayer(null);
+            videoView.setVisibility(GONE);
+            videoBox.setVisibility(GONE);
             controls.setVisibility(GONE);
             art.setVisibility(VISIBLE);
             hint.setVisibility(VISIBLE);

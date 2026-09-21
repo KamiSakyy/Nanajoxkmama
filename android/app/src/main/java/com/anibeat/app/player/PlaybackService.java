@@ -15,18 +15,16 @@ import android.os.Build;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
-import androidx.media3.common.MediaItem;
-import androidx.media3.common.PlaybackException;
-import androidx.media3.exoplayer.ExoPlayer;
 
 import com.anibeat.app.MainActivity;
 import com.anibeat.app.R;
 import com.anibeat.app.core.Image;
 import com.anibeat.app.core.Ui;
+import com.anibeat.app.data.Models;
 
 /**
- * Фоновое воспроизведение на чистой Java: обычная служба, обычный ExoPlayer,
- * системное уведомление и экран блокировки через android.media.session (без Kotlin).
+ * Фоновое воспроизведение на чистой Java: обычная служба, системный MediaPlayer,
+ * системное уведомление и экран блокировки. Без сторонних библиотек и без Kotlin.
  */
 public class PlaybackService extends Service {
 
@@ -38,47 +36,16 @@ public class PlaybackService extends Service {
     private static final String CHANNEL_ID = "anibeat_playback";
     private static final int NOTIFICATION_ID = 42;
 
-    private ExoPlayer engine;
+    private Engine engine;
     private MediaSession session;
-    private final androidx.media3.common.Player.Listener engineListener = new androidx.media3.common.Player.Listener() {
-        @Override
-        public void onIsPlayingChanged(boolean isPlaying) {
-            updateNotification();
-        }
-
-        @Override
-        public void onMediaItemTransition(@Nullable MediaItem mediaItem, int reason) {
-            updateNotification();
-        }
-
-        @Override
-        public void onPlaybackStateChanged(int state) {
-            updateNotification();
-        }
-
-        @Override
-        public void onPlayerError(PlaybackException error) {
-            // Битый трек не должен прерывать музыку — переходим к следующему.
-            try {
-                int next = engine.getCurrentMediaItemIndex() + 1;
-                if (next < engine.getMediaItemCount()) {
-                    engine.seekTo(next, 0);
-                    engine.prepare();
-                    engine.play();
-                }
-            } catch (Throwable t) {
-                Ui.report(t);
-            }
-        }
-    };
+    private final Player.Listener playerListener = this::updateNotification;
 
     @Override
     public void onCreate() {
         super.onCreate();
         createChannel();
-        engine = Player.createEngine(this);
-        Player.attachEngineListener(engine);
-        engine.addListener(engineListener);
+        engine = Engine.create(this);
+        PlayerHolder.attach(engine, true);
         session = new MediaSession(this, "AniBeat");
         session.setCallback(new MediaSession.Callback() {
             @Override
@@ -112,8 +79,9 @@ public class PlaybackService extends Service {
             }
         });
         session.setActive(true);
-        PlayerHolder.attach(engine, true);
+        Player.addListener(playerListener);
         startForeground(NOTIFICATION_ID, buildNotification());
+        Player.attachEngine(engine);
         Player.onEngineReady(this);
     }
 
@@ -128,10 +96,9 @@ public class PlaybackService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
-        if (engine != null) {
-            updateNotification();
-            startForeground(NOTIFICATION_ID, buildNotification());
-        }
+        // Каждый startForegroundService требует перевести службу в foreground-режим.
+        startForeground(NOTIFICATION_ID, buildNotification());
+        updateNotification();
         return START_STICKY;
     }
 
@@ -143,6 +110,7 @@ public class PlaybackService extends Service {
 
     @Override
     public void onDestroy() {
+        Player.removeListener(playerListener);
         PlayerHolder.detach(engine);
         if (session != null) {
             session.setActive(false);
@@ -150,7 +118,6 @@ public class PlaybackService extends Service {
             session = null;
         }
         if (engine != null) {
-            engine.removeListener(engineListener);
             engine.release();
             engine = null;
         }
@@ -178,28 +145,15 @@ public class PlaybackService extends Service {
     }
 
     private Notification buildNotification() {
-        boolean playing = engine != null && engine.isPlaying();
+        boolean playing = Player.isPlaying();
+        Models.Track track = Player.current();
         Intent open = new Intent(this, MainActivity.class);
         open.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent content = PendingIntent.getActivity(this, 0, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        MediaItem item = engine == null ? null : engine.getCurrentMediaItem();
-        String title = "AniBeat";
-        String text = "Готов к воспроизведению";
-        if (item != null && item.mediaMetadata != null) {
-            String t = item.mediaMetadata.title == null ? null : item.mediaMetadata.title.toString();
-            String a = item.mediaMetadata.artist == null ? null : item.mediaMetadata.artist.toString();
-            String album = item.mediaMetadata.albumTitle == null ? null : item.mediaMetadata.albumTitle.toString();
-            if (t != null && !t.isEmpty()) title = t;
-            StringBuilder sb = new StringBuilder();
-            if (a != null && !a.isEmpty()) sb.append(a);
-            if (album != null && !album.isEmpty()) {
-                if (sb.length() > 0) sb.append(" · ");
-                sb.append(album);
-            }
-            if (sb.length() > 0) text = sb.toString();
-        }
+        String title = track == null ? "AniBeat" : track.title;
+        String text = track == null ? "Готов к воспроизведению" : track.artistNames();
 
         Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? new Notification.Builder(this, CHANNEL_ID)
@@ -211,6 +165,7 @@ public class PlaybackService extends Service {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
+                .setOngoing(playing)
                 .addAction(android.R.drawable.ic_media_previous, "Назад", action(ACTION_PREV))
                 .addAction(playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
                         playing ? "Пауза" : "Играть", action(ACTION_TOGGLE))
@@ -225,7 +180,6 @@ public class PlaybackService extends Service {
 
     private void updateNotification() {
         try {
-            if (engine == null) return;
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (manager != null) manager.notify(NOTIFICATION_ID, buildNotification());
             updateSession();
@@ -234,24 +188,23 @@ public class PlaybackService extends Service {
         }
     }
 
-    /** Метаданные и состояние для экрана блокировки и Bluetooth-пульта. */
+    /** Метаданные и состояние для экрана блокировки, наушников и Bluetooth. */
     private void updateSession() {
-        if (session == null || engine == null) return;
+        if (session == null) return;
         try {
-            MediaItem item = engine.getCurrentMediaItem();
-            if (item != null && item.mediaMetadata != null) {
+            Models.Track track = Player.current();
+            if (track != null) {
                 MediaMetadata.Builder meta = new MediaMetadata.Builder();
-                CharSequence title = item.mediaMetadata.title;
-                CharSequence artist = item.mediaMetadata.artist;
-                CharSequence album = item.mediaMetadata.albumTitle;
-                meta.putString(MediaMetadata.METADATA_KEY_TITLE, title == null ? "AniBeat" : title.toString());
-                meta.putString(MediaMetadata.METADATA_KEY_ARTIST, artist == null ? "" : artist.toString());
-                meta.putString(MediaMetadata.METADATA_KEY_ALBUM, album == null ? "" : album.toString());
-                long duration = engine.getDuration();
+                meta.putString(MediaMetadata.METADATA_KEY_TITLE, track.title);
+                meta.putString(MediaMetadata.METADATA_KEY_ARTIST, track.artistNames());
+                meta.putString(MediaMetadata.METADATA_KEY_ALBUM,
+                        (track.anime == null || track.anime.name == null ? "" : track.anime.name) + " · " + track.themeSlug);
+                long duration = Player.duration();
                 if (duration > 0) meta.putLong(MediaMetadata.METADATA_KEY_DURATION, duration);
-                if (item.mediaMetadata.artworkUri != null) {
-                    Bitmap art = Image.cached(item.mediaMetadata.artworkUri.toString());
-                    if (art != null) meta.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, art);
+                String art = track.cover != null ? track.cover : track.coverSmall;
+                if (art != null) {
+                    Bitmap bitmap = Image.cached(art);
+                    if (bitmap != null) meta.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, bitmap);
                 }
                 session.setMetadata(meta.build());
             }
@@ -259,25 +212,27 @@ public class PlaybackService extends Service {
                     | PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SKIP_TO_NEXT
                     | PlaybackState.ACTION_SKIP_TO_PREVIOUS | PlaybackState.ACTION_SEEK_TO
                     | PlaybackState.ACTION_STOP;
-            int state = engine.isPlaying() ? PlaybackState.STATE_PLAYING
-                    : engine.getPlaybackState() == androidx.media3.common.Player.STATE_BUFFERING ? PlaybackState.STATE_BUFFERING
-                    : engine.getPlaybackState() == androidx.media3.common.Player.STATE_ENDED ? PlaybackState.STATE_STOPPED
+            int state = Player.isPlaying() ? PlaybackState.STATE_PLAYING
+                    : Player.isBuffering() ? PlaybackState.STATE_BUFFERING
+                    : Player.current() == null ? PlaybackState.STATE_STOPPED
                     : PlaybackState.STATE_PAUSED;
             session.setPlaybackState(new PlaybackState.Builder()
                     .setActions(actions)
-                    .setState(state, engine.getCurrentPosition(), 1f)
+                    .setState(state, Player.position(), 1f)
                     .build());
         } catch (Throwable t) {
             Ui.report(t);
         }
     }
 
-    /** Обновление уведомления по запросу приложения. */
-    public static void refresh(Context context) {
+    /** Обновляет уведомление по запросу приложения. */
+    public static void notifyState(Context context, boolean playing) {
         if (context == null) return;
         try {
             Intent intent = new Intent(context, PlaybackService.class);
-            context.startService(intent);
+            intent.putExtra("playing", playing);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent);
+            else context.startService(intent);
         } catch (Throwable ignored) {
         }
     }
