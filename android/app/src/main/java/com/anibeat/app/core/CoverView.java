@@ -3,8 +3,10 @@ package com.anibeat.app.core;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
@@ -22,6 +24,9 @@ public class CoverView extends android.view.View {
     private final Path iconPath = new Path();
     private final RectF rect = new RectF();
     private Bitmap bitmap;
+    private BitmapShader shader;
+    private Bitmap shaderSource;
+    private final Matrix shaderMatrix = new Matrix();
     private float radius;
     private boolean loading;
     private float shimmer = -1f;
@@ -35,7 +40,6 @@ public class CoverView extends android.view.View {
         super(context);
         radius = Theme.dpF(context, 12f);
         iconSize = Theme.dpF(context, 24f);
-        setLayerType(LAYER_TYPE_SOFTWARE, null);
         buildMusicNote();
     }
 
@@ -167,42 +171,60 @@ public class CoverView extends android.view.View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        rect.set(0, 0, getWidth(), getHeight());
-        canvas.save();
-        Path clip = new Path();
-        clip.addRoundRect(rect, radius, radius, Path.Direction.CW);
-        canvas.clipPath(clip);
+        int w = getWidth();
+        int h = getHeight();
+        if (w <= 0 || h <= 0) return;
+        rect.set(0, 0, w, h);
 
-        boolean drawn = false;
         if (bitmap != null && !bitmap.isRecycled()) {
-            float scale = Math.max(getWidth() / (float) bitmap.getWidth(), getHeight() / (float) bitmap.getHeight());
-            float w = bitmap.getWidth() * scale;
-            float h = bitmap.getHeight() * scale;
-            float left = (getWidth() - w) / 2f;
-            float top = (getHeight() - h) / 2f;
-            canvas.drawBitmap(bitmap, null, new RectF(left, top, left + w, top + h), paint);
-            drawn = true;
+            // Обложка рисуется шейдером с круглыми углами: без программного слоя и без обрезки —
+            // так сетки карточек прокручиваются плавно, а углы остаются скруглёнными.
+            if (shader == null || shaderSource != bitmap) {
+                shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                shaderSource = bitmap;
+            }
+            float scale = Math.max(w / (float) bitmap.getWidth(), h / (float) bitmap.getHeight());
+            float left = (w - bitmap.getWidth() * scale) / 2f;
+            float top = (h - bitmap.getHeight() * scale) / 2f;
+            shaderMatrix.reset();
+            shaderMatrix.setScale(scale, scale);
+            shaderMatrix.postTranslate(left, top);
+            shader.setLocalMatrix(shaderMatrix);
+            paint.setShader(shader);
+            canvas.drawRoundRect(rect, radius, radius, paint);
+            paint.setShader(null);
+            return;
         }
 
-        if (!drawn) {
-            paint.setColor(Theme.SURFACE_2);
-            canvas.drawRect(rect, paint);
-            if (loading) {
-                float w = getWidth();
-                LinearGradient g = new LinearGradient(
-                        w * shimmer, 0, w * (shimmer + 1f), 0,
-                        new int[]{Theme.SURFACE_2, Theme.SURFACE_3, Theme.SURFACE_2},
-                        new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
-                paint.setShader(g);
-                canvas.drawRect(rect, paint);
-                paint.setShader(null);
-            } else {
-                iconPaint.setColor(Theme.ON_DIM);
-                iconPaint.setStyle(Paint.Style.FILL);
-                canvas.drawPath(iconPath, iconPaint);
-            }
+        paint.setColor(Theme.SURFACE_2);
+        canvas.drawRoundRect(rect, radius, radius, paint);
+        if (loading) {
+            LinearGradient g = new LinearGradient(
+                    w * shimmer, 0, w * (shimmer + 1f), 0,
+                    new int[]{Theme.SURFACE_2, Theme.SURFACE_3, Theme.SURFACE_2},
+                    new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
+            paint.setShader(g);
+            canvas.drawRoundRect(rect, radius, radius, paint);
+            paint.setShader(null);
+        } else {
+            iconPaint.setColor(Theme.ON_DIM);
+            iconPaint.setStyle(Paint.Style.FILL);
+            canvas.save();
+            canvas.translate((w - iconSize) / 2f, (h - iconSize) / 2f);
+            canvas.drawPath(iconPath, iconPaint);
+            canvas.restore();
         }
-        canvas.restore();
+    }
+
+    @Override
+    protected void onVisibilityAggregated(boolean isVisible) {
+        super.onVisibilityAggregated(isVisible);
+        // В невидимых списках шиммер не крутится — не тратит кадры.
+        if (!isVisible && loading) {
+            if (shimmerAnim != null) shimmerAnim.pause();
+        } else if (isVisible && loading && shimmerAnim != null && shimmerAnim.isPaused()) {
+            shimmerAnim.resume();
+        }
     }
 
     @Override

@@ -35,7 +35,7 @@ public class SliderView extends View {
         super(context);
         trackH = Theme.dpF(context, 5f);
         thumbR = Theme.dpF(context, 6f);
-        setLayerType(LAYER_TYPE_SOFTWARE, null);
+        applyLayer();
     }
 
     public void setRange(float min, float max) {
@@ -65,7 +65,13 @@ public class SliderView extends View {
 
     public void setShowThumb(boolean show) {
         showThumb = show;
+        applyLayer();
         invalidate();
+    }
+
+    /** Тень бегунка требует программного слоя, но держать его постоянно — тормоза. */
+    private void applyLayer() {
+        setLayerType(showThumb ? LAYER_TYPE_SOFTWARE : LAYER_TYPE_NONE, null);
     }
 
     public void setColors(int track, int fill, int thumb) {
@@ -98,6 +104,7 @@ public class SliderView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (getWidth() <= 0) return;
         float w = getWidth();
         float cy = getHeight() / 2f;
         float r = trackH / 2f;
@@ -122,7 +129,8 @@ public class SliderView extends View {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_MOVE: {
-                getParent().requestDisallowInterceptTouchEvent(true);
+                android.view.ViewParent parent = getParent();
+                if (parent != null) parent.requestDisallowInterceptTouchEvent(true);
                 float ratio = Math.max(0f, Math.min(1f, event.getX() / Math.max(1f, getWidth())));
                 value = min + ratio * (max - min);
                 invalidate();
@@ -132,7 +140,8 @@ public class SliderView extends View {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL: {
                 if (listener != null) listener.onCommit(value);
-                getParent().requestDisallowInterceptTouchEvent(false);
+                android.view.ViewParent parent = getParent();
+                if (parent != null) parent.requestDisallowInterceptTouchEvent(false);
                 return true;
             }
             default:
