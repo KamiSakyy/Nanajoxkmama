@@ -168,7 +168,7 @@ jobs:
           } > ci-logs/last-build.log
           tail -c 120000 test.log 2>/dev/null > ci-logs/tests.log || true
           if [ -f test.log ]; then
-            grep -nE "at com\\.anibeat|Caused by|Exception|FAILED|нажатий|→" test.log | head -14 | while IFS= read -r line; do
+            grep -nE "at com\\.anibeat|Caused by|Exception|FAILED|нажатий|→|Ошибка" test.log | head -20 | while IFS= read -r line; do
               echo "::warning title=Прогон::$(printf '%s' "$line" | sed 's/%/%25/g' | tr -d '\r' | cut -c1-900)"
             done
           fi
