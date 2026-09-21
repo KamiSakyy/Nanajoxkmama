@@ -424,6 +424,11 @@ public class NowPlaying extends FrameLayout {
         handler.removeCallbacksAndMessages(null);
     }
 
+    /** Показывает обложки, которые оказались на экране. */
+    private void loadCovers() {
+        post(() -> Ui.loadVisibleCovers(this));
+    }
+
     public void open() {
         if (Player.current() == null) return;
         open = true;
@@ -433,6 +438,7 @@ public class NowPlaying extends FrameLayout {
         handler.removeCallbacks(tick);
         handler.post(tick);
         refresh();
+        loadCovers();
     }
 
     public void close() {

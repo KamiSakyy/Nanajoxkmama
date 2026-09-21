@@ -113,7 +113,13 @@ public class Sheets extends FrameLayout {
         sheet.addView(sheetTitle);
 
         sheetBody = Ui.column(c);
-        ScrollView scroll = new ScrollView(c);
+        ScrollView scroll = new ScrollView(c) {
+            @Override
+            protected void onScrollChanged(int l, int t, int oldl, int oldt) {
+                super.onScrollChanged(l, t, oldl, oldt);
+                post(() -> Ui.loadVisibleCovers(this));
+            }
+        };
         scroll.setFillViewport(false);
         scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
         scroll.addView(sheetBody, new ScrollView.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
@@ -199,6 +205,7 @@ public class Sheets extends FrameLayout {
             sheet.setTranslationY(from);
             scrim.animate().alpha(1f).setDuration(Theme.DUR).start();
             sheet.animate().translationY(0f).setDuration(Theme.DUR_SHEET).setInterpolator(Theme.EASE_SHEET).start();
+            Ui.loadVisibleCovers(sheetBody);
         });
         bringToFront();
     }

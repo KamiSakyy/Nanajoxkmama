@@ -33,6 +33,9 @@ public class CoverView extends android.view.View {
     private ValueAnimator shimmerAnim;
     private float iconSize;
     private String url;
+    private String waitingUrl;
+    private String waitingFallback;
+    private boolean loadRequested;
     private float aspect;
     private int requestedPx;
 
@@ -65,6 +68,7 @@ public class CoverView extends android.view.View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        post(this::ensureLoading);
         int target = Math.max(w, h);
         if (url != null && target > Math.max(requestedPx, 1) * 3 / 2 && target > 0) {
             String again = url;
@@ -91,6 +95,7 @@ public class CoverView extends android.view.View {
                 return;
             }
             this.url = null;
+            this.waitingUrl = null;
             this.bitmap = null;
             stopShimmer();
             invalidate();
@@ -98,6 +103,9 @@ public class CoverView extends android.view.View {
         }
         if (url.equals(this.url) && bitmap != null) return;
         this.url = url;
+        this.waitingUrl = url;
+        this.waitingFallback = fallback;
+        this.loadRequested = false;
         Bitmap cached = Image.cached(url);
         if (cached != null) {
             this.bitmap = cached;
@@ -107,6 +115,24 @@ public class CoverView extends android.view.View {
         }
         this.bitmap = null;
         startShimmer();
+        ensureLoading();
+    }
+
+    /**
+     * Загружает обложку, только когда она действительно видна на экране:
+     * на сайте картинки тоже подгружаются по мере появления, а не все сразу.
+     */
+    public void ensureLoading() {
+        if (loadRequested || waitingUrl == null) return;
+        if (isAttachedToWindow()) {
+            android.graphics.Rect rect = new android.graphics.Rect();
+            if (!getGlobalVisibleRect(rect) || rect.height() <= 0 || rect.width() <= 0) return;
+        }
+        loadRequested = true;
+        startLoad(waitingUrl, waitingFallback);
+    }
+
+    private void startLoad(final String url, final String fallback) {
         final int target = Math.max(getWidth(), getHeight());
         final int requestPx = Math.max(target, Theme.dp(getContext(), 120f));
         requestedPx = requestPx;
@@ -219,6 +245,7 @@ public class CoverView extends android.view.View {
     @Override
     public void onVisibilityAggregated(boolean isVisible) {
         super.onVisibilityAggregated(isVisible);
+        if (isVisible) post(this::ensureLoading);
         // В невидимых списках шиммер не крутится — не тратит кадры.
         if (!isVisible && loading) {
             if (shimmerAnim != null) shimmerAnim.pause();

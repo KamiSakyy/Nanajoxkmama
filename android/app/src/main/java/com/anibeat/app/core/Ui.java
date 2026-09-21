@@ -726,6 +726,19 @@ public final class Ui {
     /* Скролл                                                              */
     /* ------------------------------------------------------------------ */
 
+    /** Даёт шанс загрузиться тем обложкам, которые сейчас видны на экране. */
+    public static void loadVisibleCovers(View root) {
+        if (root == null) return;
+        if (root instanceof CoverView) {
+            ((CoverView) root).ensureLoading();
+            return;
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) loadVisibleCovers(group.getChildAt(i));
+        }
+    }
+
     public static ScrollView scroller(Context c, LinearLayout content) {
         ScrollView sv = new ScrollView(c);
         sv.setFillViewport(true);

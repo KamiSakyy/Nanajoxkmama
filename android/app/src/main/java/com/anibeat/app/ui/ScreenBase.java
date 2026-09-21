@@ -75,6 +75,7 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
         content = build();
         addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         if (scrollY > 0) restoreScrollY(scrollY);
+        post(() -> Ui.loadVisibleCovers(this));
     }
 
     /** Текущая позиция вертикального скролла (0, если прокрутки нет). */
@@ -112,6 +113,7 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
     public void onShow() {
         visible = true;
         scheduleRefresh();
+        post(() -> Ui.loadVisibleCovers(this));
     }
 
     @Override
@@ -152,9 +154,25 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
     /* Помощники вёрстки                                                   */
     /* ------------------------------------------------------------------ */
 
+    /** Прокрутка, которая подсказывает обложкам, что они появились на экране. */
+    private final class LazyScroll extends android.widget.ScrollView {
+        LazyScroll(Context c) {
+            super(c);
+        }
+
+        private final Runnable notify = () -> Ui.loadVisibleCovers(LazyScroll.this);
+
+        @Override
+        protected void onScrollChanged(int l, int t, int oldl, int oldt) {
+            super.onScrollChanged(l, t, oldl, oldt);
+            removeCallbacks(notify);
+            postDelayed(notify, 90);
+        }
+    }
+
     protected LinearLayout scroller(View content) {
         LinearLayout box = Ui.column(ctx());
-        android.widget.ScrollView scroll = new android.widget.ScrollView(ctx());
+        android.widget.ScrollView scroll = new LazyScroll(ctx());
         scroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
         scroll.setClipToPadding(false);
         scroll.addView(content, new android.widget.ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
