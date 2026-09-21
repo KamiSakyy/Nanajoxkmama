@@ -95,7 +95,7 @@ class BrowseViewModel @Inject constructor(
                                 (a.name + " " + (a.synopsis ?: "")).lowercase().contains(n.lowercase()) ||
                                     (a.mediaFormat ?: "").lowercase().contains(n.lowercase())
                             }
-                        ) acc.putIfAbsent(a.slug, a)
+                        ) if (!acc.containsKey(a.slug)) acc[a.slug] = a
                     }
                 }
                 if (acc.size >= 30) break

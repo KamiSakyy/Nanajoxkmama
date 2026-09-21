@@ -3,6 +3,7 @@ package com.kamisakyy.nanajoxkmama.core.playback
 import android.content.ComponentName
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.ContextCompat
 import android.view.SurfaceView
 import android.view.TextureView
 import androidx.media3.common.MediaItem
@@ -127,7 +128,7 @@ class PlayerController @Inject constructor(
                 controller = c
                 c.addListener(listener)
                 restoreQueue()
-            }, context.mainExecutor)
+            }, ContextCompat.getMainExecutor(context))
         }
     }
 
