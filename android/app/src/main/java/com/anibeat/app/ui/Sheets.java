@@ -410,7 +410,7 @@ public final class Sheets {
                 card.setPadding(Theme.dp(context, 20), Theme.dp(context, 10), Theme.dp(context, 20), Theme.dp(context, 10));
                 card.addView(header(context, job.track));
                 LinearProgressIndicator progress = new LinearProgressIndicator(context);
-                progress.setTrackColor(ColorStateList.valueOf(Theme.SURFACE_4));
+                progress.setTrackColor(Theme.SURFACE_4);
                 progress.setIndicatorColor(job.status == Downloads.Status.ERROR ? Theme.ERROR : Theme.ACCENT);
                 int percent = job.total > 0 ? (int) (job.received * 100 / job.total) : 0;
                 progress.setProgressCompat(Math.max(percent, job.status == Downloads.Status.QUEUED ? 2 : 0), true);
