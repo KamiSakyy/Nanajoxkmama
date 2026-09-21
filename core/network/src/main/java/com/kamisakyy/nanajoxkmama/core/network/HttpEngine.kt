@@ -63,7 +63,7 @@ class HttpEngine @Inject constructor(
 
     private val mem = ConcurrentHashMap<String, Entry>()
     private val inflight = ConcurrentHashMap<String, kotlinx.coroutines.Deferred<String>>()
-    private val diskDir: File = File(context.cacheDir, "http-cache").apply { mkdirs() }
+    private val diskDir: File = File(context.cacheDir, "http-cache-v2").apply { mkdirs() }
     private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
     private val jsonMedia = "application/json".toMediaType()
 
@@ -99,11 +99,30 @@ class HttpEngine @Inject constructor(
     private fun diskFile(key: String): File =
         File(diskDir, MessageDigest.getInstance("SHA-1").digest(key.toByteArray()).joinToString("") { "%02x".format(it) })
 
-    suspend fun getJson(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): JSONObject =
-        JSONObject(getString(url, policy))
+    suspend fun getJson(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): JSONObject {
+        val k = key(url, policy)
+        return try {
+            JSONObject(getString(url, policy))
+        } catch (e: Exception) {
+            invalidate(k)
+            JSONObject(getString(url, policy.copy(refresh = true, cacheKey = policy.cacheKey)))
+        }
+    }
 
-    suspend fun getArray(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): JSONArray =
-        JSONArray(getString(url, policy))
+    suspend fun getArray(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): JSONArray {
+        val k = key(url, policy)
+        return try {
+            JSONArray(getString(url, policy))
+        } catch (e: Exception) {
+            invalidate(k)
+            JSONArray(getString(url, policy.copy(refresh = true, cacheKey = policy.cacheKey)))
+        }
+    }
+
+    private fun invalidate(k: String) {
+        mem.remove(k)
+        try { diskFile(k).delete() } catch (_: Exception) { }
+    }
 
     suspend fun getString(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): String {
         val k = key(url, policy)
@@ -159,19 +178,22 @@ class HttpEngine @Inject constructor(
         var data = bytes
         try {
             val enc = encoding?.lowercase(java.util.Locale.US) ?: ""
-            val isGzip = data.size > 2 && data[0] == 0x1f.toByte() && data[1] == 0x8b.toByte()
-            val isZip = data.size > 3 && data[0] == 0x50.toByte() && data[1] == 0x4b.toByte() && data[2] == 0x03.toByte()
-            data = when {
-                enc.contains("gzip") || isGzip ->
-                    java.util.zip.GZIPInputStream(data.inputStream()).use { it.readBytes() }
-                enc.contains("deflate") ->
-                    java.util.zip.InflaterInputStream(data.inputStream()).use { it.readBytes() }
-                isZip ->
-                    java.util.zip.ZipInputStream(data.inputStream()).use { z ->
-                        z.nextEntry
-                        z.readBytes()
+            // gzip — up to 3 layers (some middleboxes double-wrap)
+            if (enc.contains("gzip") || (data.size > 2 && data[0] == 0x1f.toByte() && data[1] == 0x8b.toByte())) {
+                var d = data
+                repeat(3) {
+                    if (d.size > 2 && d[0] == 0x1f.toByte() && d[1] == 0x8b.toByte()) {
+                        d = java.util.zip.GZIPInputStream(d.inputStream()).use { it.readBytes() }
                     }
-                else -> data
+                }
+                data = d
+            } else if (enc.contains("deflate")) {
+                data = java.util.zip.InflaterInputStream(data.inputStream()).use { it.readBytes() }
+            } else if (data.size > 3 && data[0] == 0x50.toByte() && data[1] == 0x4b.toByte() && data[2] == 0x03.toByte()) {
+                data = java.util.zip.ZipInputStream(data.inputStream()).use { z ->
+                    z.nextEntry
+                    z.readBytes()
+                }
             }
         } catch (_: Exception) {
         }
@@ -235,7 +257,11 @@ class HttpEngine @Inject constructor(
         if (!f.exists() || System.currentTimeMillis() - f.lastModified() > 30 * DAY_MS) null
         else {
             val head = f.readLines()
-            if (head.size >= 2) Entry(head[0].toLongOrNull() ?: 0, head.drop(1).joinToString("\n")) else null
+            if (head.size >= 2) {
+                val body = head.drop(1).joinToString("\n").trim()
+                if (body.startsWith("{") || body.startsWith("[")) Entry(head[0].toLongOrNull() ?: 0, body)
+                else { f.delete(); null }
+            } else null
         }
     } catch (_: Exception) { null }
 
