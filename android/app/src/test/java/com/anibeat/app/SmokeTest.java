@@ -32,7 +32,8 @@ public class SmokeTest {
         MainActivity activity = controller.get();
 
         for (int tab = 0; tab < 4; tab++) {
-            clickSafely("showTab(" + tab + ")", () -> activity.showTab(tab, false));
+            final int index = tab;
+            clickSafely("showTab(" + tab + ")", () -> activity.showTab(index, false));
             layout(activity);
             walk("tab" + tab, activity.getWindow().getDecorView(), 0);
         }

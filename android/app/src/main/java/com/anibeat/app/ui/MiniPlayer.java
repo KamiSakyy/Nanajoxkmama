@@ -163,7 +163,7 @@ public class MiniPlayer extends FrameLayout {
         long position = Player.position();
         float ratio = duration > 0 ? Math.max(0f, Math.min(1f, position / (float) duration)) : 0f;
         card.post(() -> {
-            FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) progress.getLayoutParams();
+            FrameLayout.LayoutParams p = Ui.flp(progress);
             p.width = Math.round(card.getWidth() * ratio);
             progress.setLayoutParams(p);
         });

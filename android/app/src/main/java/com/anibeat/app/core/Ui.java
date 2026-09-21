@@ -158,6 +158,36 @@ public final class Ui {
         return ll;
     }
 
+    /** Безопасно отдаёт FrameLayout.LayoutParams, никогда не падает на несовпадении типа. */
+    public static FrameLayout.LayoutParams flp(View view) {
+        ViewGroup.LayoutParams raw = view.getLayoutParams();
+        if (raw instanceof FrameLayout.LayoutParams) return (FrameLayout.LayoutParams) raw;
+        FrameLayout.LayoutParams p = new FrameLayout.LayoutParams(
+                raw == null ? ViewGroup.LayoutParams.MATCH_PARENT : raw.width,
+                raw == null ? ViewGroup.LayoutParams.WRAP_CONTENT : raw.height);
+        if (raw instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) raw;
+            p.setMargins(m.leftMargin, m.topMargin, m.rightMargin, m.bottomMargin);
+        }
+        view.setLayoutParams(p);
+        return p;
+    }
+
+    /** Безопасно отдаёт LinearLayout.LayoutParams, никогда не падает на несовпадении типа. */
+    public static LinearLayout.LayoutParams llp(View view) {
+        ViewGroup.LayoutParams raw = view.getLayoutParams();
+        if (raw instanceof LinearLayout.LayoutParams) return (LinearLayout.LayoutParams) raw;
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
+                raw == null ? ViewGroup.LayoutParams.MATCH_PARENT : raw.width,
+                raw == null ? ViewGroup.LayoutParams.WRAP_CONTENT : raw.height);
+        if (raw instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) raw;
+            p.setMargins(m.leftMargin, m.topMargin, m.rightMargin, m.bottomMargin);
+        }
+        view.setLayoutParams(p);
+        return p;
+    }
+
     public static LinearLayout.LayoutParams lp(int w, int h) {
         return new LinearLayout.LayoutParams(w, h);
     }
@@ -437,7 +467,7 @@ public final class Ui {
             float width = (getWidth() - dp(getContext(), 4f)) / (float) count;
             float target = dp(getContext(), 2f) + selected * width;
             if (!animate) {
-                FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) indicator.getLayoutParams();
+                FrameLayout.LayoutParams p = flp(indicator);
                 p.leftMargin = Math.round(target);
                 p.width = Math.round(width);
                 indicator.setLayoutParams(p);
@@ -449,7 +479,7 @@ public final class Ui {
             anim.setInterpolator(Theme.EASE_SHEET);
             anim.addUpdateListener(a -> {
                 float value = (float) a.getAnimatedValue();
-                FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) indicator.getLayoutParams();
+                FrameLayout.LayoutParams p = flp(indicator);
                 p.leftMargin = Math.round(value);
                 p.width = Math.round(width);
                 indicator.setLayoutParams(p);
@@ -525,7 +555,7 @@ public final class Ui {
             ip.gravity = Gravity.CENTER;
             box.addView(iv, ip);
             row.addView(box, lp(dp(c, 28), dp(c, 28)));
-            LinearLayout.LayoutParams boxLp = (LinearLayout.LayoutParams) box.getLayoutParams();
+            LinearLayout.LayoutParams boxLp = llp(box);
             boxLp.rightMargin = dp(c, 14);
             box.setLayoutParams(boxLp);
         }
@@ -592,7 +622,7 @@ public final class Ui {
             ip.gravity = Gravity.CENTER;
             box.addView(iv, ip);
             row.addView(box, lp(dp(c, 28), dp(c, 28)));
-            LinearLayout.LayoutParams boxLp = (LinearLayout.LayoutParams) box.getLayoutParams();
+            LinearLayout.LayoutParams boxLp = llp(box);
             boxLp.rightMargin = dp(c, 14);
             box.setLayoutParams(boxLp);
         }
@@ -618,7 +648,7 @@ public final class Ui {
         sw.setOnClickListener(v -> {
             state[0] = !state[0];
             track.setBackground(rounded(state[0] ? 0xFFFFFFFF : 0x33FFFFFF, dpF(c, 14)));
-            FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) thumb.getLayoutParams();
+            FrameLayout.LayoutParams p = flp(thumb);
             p.leftMargin = state[0] ? dp(c, 21) : dp(c, 3);
             thumb.setLayoutParams(p);
             thumb.setBackground(rounded(state[0] ? 0xFF000000 : 0xFFFFFFFF, dpF(c, 11)));
@@ -651,7 +681,7 @@ public final class Ui {
         View fill = (View) bar.getTag();
         View parent = (View) bar;
         int width = parent.getWidth();
-        FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) fill.getLayoutParams();
+        FrameLayout.LayoutParams p = flp(fill);
         p.width = Math.round(width * Math.max(0f, Math.min(1f, percent / 100f)));
         fill.setLayoutParams(p);
     }
@@ -669,7 +699,7 @@ public final class Ui {
         col.setGravity(Gravity.CENTER_HORIZONTAL);
         col.setPadding(dp(c, 32), dp(c, 56), dp(c, 32), dp(c, 56));
         col.addView(icon(c, iconName, 44, Theme.ON_DIM));
-        LinearLayout.LayoutParams ip = (LinearLayout.LayoutParams) col.getChildAt(0).getLayoutParams();
+        LinearLayout.LayoutParams ip = llp(col.getChildAt(0));
         ip.bottomMargin = dp(c, 16);
         TextView t = heading(c, title, 19f, Theme.ON);
         col.addView(t);

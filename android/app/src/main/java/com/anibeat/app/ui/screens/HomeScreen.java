@@ -199,7 +199,7 @@ public class HomeScreen extends ScreenBase {
         bar.setPadding(dp(16), 0, dp(16), 0);
         FrameLayout logoBtn = new FrameLayout(c);
         logoBtn.addView(Ui.logo(c, 26), Ui.lp(dp(26), dp(26)));
-        ((FrameLayout.LayoutParams) logoBtn.getChildAt(0).getLayoutParams()).gravity = Gravity.CENTER;
+        (Ui.flp(logoBtn.getChildAt(0))).gravity = Gravity.CENTER;
         bar.addView(logoBtn, Ui.lp(dp(44), dp(44)));
         bar.addView(Ui.iconButton(c, "search", 21, Theme.ON, () -> activity.showTab(1, true)));
         bar.addView(Ui.iconButton(c, "settings", 21, Theme.ON, () -> activity.sheets().openSettings()));

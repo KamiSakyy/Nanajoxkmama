@@ -670,7 +670,7 @@ public class NowPlaying extends FrameLayout {
             } catch (Exception ignored) {
             }
         }
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) stage.getLayoutParams();
+        FrameLayout.LayoutParams params = Ui.flp(stage);
         if (value) {
             params.width = LayoutParams.MATCH_PARENT;
             params.height = LayoutParams.MATCH_PARENT;

@@ -29,7 +29,7 @@ public final class Image {
 
     private static final ExecutorService POOL = Executors.newFixedThreadPool(5);
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
-    private static final Map<String, Listener> PENDING = new ConcurrentHashMap<>();
+    private static final Map<String, java.util.List<Listener>> WAITERS = new ConcurrentHashMap<>();
     private static final Set<String> FAILED = ConcurrentHashMap.newKeySet();
     private static LruCache<String, Bitmap> mem;
     private static File dir;
@@ -60,32 +60,56 @@ public final class Image {
     }
 
     public static void load(String url, int targetPx, Listener listener) {
+        if (listener == null) return;
         if (url == null || url.isEmpty()) {
-            listener.onError();
+            deliver(listener, null);
             return;
         }
         Bitmap ready = cached(url);
         if (ready != null) {
-            listener.onBitmap(ready);
+            deliver(listener, ready);
             return;
         }
-        Listener pending = PENDING.get(url);
-        if (pending != null) {
-            PENDING.put(url + "#" + System.nanoTime(), listener);
-            return;
+        // все, кто ждёт одну и ту же обложку, получат её — никто не потеряется
+        java.util.List<Listener> waiters = WAITERS.get(url);
+        if (waiters == null) {
+            java.util.List<Listener> fresh = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+            waiters = WAITERS.putIfAbsent(url, fresh);
+            if (waiters == null) waiters = fresh;
         }
-        PENDING.put(url, listener);
+        boolean first;
+        synchronized (waiters) {
+            first = waiters.isEmpty();
+            waiters.add(listener);
+        }
+        if (!first) return;
+        final java.util.List<Listener> queue = waiters;
         final int px = Math.max(64, targetPx);
         POOL.execute(() -> {
             Bitmap bitmap = fromDisk(url, px);
             if (bitmap == null) bitmap = fromNetwork(url, px);
             final Bitmap result = bitmap;
             MAIN.post(() -> {
-                PENDING.remove(url);
-                if (result != null) listener.onBitmap(result);
-                else listener.onError();
+                java.util.List<Listener> waiting = WAITERS.remove(url);
+                if (waiting == null) waiting = queue;
+                java.util.List<Listener> copy;
+                synchronized (waiting) {
+                    copy = new java.util.ArrayList<>(waiting);
+                    waiting.clear();
+                }
+                for (Listener l : copy) deliver(l, result);
             });
         });
+    }
+
+    /** Отдаёт результат слушателю; ошибка внутри отрисовки не закрывает приложение. */
+    private static void deliver(Listener listener, Bitmap bitmap) {
+        try {
+            if (bitmap != null) listener.onBitmap(bitmap);
+            else listener.onError();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
     }
 
     private static Bitmap fromDisk(String url, int px) {
@@ -120,7 +144,6 @@ public final class Image {
             if (b != null) mem.put(url, b);
             return b;
         } catch (Exception e) {
-            FAILED.add(url);
             return null;
         } finally {
             if (c != null) c.disconnect();
