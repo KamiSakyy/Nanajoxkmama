@@ -27,7 +27,7 @@ public final class Image {
         void onError();
     }
 
-    private static final ExecutorService POOL = Executors.newFixedThreadPool(5);
+    private static final ExecutorService POOL = Executors.newFixedThreadPool(3);
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final Map<String, java.util.List<Listener>> WAITERS = new ConcurrentHashMap<>();
     private static final Set<String> FAILED = ConcurrentHashMap.newKeySet();
@@ -52,6 +52,10 @@ public final class Image {
 
     public static void setDataSaver(boolean value) {
         dataSaver = value;
+    }
+
+    public static boolean dataSaver() {
+        return dataSaver;
     }
 
     public static Bitmap cached(String url) {

@@ -68,7 +68,6 @@ public class CoverView extends android.view.View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        post(this::ensureLoading);
         int target = Math.max(w, h);
         if (url != null && target > Math.max(requestedPx, 1) * 3 / 2 && target > 0) {
             String again = url;
@@ -115,7 +114,7 @@ public class CoverView extends android.view.View {
         }
         this.bitmap = null;
         startShimmer();
-        ensureLoading();
+        invalidate();
     }
 
     /**
@@ -123,18 +122,15 @@ public class CoverView extends android.view.View {
      * на сайте картинки тоже подгружаются по мере появления, а не все сразу.
      */
     public void ensureLoading() {
-        if (loadRequested || waitingUrl == null) return;
-        if (isAttachedToWindow()) {
-            android.graphics.Rect rect = new android.graphics.Rect();
-            if (!getGlobalVisibleRect(rect) || rect.height() <= 0 || rect.width() <= 0) return;
-        }
+        if (loadRequested || waitingUrl == null || getWidth() <= 0 || getHeight() <= 0) return;
         loadRequested = true;
         startLoad(waitingUrl, waitingFallback);
     }
 
     private void startLoad(final String url, final String fallback) {
         final int target = Math.max(getWidth(), getHeight());
-        final int requestPx = Math.max(target, Theme.dp(getContext(), 120f));
+        // При экономии трафика декодируем мельче — памяти и сети меньше.
+        final int requestPx = Math.max(target, Theme.dp(getContext(), Image.dataSaver() ? 90f : 120f));
         requestedPx = requestPx;
         Image.load(url, requestPx, new Image.Listener() {
             @Override
@@ -201,6 +197,8 @@ public class CoverView extends android.view.View {
         int h = getHeight();
         if (w <= 0 || h <= 0) return;
         rect.set(0, 0, w, h);
+        // Рисуется только то, что видно на экране — значит именно здесь и запрашиваем обложку.
+        if (bitmap == null) ensureLoading();
 
         if (bitmap != null && !bitmap.isRecycled()) {
             // Обложка рисуется шейдером с круглыми углами: без программного слоя и без обрезки —
@@ -245,7 +243,6 @@ public class CoverView extends android.view.View {
     @Override
     public void onVisibilityAggregated(boolean isVisible) {
         super.onVisibilityAggregated(isVisible);
-        if (isVisible) post(this::ensureLoading);
         // В невидимых списках шиммер не крутится — не тратит кадры.
         if (!isVisible && loading) {
             if (shimmerAnim != null) shimmerAnim.pause();

@@ -90,7 +90,7 @@ public class MainActivity extends Activity {
         Ui.safe(() -> Prefs.init(this));
         Ui.safe(() -> Net.init(this));
         Ui.safe(() -> Image.init(this));
-        Ui.safe(Settings::init);
+        Ui.safe(() -> Settings.init(this));
         Ui.safe(Library::init);
         Ui.safe(() -> Downloads.init(this));
         Ui.safe(() -> Player.init(this));

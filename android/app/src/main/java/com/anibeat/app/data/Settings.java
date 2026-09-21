@@ -1,5 +1,7 @@
 package com.anibeat.app.data;
 
+import android.content.Context;
+
 import com.anibeat.app.core.Image;
 import com.anibeat.app.core.Prefs;
 
@@ -26,8 +28,12 @@ public final class Settings {
     private Settings() {
     }
 
-    public static void init() {
-        dataSaver = Prefs.getBool("settings.dataSaver", false);
+    /** Контекст нужен, чтобы понять: сеть мобильная (жёсткая экономия) или Wi-Fi. */
+    private static Context appContext;
+
+    public static void init(Context context) {
+        if (context != null) appContext = context.getApplicationContext();
+        dataSaver = Prefs.getBool("settings.dataSaver", isMetered(context));
         preloadNext = Prefs.getBool("settings.preloadNext", true);
         downloadKind = Prefs.getString("settings.downloadKind", "audio");
         ruTitles = Prefs.getBool("settings.ruTitles", true);
@@ -52,6 +58,21 @@ public final class Settings {
             } catch (Throwable t) {
                 com.anibeat.app.core.Ui.report(t);
             }
+        }
+    }
+
+    /** Мобильная сеть (или режим экономии системы) — значит жёсткая экономия трафика включена. */
+    private static boolean isMetered(Context context) {
+        try {
+            if (context == null) return false;
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return false;
+            if (cm.isActiveNetworkMetered()) return true;
+            android.net.NetworkCapabilities caps = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return caps != null && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == false;
+        } catch (Throwable t) {
+            return false;
         }
     }
 

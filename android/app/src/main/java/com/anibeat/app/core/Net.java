@@ -165,6 +165,8 @@ public final class Net {
     }
 
     private static void backgroundFetch(String key, String url, String postBody, Callback<JSONObject> cb, boolean silent) {
+        // При экономии трафика фоновые обновления не запускаем: данные уже отданы из кэша.
+        if (silent && Image.dataSaver()) return;
         NetTask<?> running = INFLIGHT.get(key);
         if (running != null) {
             if (!silent) running.addCallback(cb);
