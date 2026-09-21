@@ -1,0 +1,26 @@
+# Gradle / Android
+.gradle/
+.idea/
+**/build/
+local.properties
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local signing material and machine-specific files
+signing/*
+!signing/
+!signing/anibeat-release.p12
+*.jks
+*.keystore
+*.p12
+!signing/anibeat-release.p12
+
+# Generated release output is intentionally kept in handoff/ by CI.
+# Keep all other APKs out of the source tree.
+*.apk
+!handoff/*.apk
+
+# Temporary tooling
+.tmp/

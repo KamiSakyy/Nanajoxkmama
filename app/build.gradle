@@ -1,0 +1,71 @@
+plugins {
+    id 'com.android.application'
+}
+
+def releaseStore = System.getenv('ANIBEAT_KEYSTORE_PATH')
+def releaseStorePassword = System.getenv('ANIBEAT_KEYSTORE_PASSWORD') ?: 'AniBeat-release-key-2026'
+def releaseKeyAlias = System.getenv('ANIBEAT_KEY_ALIAS') ?: 'anibeat'
+def releaseKeyPassword = System.getenv('ANIBEAT_KEY_PASSWORD') ?: releaseStorePassword
+
+def requestedVersionCode = (project.findProperty('versionCode') ?: '1').toString().toInteger()
+def requestedVersionName = (project.findProperty('versionName') ?: '1.0.0').toString()
+
+android {
+    namespace 'com.kamisakyy.nanajoxkmama'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.kamisakyy.nanajoxkmama'
+        minSdk 23
+        targetSdk 35
+        versionCode requestedVersionCode
+        versionName requestedVersionName
+        vectorDrawables.useSupportLibrary = false
+    }
+
+    signingConfigs {
+        release {
+            if (releaseStore) {
+                storeFile file(releaseStore)
+            } else {
+                storeFile rootProject.file('signing/anibeat-release.p12')
+            }
+            storePassword releaseStorePassword
+            keyAlias releaseKeyAlias
+            keyPassword releaseKeyPassword
+            storeType 'pkcs12'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    packaging {
+        resources {
+            excludes += ['/META-INF/{AL2.0,LGPL2.1}', '/META-INF/DEPENDENCIES', '/META-INF/LICENSE*', '/META-INF/NOTICE*']
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+// The native-only app intentionally has no runtime dependencies.
+dependencies {
+}

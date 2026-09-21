@@ -1,0 +1,96 @@
+name: AniBeat release APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: anibeat-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build signed release APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Restore persistent signing key
+        env:
+          ANIBEAT_KEYSTORE_BASE64: ${{ secrets.ANIBEAT_KEYSTORE_BASE64 }}
+          ANIBEAT_KEYSTORE_PASSWORD: ${{ secrets.ANIBEAT_KEYSTORE_PASSWORD }}
+          ANIBEAT_KEY_ALIAS: ${{ secrets.ANIBEAT_KEY_ALIAS }}
+          ANIBEAT_KEY_PASSWORD: ${{ secrets.ANIBEAT_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -n "$ANIBEAT_KEYSTORE_BASE64" ] && [ -n "$ANIBEAT_KEYSTORE_PASSWORD" ] && [ -n "$ANIBEAT_KEY_ALIAS" ] && [ -n "$ANIBEAT_KEY_PASSWORD" ]; then
+            mkdir -p "$GITHUB_WORKSPACE/signing"
+            printf '%s' "$ANIBEAT_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/signing/anibeat-release.p12"
+            echo "ANIBEAT_KEYSTORE_PATH=$GITHUB_WORKSPACE/signing/anibeat-release.p12" >> "$GITHUB_ENV"
+            echo 'Using the protected repository signing key.'
+          else
+            test -f "$GITHUB_WORKSPACE/signing/anibeat-release.p12" || { echo 'No persistent signing key is available'; exit 1; }
+            echo 'Using the project release key; configure repository secrets for private key storage.'
+          fi
+
+      - name: Assemble signed release APK only
+        env:
+          ANIBEAT_KEYSTORE_PASSWORD: ${{ secrets.ANIBEAT_KEYSTORE_PASSWORD }}
+          ANIBEAT_KEY_ALIAS: ${{ secrets.ANIBEAT_KEY_ALIAS }}
+          ANIBEAT_KEY_PASSWORD: ${{ secrets.ANIBEAT_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
+          VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
+          gradle --no-daemon --stacktrace assembleRelease \
+            -PversionCode="$VERSION_CODE" \
+            -PversionName="$VERSION_NAME"
+          mkdir -p handoff
+          cp app/build/outputs/apk/release/app-release.apk handoff/AniBeat-release.apk
+          printf 'versionName=%s\nversionCode=%s\n' "$VERSION_NAME" "$VERSION_CODE" > handoff/version.txt
+          sha256sum handoff/AniBeat-release.apk > handoff/SHA256SUMS.txt
+          BYTES=$(stat -c '%s' handoff/AniBeat-release.apk)
+          test "$BYTES" -le 4194304 || { echo "APK is ${BYTES} bytes; the 4 MiB limit was exceeded"; exit 1; }
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AniBeat-release-${{ github.run_number }}
+          path: |
+            handoff/AniBeat-release.apk
+            handoff/version.txt
+            handoff/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Put the current APK in handoff/
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add handoff/AniBeat-release.apk handoff/version.txt handoff/SHA256SUMS.txt
+          if git diff --cached --quiet; then
+            echo 'handoff is already current'
+          else
+            git commit -m "chore: update signed AniBeat APK [skip ci]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
