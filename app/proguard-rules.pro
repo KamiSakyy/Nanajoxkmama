@@ -1,5 +1,9 @@
-# Keep the manifest entry point and the small JSON model stable in release builds.
--keep public class com.kamisakyy.nanajoxkmama.PlaybackService { *; }
--keep public class com.kamisakyy.nanajoxkmama.MainActivity { *; }
--keep class com.kamisakyy.nanajoxkmama.Track { *; }
--keep class com.kamisakyy.nanajoxkmama.Playlist { *; }
+# AniBeat — keep media-session service and models used via reflection/serialization
+-keep class * extends androidx.media3.session.MediaSessionService { *; }
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final ** CREATOR;
+}
+-dontwarn org.slf4j.**
+-dontwarn org.conscrypt.**
+-dontwarn org.bouncycastle.**
+-dontwarn org.openjsse.**

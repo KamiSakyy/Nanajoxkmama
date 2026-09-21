@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AniBeat mark: eighth note in a rounded stage -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path
+        android:pathData="M54,30 L78,38 L78,60 C78,70 68,76 58,73 C48,70 42,62 44,54 C46,46 56,40 66,43 L66,52 C61,50 55,52 53,57 C51,62 54,67 60,68 C66,69 70,65 70,59 L70,42 L54,36 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

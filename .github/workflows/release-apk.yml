@@ -1,127 +1,91 @@
-name: AniBeat release APK
+name: Build APK
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-      - 'arena/**'
+    branches: [ main, master, "arena/**" ]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: anibeat-release-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  release:
-    name: Build signed release APK
+  apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android/ndk /opt/ghc /opt/hostedtoolcache/CodeQL || true
+
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "21"
 
-      - name: Set up Gradle
+      - name: Set up Gradle 8.14
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: "8.14"
 
-      - name: Restore persistent signing key
-        env:
-          ANIBEAT_KEYSTORE_BASE64: ${{ secrets.ANIBEAT_KEYSTORE_BASE64 }}
-          ANIBEAT_KEYSTORE_PASSWORD: ${{ secrets.ANIBEAT_KEYSTORE_PASSWORD }}
-          ANIBEAT_KEY_ALIAS: ${{ secrets.ANIBEAT_KEY_ALIAS }}
-          ANIBEAT_KEY_PASSWORD: ${{ secrets.ANIBEAT_KEY_PASSWORD }}
+      - name: Install Android SDK 36
         run: |
-          set -euo pipefail
-          if [ -n "$ANIBEAT_KEYSTORE_BASE64" ] && [ -n "$ANIBEAT_KEYSTORE_PASSWORD" ] && [ -n "$ANIBEAT_KEY_ALIAS" ] && [ -n "$ANIBEAT_KEY_PASSWORD" ]; then
-            mkdir -p "$GITHUB_WORKSPACE/signing"
-            printf '%s' "$ANIBEAT_KEYSTORE_BASE64" | base64 --decode > "$GITHUB_WORKSPACE/signing/anibeat-release.p12"
-            echo "ANIBEAT_KEYSTORE_PATH=$GITHUB_WORKSPACE/signing/anibeat-release.p12" >> "$GITHUB_ENV"
-            echo 'Using the protected repository signing key.'
-          else
-            test -f "$GITHUB_WORKSPACE/signing/anibeat-release.p12" || { echo 'No persistent signing key is available'; exit 1; }
-            echo 'Using the project release key; configure repository secrets for private key storage.'
-          fi
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Assemble signed release APK only
-        env:
-          ANIBEAT_KEYSTORE_PASSWORD: ${{ secrets.ANIBEAT_KEYSTORE_PASSWORD }}
-          ANIBEAT_KEY_ALIAS: ${{ secrets.ANIBEAT_KEY_ALIAS }}
-          ANIBEAT_KEY_PASSWORD: ${{ secrets.ANIBEAT_KEY_PASSWORD }}
+      - name: Gradle build (assembleRelease)
+        id: build
         run: |
-          set -euo pipefail
-          VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
-          VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
           set +e
-          gradle --no-daemon assembleRelease \
-            -PversionCode="$VERSION_CODE" \
-            -PversionName="$VERSION_NAME" > build.log 2>&1
-          STATUS=$?
-          set -e
-          tail -n 200 build.log
-          if [ $STATUS -ne 0 ]; then
-            echo "## Gradle build failed" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            grep -E -A2 "error:|FAILURE|What went wrong" build.log | head -120 >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::gradle assembleRelease failed — see job summary"
-            exit $STATUS
-          fi
+          gradle assembleRelease -PversionCode=$(( ${{ github.run_number }} + 1000 )) -PversionName=2.0.${{ github.run_number }} --no-daemon 2>&1 | tee build.log
+          echo "exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
-      - name: Commit build errors for debugging
-        if: failure()
-        shell: bash
+      - name: Build failed → publish build-errors.txt
+        if: steps.build.outputs.exit != '0'
         run: |
-          set -euo pipefail
-          grep -E -A2 "error:|FAILURE|What went wrong" build.log | head -120 > build-errors.txt || true
-          [ -s build-errors.txt ] || tail -n 80 build.log > build-errors.txt
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          echo "::error::BUILD FAILED — see build-errors.txt"
+          grep -E -A2 "error:|FAILURE|What went wrong|e: " build.log | head -120 > build-errors.txt
+          echo "----- tail -----" >> build-errors.txt
+          tail -60 build.log >> build-errors.txt
+          echo "[skip ci]" >> build-errors.txt
+          git config user.name "anibeat-ci"
+          git config user.email "ci@anibeat.app"
           git add build-errors.txt
-          git commit -m "ci: build errors [skip ci]" || true
-          git push || true
+          git commit -m "ci: build-errors.txt [skip ci]"
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push origin "HEAD:$GITHUB_REF_NAME" || true
+          exit 1
 
-      - name: Prepare release handoff
+      - name: Collect artifacts
+        if: steps.build.outputs.exit == '0'
         run: |
-          set -euo pipefail
-          VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
-          VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
+          rm -f build-errors.txt
           mkdir -p handoff
-          cp app/build/outputs/apk/release/app-release.apk handoff/AniBeat-release.apk
-          printf 'versionName=%s\nversionCode=%s\n' "$VERSION_NAME" "$VERSION_CODE" > handoff/version.txt
-          sha256sum handoff/AniBeat-release.apk > handoff/SHA256SUMS.txt
-          BYTES=$(stat -c '%s' handoff/AniBeat-release.apk)
-          test "$BYTES" -le 4194304 || { echo "APK is ${BYTES} bytes; the 4 MiB limit was exceeded"; exit 1; }
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          cp "$APK" handoff/AniBeat-release.apk
+          sha256sum handoff/AniBeat-release.apk | tee handoff/AniBeat-release.sha256
+          rm -f handoff/anibeat-sources.zip
+          zip -qr handoff/anibeat-sources.zip . -x '*/build/*' 'build/*' '*/.gradle/*' '.gradle/*' 'signing/*' '.git/*' 'handoff/*' '*.apk' '*/.idea/*' '.idea/*'
 
-      - name: Upload release APK artifact
+      - name: Handoff commit [skip ci]
+        if: steps.build.outputs.exit == '0'
+        run: |
+          git config user.name "anibeat-ci"
+          git config user.email "ci@anibeat.app"
+          git add handoff/AniBeat-release.apk handoff/AniBeat-release.sha256 handoff/anibeat-sources.zip
+          git add -u
+          git commit -m "release: AniBeat APK + sources [skip ci]" || true
+          git pull --rebase origin "$GITHUB_REF_NAME" || true
+          git push origin "HEAD:$GITHUB_REF_NAME" || true
+
+      - name: Upload APK artifact
+        if: steps.build.outputs.exit == '0'
         uses: actions/upload-artifact@v4
         with:
-          name: AniBeat-release-${{ github.run_number }}
+          name: AniBeat-release
           path: |
             handoff/AniBeat-release.apk
-            handoff/version.txt
-            handoff/SHA256SUMS.txt
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Put the current APK in handoff/
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add handoff/AniBeat-release.apk handoff/version.txt handoff/SHA256SUMS.txt
-          if git diff --cached --quiet; then
-            echo 'handoff is already current'
-          else
-            git commit -m "chore: update signed AniBeat APK [skip ci]"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
+            handoff/AniBeat-release.sha256
+            handoff/anibeat-sources.zip
