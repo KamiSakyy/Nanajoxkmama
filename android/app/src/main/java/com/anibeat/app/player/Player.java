@@ -1,14 +1,20 @@
 package com.anibeat.app.player;
 
-import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 
+import androidx.media3.common.AudioAttributes;
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
-import androidx.media3.session.MediaController;
-import androidx.media3.session.SessionToken;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.exoplayer.ExoPlayer;
 
+import com.anibeat.app.core.Ui;
 import com.anibeat.app.data.Downloads;
 import com.anibeat.app.data.Library;
 import com.anibeat.app.data.Models;
@@ -34,7 +40,11 @@ public final class Player {
 
     private static final String PERSIST_KEY = "player";
 
-    private static MediaController controller;
+    private static ExoPlayer engine;
+    private static boolean startingService;
+    private static boolean restored;
+    private static boolean localOnly;
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final List<Models.Track> QUEUE = new ArrayList<>();
     private static List<Models.Track> ORIGINAL;
     private static int index;
@@ -67,81 +77,130 @@ public final class Player {
 
     public static void init(Context context) {
         if (context != null) appContext = context.getApplicationContext();
-        if (ready) return;
+        if (!restored) {
+            restored = true;
+            restore(context);
+        }
+        if (engine != null || startingService) return;
         if (!autoConnect) return;
-        restore(context);
-        SessionToken token = new SessionToken(context, new ComponentName(context, PlaybackService.class));
-        MediaController.Builder builder = new MediaController.Builder(context, token);
-        // Служба может отключиться (система остановила сервис). Тогда контроллер сбрасываем,
-        // и следующее нажатие поднимет его заново — вместо падения приложения.
-        builder.setListener(new MediaController.Listener() {
+        // Пробуем фон (служба). Если не получится — играем прямо в приложении.
+        startingService = true;
+        if (!startService()) {
+            startingService = false;
+            ensureLocalEngine();
+            return;
+        }
+        MAIN.postDelayed(() -> {
+            if (engine == null) {
+                startingService = false;
+                ensureLocalEngine();
+            }
+        }, 1500);
+    }
+
+    private static boolean startService() {
+        if (appContext == null) return false;
+        try {
+            Intent intent = new Intent(appContext, PlaybackService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) appContext.startForegroundService(intent);
+            else appContext.startService(intent);
+            return true;
+        } catch (Throwable t) {
+            Ui.report(t);
+            return false;
+        }
+    }
+
+    private static void ensureLocalEngine() {
+        if (engine != null || localOnly || !autoConnect) return;
+        localOnly = true;
+        try {
+            engine = createEngine(appContext);
+            PlayerHolder.attach(engine, false);
+            attachEngineListener(engine);
+            onEngineReady(appContext);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    /** Создаёт проигрыватель (чистая Java). Используется и службой, и приложением. */
+    public static ExoPlayer createEngine(Context context) {
+        ExoPlayer player = new ExoPlayer.Builder(context)
+                .setAudioAttributes(new AudioAttributes.Builder()
+                        .setUsage(C.USAGE_MEDIA)
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                        .build(), true)
+                .setHandleAudioBecomingNoisy(true)
+                .setWakeMode(C.WAKE_MODE_NETWORK)
+                .build();
+        player.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE
+                : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
+        player.setVolume(muted ? 0f : volume);
+        return player;
+    }
+
+    /** Общая часть для службы и приложения: следим за событиями плеера. */
+    static void attachEngineListener(ExoPlayer player) {
+        player.addListener(new androidx.media3.common.Player.Listener() {
             @Override
-            public void onDisconnected(MediaController disconnected) {
-                if (controller == disconnected) {
-                    controller = null;
-                    ready = false;
+            public void onIsPlayingChanged(boolean isPlaying) {
+                emit();
+            }
+
+            @Override
+            public void onMediaItemTransition(MediaItem mediaItem, int reason) {
+                syncIndex();
+                Models.Track track = current();
+                if (track != null && engine != null && engine.getPlayWhenReady()
+                        && reason != androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
+                    Library.addToHistory(track);
                 }
                 emit();
             }
-        });
-        com.google.common.util.concurrent.ListenableFuture<MediaController> future = builder.buildAsync();
-        // Подключение уже идёт: повторные init() не должны создавать новые контроллеры.
-        ready = true;
-        future.addListener(() -> {
-            try {
-                controller = future.get();
-            } catch (Exception e) {
-                ready = false;
-                return;
-            }
-            controller.addListener(new androidx.media3.common.Player.Listener() {
-                @Override
-                public void onIsPlayingChanged(boolean isPlaying) {
-                    emit();
-                }
 
-                @Override
-                public void onMediaItemTransition(MediaItem mediaItem, int reason) {
-                    syncIndexFromController();
-                    Models.Track track = current();
-                    // История пополняется при автопереходе (как на сайте: applySource с autoplay).
-                    if (track != null && controller != null && controller.getPlayWhenReady() && reason != androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
-                        Library.addToHistory(track);
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                emit();
+            }
+
+            @Override
+            public void onPlayerError(PlaybackException error) {
+                // Недоступный трек пропускаем, музыка не прерывается.
+                try {
+                    int next = engine == null ? -1 : engine.getCurrentMediaItemIndex() + 1;
+                    if (engine != null && next > 0 && next < engine.getMediaItemCount()) {
+                        engine.seekTo(next, 0);
+                        engine.prepare();
+                        engine.play();
                     }
-                    emit();
+                } catch (Throwable ignored) {
                 }
-
-                @Override
-                public void onPlaybackStateChanged(int state) {
-                    emit();
-                }
-
-                @Override
-                public void onRepeatModeChanged(int mode) {
-                    emit();
-                }
-
-                @Override
-                public void onShuffleModeEnabledChanged(boolean enabled) {
-                    emit();
-                }
-            });
-            if (!QUEUE.isEmpty()) {
-                applyQueue(index, false);
             }
+        });
+    }
+
+    /** Служба подключилась (или приложение подняло свой плеер) — продолжаем с очередью. */
+    public static void onEngineReady(Context context) {
+        MAIN.post(() -> Ui.safe(() -> {
+            if (engine == null) engine = PlayerHolder.engine();
+            if (engine == null) return;
+            engine.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE
+                    : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
+            engine.setVolume(muted ? 0f : volume);
+            if (!QUEUE.isEmpty()) applyQueue(index, pendingPlay);
             if (pendingIndex >= 0) {
                 int pIndex = pendingIndex;
-                boolean pPlay = pendingPlay;
                 pendingIndex = -1;
+                applyQueue(pIndex, pendingPlay);
                 pendingPlay = false;
-                applyQueue(pIndex, pPlay);
             }
             emit();
-        }, com.google.common.util.concurrent.MoreExecutors.directExecutor());
+        }));
     }
 
     public static boolean isReady() {
-        return controller != null;
+        return engine != null;
     }
 
     public static void addListener(Listener l) {
@@ -152,21 +211,38 @@ public final class Player {
         LISTENERS.remove(l);
     }
 
-    /** Выполняет действие с контроллером; если он отвалился — поднимает службу заново. */
-    private static boolean withController(java.util.function.Consumer<MediaController> action) {
-        MediaController c = controller;
-        if (c == null) return false;
+    /** Выполняет действие с проигрывателем; при сбое поднимает его заново. */
+    private static boolean withEngine(java.util.function.Consumer<ExoPlayer> action) {
+        ExoPlayer e = engine;
+        if (e == null) return false;
         try {
-            action.accept(c);
+            action.accept(e);
             return true;
         } catch (Throwable t) {
-            // Контроллер перестал отвечать: забываем его, следующий тап подключит службу заново.
-            controller = null;
-            ready = false;
-            if (appContext != null) init(appContext);
-            com.anibeat.app.core.Ui.report(t);
+            Ui.report(t);
+            recover();
             return false;
         }
+    }
+
+    /** Проигрыватель отказал: забываем его и создаём заново, чтобы тапы продолжали работать. */
+    private static void recover() {
+        try {
+            ExoPlayer broken = engine;
+            engine = null;
+            if (broken != null) {
+                try {
+                    broken.release();
+                } catch (Throwable ignored) {
+                }
+            }
+            PlayerHolder.detach(broken);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+        localOnly = false;
+        startingService = false;
+        if (appContext != null) init(appContext);
     }
 
     private static void emit() {
@@ -198,11 +274,11 @@ public final class Player {
     }
 
     public static boolean isPlaying() {
-        return controller != null && controller.isPlaying();
+        return engine != null && engine.isPlaying();
     }
 
     public static boolean isBuffering() {
-        return controller != null && controller.getPlaybackState() == androidx.media3.common.Player.STATE_BUFFERING;
+        return engine != null && engine.getPlaybackState() == androidx.media3.common.Player.STATE_BUFFERING;
     }
 
     public static boolean shuffle() {
@@ -226,16 +302,17 @@ public final class Player {
     }
 
     public static long position() {
-        return controller == null ? 0 : controller.getCurrentPosition();
+        return engine == null ? 0 : engine.getCurrentPosition();
     }
 
     public static long duration() {
-        long d = controller == null ? 0 : controller.getDuration();
+        long d = engine == null ? 0 : engine.getDuration();
         return d < 0 ? 0 : d;
     }
 
-    public static MediaController controller() {
-        return controller;
+    /** Проигрыватель для экрана видео. */
+    public static androidx.media3.common.Player controller() {
+        return engine;
     }
 
     /* ------------------------------------------------------------------ */
@@ -317,44 +394,40 @@ public final class Player {
     }
 
     public static void toggle() {
-        if (controller == null) {
+        if (engine == null) {
             if (QUEUE.isEmpty()) return;
             pendingIndex = index;
             pendingPlay = true;
             if (appContext != null) init(appContext);
             return;
         }
-        if (controller == null) {
-            pendingIndex = index;
-            pendingPlay = true;
-            if (appContext != null) init(appContext);
-            return;
-        }
-        boolean wasPlaying = controller.isPlaying();
-        if (!withController(c -> { if (wasPlaying) c.pause(); else c.play(); })) return;
+        boolean wasPlaying = engine.isPlaying();
+        if (!withEngine(e -> { if (wasPlaying) e.pause(); else e.play(); })) return;
         if (!wasPlaying) {
             Models.Track t = current();
             if (t != null) Library.addToHistory(t);
         }
+        PlaybackService.refresh(appContext);
         emit();
     }
 
     public static void play() {
-        if (controller == null) {
+        if (engine == null) {
             if (QUEUE.isEmpty()) return;
             pendingIndex = index;
             pendingPlay = true;
             if (appContext != null) init(appContext);
             return;
         }
-        if (!withController(MediaController::play)) return;
+        if (!withEngine(ExoPlayer::play)) return;
         Models.Track t = current();
         if (t != null) Library.addToHistory(t);
+        PlaybackService.refresh(appContext);
         emit();
     }
 
     public static void pause() {
-        if (controller != null) withController(MediaController::pause);
+        if (engine != null) withEngine(ExoPlayer::pause);
         emit();
     }
 
@@ -398,7 +471,7 @@ public final class Player {
     }
 
     public static void seekTo(long ms) {
-        if (controller != null) withController(c -> c.seekTo(Math.max(0, ms)));
+        if (engine != null) withEngine(e -> e.seekTo(Math.max(0, ms)));
         emit();
     }
 
@@ -426,7 +499,7 @@ public final class Player {
         boolean isCurrent = i == index;
         QUEUE.remove(i);
         if (QUEUE.isEmpty()) {
-            if (controller != null) controller.clearMediaItems();
+            if (engine != null) withEngine(e -> e.clearMediaItems());
             index = 0;
             emit();
             save();
@@ -501,8 +574,10 @@ public final class Player {
 
     public static void cycleRepeat() {
         repeat = "off".equals(repeat) ? "all" : "all".equals(repeat) ? "one" : "off";
-        if (controller != null) {
-            controller.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
+        if (engine != null) {
+            final String mode = repeat;
+            withEngine(e -> e.setRepeatMode("one".equals(mode) ? androidx.media3.common.Player.REPEAT_MODE_ONE
+                    : "all".equals(mode) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF));
         }
         save();
         emit();
@@ -519,14 +594,14 @@ public final class Player {
     public static void setVolume(float value) {
         volume = Math.max(0f, Math.min(1f, value));
         if (value > 0) muted = false;
-        if (controller != null) withController(c -> c.setVolume(muted ? 0f : volume));
+        if (engine != null) withEngine(e -> e.setVolume(muted ? 0f : volume));
         save();
         emit();
     }
 
     public static void toggleMute() {
         muted = !muted;
-        if (controller != null) withController(c -> c.setVolume(muted ? 0f : volume));
+        if (engine != null) withEngine(e -> e.setVolume(muted ? 0f : volume));
         save();
         emit();
     }
@@ -535,17 +610,17 @@ public final class Player {
     /* Внутреннее                                                          */
     /* ------------------------------------------------------------------ */
 
-    private static void syncIndexFromController() {
-        if (controller == null) return;
-        String id = controller.getCurrentMediaItem() == null ? null : controller.getCurrentMediaItem().mediaId;
+    private static void syncIndex() {
+        if (engine == null) return;
+        String id = engine.getCurrentMediaItem() == null ? null : engine.getCurrentMediaItem().mediaId;
         if (id == null) return;
         int found = indexOf(id);
         if (found >= 0) index = found;
     }
 
     private static void applyQueue(int startIndex, boolean play) {
-        if (controller == null) {
-            // Сервис ещё поднимается — запомним и выполним сразу после подключения.
+        if (engine == null) {
+            // Плеер ещё поднимается — запомним и выполним сразу, как он появится.
             pendingIndex = startIndex;
             pendingPlay = play;
             if (appContext != null) init(appContext);
@@ -554,24 +629,24 @@ public final class Player {
         List<MediaItem> items = new ArrayList<>();
         for (Models.Track t : QUEUE) items.add(toMediaItem(t));
         final int start = Math.max(0, Math.min(startIndex, Math.max(0, items.size() - 1)));
-        boolean ok = withController(c -> {
-            c.setMediaItems(items, start, 0);
-            c.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
-            c.setVolume(muted ? 0f : volume);
-            c.prepare();
-            if (play) c.play();
+        boolean ok = withEngine(e -> {
+            e.setMediaItems(items, start, 0);
+            e.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE
+                    : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
+            e.setVolume(muted ? 0f : volume);
+            e.prepare();
+            if (play) e.play();
         });
         if (!ok) {
-            // Служба отвалилась — запомним, что играть, и подключимся заново.
             pendingIndex = startIndex;
             pendingPlay = play;
-            if (appContext != null) init(appContext);
             emit();
             return;
         }
         if (play) {
             Models.Track t = current();
             if (t != null) Library.addToHistory(t);
+            PlaybackService.refresh(appContext);
         }
         emit();
     }
@@ -622,6 +697,7 @@ public final class Player {
 
     private static void restore(Context context) {
         try {
+            QUEUE.clear();
             String raw = Prefs.getString(PERSIST_KEY, "");
             if (!raw.isEmpty()) {
                 JSONObject o = new JSONObject(raw);
