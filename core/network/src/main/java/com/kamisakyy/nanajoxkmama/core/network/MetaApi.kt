@@ -3,6 +3,8 @@ package com.kamisakyy.nanajoxkmama.core.network
 import com.kamisakyy.nanajoxkmama.core.common.DAY_MS
 import com.kamisakyy.nanajoxkmama.core.common.HOUR_MS
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -77,6 +79,9 @@ class MetaApi @Inject constructor(
     @Volatile private var shikiHost: String? = null
     @Volatile private var shikiDead = false
     private val detailsCache = ConcurrentHashMap<Int, ShikiDetails>()
+    private val warmScope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
+    )
 
     private suspend fun ping(host: String): String? = withTimeoutOrNull(6000) {
         try {
@@ -212,7 +217,7 @@ class MetaApi @Inject constructor(
     }
 
     fun warm(malIds: List<Int?>) {
-        kotlinx.coroutines.GlobalScope.launchSafe {
+        warmScope.launch {
             val ids = malIds.filterNotNull().distinct().take(24)
             ids.map { id -> async { runCatching { fetchShikiDetails(id) } } }.awaitAll()
             runCatching { fetchAniList(ids) }
@@ -225,14 +230,5 @@ class MetaApi @Inject constructor(
     private fun cleanShikiText(s: String?): String? {
         if (s == null) return null
         return s.replace(Regex("<[^>]*>"), "").replace(Regex("\\n{3,}"), "\n\n").trim()
-    }
-}
-
-private fun kotlinx.coroutines.GlobalScope.launchSafe(block: suspend kotlinx.coroutines.CoroutineScope.() -> Unit) {
-    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-        try {
-            block()
-        } catch (_: Exception) {
-        }
     }
 }
