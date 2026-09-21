@@ -1,5 +1,5 @@
-run: 35574537461  job: build-apk  status: success
-version: 1.0.26
+run: 35574856888  job: build-apk  status: success
+version: 1.0.27
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -11,8 +11,8 @@ Daemon will be stopped at the end of the build
 > Task :app:stripReleaseDebugSymbols NO-SOURCE
 > Task :app:extractReleaseNativeSymbolTables NO-SOURCE
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
-> Task :app:checkReleaseDuplicateClasses
 > Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:checkReleaseDuplicateClasses
 > Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
@@ -27,22 +27,22 @@ Daemon will be stopped at the end of the build
 > Task :app:mergeReleaseStartupProfile
 > Task :app:mergeReleaseResources
 > Task :app:processReleaseManifestForPackage
-> Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
+> Task :app:mergeReleaseArtProfile
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
 > Task :app:compressReleaseAssets
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseJavaRes NO-SOURCE
-> Task :app:collectReleaseDependencies
 > Task :app:processReleaseResources
-> Task :app:sdkReleaseDependencyData
+> Task :app:collectReleaseDependencies
 > Task :app:compileReleaseJavaWithJavac FROM-CACHE
 > Task :app:mergeReleaseJavaResource
 > Task :app:dexBuilderRelease
-> Task :app:validateSigningRelease
 > Task :app:mergeReleaseGlobalSynthetics
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
 > Task :app:optimizeReleaseResources
@@ -79,8 +79,8 @@ Daemon will be stopped at the end of the build
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugResources
 
@@ -88,16 +88,50 @@ Daemon will be stopped at the end of the build
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
-> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
 > Task :app:packageDebugUnitTestForUnitTest
+> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:generateDebugUnitTestConfig
 
 > Task :app:testDebugUnitTest
 
+SmokeTest > everythingIsClickableWithoutCrash STANDARD_OUT
+    java.lang.NullPointerException: Cannot invoke "android.content.ComponentName.getPackageName()" because "name" is null
+    	at androidx.media3.session.MediaControllerImplBase$SessionServiceConnection.onServiceConnected(MediaControllerImplBase.java:3250)
+    	at org.robolectric.shadows.ShadowInstrumentation.lambda$bindService$0(ShadowInstrumentation.java:737)
+    	at android.os.Handler.handleCallback(Handler.java:942)
+    	at android.os.Handler.dispatchMessage(Handler.java:99)
+    	at org.robolectric.shadows.ShadowPausedLooper$IdlingRunnable.doRun(ShadowPausedLooper.java:600)
+    	at org.robolectric.shadows.ShadowPausedLooper$ControlRunnable.run(ShadowPausedLooper.java:563)
+    	at org.robolectric.shadows.ShadowPausedLooper.executeOnLooper(ShadowPausedLooper.java:685)
+    	at org.robolectric.shadows.ShadowPausedLooper.idle(ShadowPausedLooper.java:104)
+    	at org.robolectric.shadows.ShadowPausedLooper.idleIfPaused(ShadowPausedLooper.java:177)
+    	at org.robolectric.android.controller.ActivityController.visible(ActivityController.java:233)
+    	at org.robolectric.android.controller.ActivityController.setup(ActivityController.java:341)
+    	at com.anibeat.app.SmokeTest.everythingIsClickableWithoutCrash(SmokeTest.java:33)
+    	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+    	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+    	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+    	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+    	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+    	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+    	at org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:489)
+    	at org.robolectric.internal.SandboxTestRunner$2.lambda$evaluate$2(SandboxTestRunner.java:291)
+    	at org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:104)
+    	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+    	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+    	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+    	at java.base/java.lang.Thread.run(Thread.java:840)
+
 SmokeTest > everythingIsClickableWithoutCrash FAILED
-    java.lang.AssertionError at SmokeTest.java:37
+    java.lang.AssertionError: нажатий: 0, падений: 1
+    запуск приложения → java.lang.NullPointerException: Cannot invoke "android.content.ComponentName.getPackageName()" because "name" is null
+        at org.junit.Assert.fail(Assert.java:89)
+        at org.junit.Assert.assertTrue(Assert.java:42)
+        at com.anibeat.app.SmokeTest.everythingIsClickableWithoutCrash(SmokeTest.java:37)
 
 1 test completed, 1 failed
 
@@ -112,5 +146,5 @@ Execution failed for task ':app:testDebugUnitTest'.
 * Try:
 > Run with --scan to get full insights.
 
-BUILD FAILED in 59s
+BUILD FAILED in 1m 9s
 24 actionable tasks: 23 executed, 1 from cache
