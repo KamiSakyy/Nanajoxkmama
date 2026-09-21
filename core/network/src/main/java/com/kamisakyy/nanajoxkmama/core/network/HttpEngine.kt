@@ -6,10 +6,6 @@ import com.kamisakyy.nanajoxkmama.core.common.DAY_MS
 import com.kamisakyy.nanajoxkmama.core.common.HOUR_MS
 import com.kamisakyy.nanajoxkmama.core.common.MINUTE_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlinx.coroutines.async
@@ -17,13 +13,12 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Browser-grade HTTP layer (website `src/api/http.ts` port):
- *  • HTTP/2 via OkHttp with connection pre-warm
+ *  • Transport: platform HttpURLConnection (proven v1.x semantics)
  *  • two-tier cache — memory hot + disk, stale-while-revalidate
  *  • request de-duplication (identical inflight calls share one call)
  *  • retries with exponential backoff + Retry-After on 429 / 5xx / network errors
@@ -65,17 +60,6 @@ class HttpEngine @Inject constructor(
     private val inflight = ConcurrentHashMap<String, kotlinx.coroutines.Deferred<String>>()
     private val diskDir: File = File(context.cacheDir, "http-cache-v2").apply { mkdirs() }
     private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
-    private val jsonMedia = "application/json".toMediaType()
-
-    // Official OkHttp 5.5.0 — stock configuration, timeouts only. No custom hacks.
-    private val client: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
-            .build()
-    }
 
     fun buildUrl(base: String, path: String, params: Map<String, Any?>): String {
         val sb = StringBuilder(base).append(path)
@@ -200,43 +184,53 @@ class HttpEngine @Inject constructor(
         return String(data, Charsets.UTF_8)
     }
 
+    /**
+     * Transport is a VERBATIM port of the proven v1.x ApiClient.requestText
+     * (HttpURLConnection, plain UTF-8 stream, no compression negotiation) —
+     * exactly what worked on this device, plus multi-layer decode safety net.
+     */
     private fun fetch(url: String, policy: HttpCachePolicy.Policy): String {
         var attempt = 0
         val maxRetries = policy.retries.coerceAtMost(RETRY_DELAYS.size)
         while (true) {
+            var connection: java.net.HttpURLConnection? = null
             try {
-                val rb = Request.Builder().url(url)
-                if (policy.body != null) {
-                    rb.post(policy.body.toRequestBody(jsonMedia))
-                    rb.header("Accept-Encoding", "identity")
-                } else {
-                    rb.get()
-                rb.header("Accept-Encoding", "identity")
-                }
-                client.newCall(rb.build()).execute().use { res ->
-                    when {
-                        res.code == 429 || res.code >= 500 -> {
-                            if (attempt < maxRetries) {
-                                val ra = res.header("retry-after")?.toLongOrNull()?.times(1000) ?: 0L
-                                Thread.sleep(if (ra > 0) minOf(ra, 8000) else RETRY_DELAYS[attempt])
-                                attempt++
-                                return@use ""
-                            }
-                            throw ApiException(
-                                if (res.code == 429) "Слишком много запросов — попробуйте чуть позже"
-                                else "Сервер временно недоступен (${res.code})",
-                                res.code
-                            )
-                        }
-                        !res.isSuccessful -> throw ApiException(
-                            if (res.code == 404) "Не найдено" else "Ошибка API (${res.code})",
-                            res.code
-                        )
+                connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection)
+                connection.requestMethod = if (policy.body != null) "POST" else "GET"
+                connection.connectTimeout = 12000
+                connection.readTimeout = 22000
+                connection.useCaches = true
+                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("User-Agent", "AniBeat/2.0 (Android; Anime music player)")
+                val body = policy.body
+                if (body != null) {
+                    val payload = body.toByteArray(Charsets.UTF_8)
+                    connection.doOutput = true
+                    connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    connection.setFixedLengthStreamingMode(payload.size)
+                    connection.outputStream.use { out ->
+                        out.write(payload)
+                        out.flush()
                     }
-                    return decodeBody(res.body?.bytes() ?: ByteArray(0), res.header("Content-Encoding"))
                 }
-                // loop continues only after a retryable sleep above
-                continue
+                val code = connection.responseCode
+                if (code == 429 || code >= 500) {
+                    if (attempt < maxRetries) {
+                        val ra = connection.getHeaderField("retry-after")?.toLongOrNull()?.times(1000) ?: 0L
+                        Thread.sleep(if (ra > 0) minOf(ra, 8000) else RETRY_DELAYS[attempt])
+                        attempt++
+                        continue
+                    }
+                    throw ApiException(
+                        if (code == 429) "Слишком много запросов — попробуйте чуть позже"
+                        else "Сервер временно недоступен ($code)",
+                        code
+                    )
+                }
+                val input = if (code in 200..299) connection.inputStream else connection.errorStream
+                val text = readPlain(input, connection.getHeaderField("Content-Encoding"))
+                if (code < 200 || code >= 300) throw ApiException("Ошибка API ($code)", code)
+                return text
             } catch (e: ApiException) {
                 throw e
             } catch (e: Exception) {
@@ -248,8 +242,17 @@ class HttpEngine @Inject constructor(
                 val err = e.javaClass.simpleName + (e.message?.let { ": $it" } ?: "")
                 android.util.Log.e("AniBeatHttp", "fetch failed: $url", e)
                 throw ApiException("Сервер не отвечает ($err)")
+            } finally {
+                connection?.disconnect()
             }
         }
+    }
+
+    /** v1 read() semantics + safety-net decode if a hop compressed the body anyway. */
+    private fun readPlain(input: java.io.InputStream?, encoding: String?): String {
+        if (input == null) return ""
+        val bytes = input.use { it.readBytes() }
+        return decodeBody(bytes, encoding)
     }
 
     private fun readDisk(key: String): Entry? = try {
