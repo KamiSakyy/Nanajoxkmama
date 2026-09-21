@@ -20,9 +20,9 @@ android {
 dependencies {
     api(project(":core:model"))
     api(project(":core:common"))
-    implementation(libs.coroutines.core)
+    api(libs.coroutines.core)
     implementation(libs.coroutines.android)
-    implementation(libs.okhttp)
+    api(libs.okhttp)
     implementation(libs.javax.inject)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)

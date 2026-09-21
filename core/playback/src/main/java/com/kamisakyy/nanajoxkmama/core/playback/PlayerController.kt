@@ -101,8 +101,9 @@ class PlayerController @Inject constructor(
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
-                reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK_TO_NEXT ||
-                reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK_TO_PREVIOUS
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK ||
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED ||
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_SKIP
             ) {
                 val id = mediaItem?.mediaId
                 val idx = _state.value.queue.indexOfFirst { it.id == id }
