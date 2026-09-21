@@ -229,5 +229,10 @@ class MetaApi @Inject constructor(
 }
 
 private fun kotlinx.coroutines.GlobalScope.launchSafe(block: suspend kotlinx.coroutines.CoroutineScope.() -> Unit) {
-    kotlinx.coroutines.launch(kotlinx.coroutines.Dispatchers.IO) { try { block() } catch (_: Exception) { } }
+    kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        try {
+            block()
+        } catch (_: Exception) {
+        }
+    }
 }
