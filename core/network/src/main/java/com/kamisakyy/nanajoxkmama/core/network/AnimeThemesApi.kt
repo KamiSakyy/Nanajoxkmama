@@ -1,6 +1,10 @@
 package com.kamisakyy.nanajoxkmama.core.network
 
 import com.kamisakyy.nanajoxkmama.core.common.ApiException
+import com.kamisakyy.nanajoxkmama.core.common.DAY_MS
+import com.kamisakyy.nanajoxkmama.core.common.HOUR_MS
+import com.kamisakyy.nanajoxkmama.core.common.MINUTE_MS
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -241,7 +245,12 @@ class AnimeThemesApi @Inject constructor(
                 chunk.forEach { idCache.putIfAbsent(it, (null to null)) }
             } catch (_: Exception) { }
         }
-        return slugs.mapNotNull { s -> idCache[s]?.let { s to it } }.toMap()
+        val outMap = LinkedHashMap<String, Pair<Int?, Int?>>()
+        for (sl in slugs) {
+            val v = idCache[sl]
+            if (v != null) outMap[sl] = v
+        }
+        return outMap
     }
 
     suspend fun attachIds(tracks: List<Track>): List<Track> {
@@ -420,10 +429,10 @@ class AnimeThemesApi @Inject constructor(
         return Paged(items, hasMore, page)
     }
 
-    suspend fun getSeasonTracks(year: Int, season: String): List<Track> {
+    suspend fun getSeasonTracks(year: Int, season: String?): List<Track> {
         val d = http.getJson(url("/anime", buildMap {
             put("filter[year]", year)
-            put("filter[season]", season)
+            if (season != null) put("filter[season]", season)
             put("filter[has]", "animethemes")
             put("include", ANIME_THEMES_INCLUDE)
             put("sort", "name")
