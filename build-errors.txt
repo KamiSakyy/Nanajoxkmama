@@ -1,0 +1,81 @@
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+--
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:235:17 Unresolved reference 'Row'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:238:26 Unresolved reference 'clip'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:246:60 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:248:34 Unresolved reference 'clip'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:249:68 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:250:34 Unresolved reference 'clickable'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:270:13 Unresolved reference 'Spacer'.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789993682588.json
+
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+----- tail -----
+> Task :feature:settings:bundleReleaseLocalLintAar
+> Task :feature:home:lintVitalAnalyzeRelease
+> Task :feature:library:lintVitalAnalyzeRelease
+> Task :feature:details:lintVitalAnalyzeRelease
+> Task :feature:details:generateReleaseLintVitalModel
+> Task :feature:library:generateReleaseLintVitalModel
+> Task :feature:player:generateReleaseLintVitalModel
+> Task :feature:search:generateReleaseLintVitalModel
+> Task :feature:settings:generateReleaseLintVitalModel
+> Task :feature:browse:bundleReleaseAar
+> Task :feature:browse:assembleRelease
+> Task :feature:details:bundleReleaseAar
+> Task :feature:details:assembleRelease
+> Task :feature:home:bundleReleaseAar
+> Task :feature:home:assembleRelease
+> Task :feature:library:bundleReleaseAar
+> Task :feature:library:assembleRelease
+> Task :feature:player:bundleReleaseAar
+> Task :feature:player:assembleRelease
+> Task :feature:settings:lintVitalAnalyzeRelease
+> Task :feature:search:bundleReleaseAar
+> Task :feature:search:assembleRelease
+> Task :feature:settings:bundleReleaseAar
+> Task :feature:settings:assembleRelease
+> Task :feature:search:lintVitalAnalyzeRelease
+> Task :app:kspReleaseKotlin
+
+> Task :app:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:235:17 Unresolved reference 'Row'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:238:26 Unresolved reference 'clip'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:246:60 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:248:34 Unresolved reference 'clip'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:249:68 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:250:34 Unresolved reference 'clickable'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:270:13 Unresolved reference 'Spacer'.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789993682588.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 3m 1s
+567 actionable tasks: 493 executed, 74 from cache
+[skip ci]
