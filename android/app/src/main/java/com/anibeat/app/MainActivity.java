@@ -273,16 +273,16 @@ public class MainActivity extends AppCompatActivity implements Host {
         if (tabs[index] == null) {
             switch (index) {
                 case 0:
-                    tabs[index] = new HomeScreen(this);
+                    tabs[index] = new HomeScreen(this, this);
                     break;
                 case 1:
-                    tabs[index] = new SearchScreen(this);
+                    tabs[index] = new SearchScreen(this, this);
                     break;
                 case 2:
-                    tabs[index] = new BrowseScreen(this);
+                    tabs[index] = new BrowseScreen(this, this);
                     break;
                 default:
-                    tabs[index] = new LibraryScreen(this);
+                    tabs[index] = new LibraryScreen(this, this);
                     break;
             }
         }
@@ -515,7 +515,7 @@ public class MainActivity extends AppCompatActivity implements Host {
             toast("Не удалось определить аниме");
             return;
         }
-        push(new AnimeScreen(this, anime.slug), true);
+        push(new AnimeScreen(this, this, anime.slug), true);
     }
 
     @Override
@@ -525,7 +525,7 @@ public class MainActivity extends AppCompatActivity implements Host {
             toast("Не удалось определить исполнителя");
             return;
         }
-        push(new ArtistScreen(this, artist.slug), true);
+        push(new ArtistScreen(this, this, artist.slug), true);
     }
 
     @Override
@@ -541,12 +541,12 @@ public class MainActivity extends AppCompatActivity implements Host {
     @Override
     public void openPlaylist(Models.Playlist playlist) {
         if (playlist == null) return;
-        push(new PlaylistScreen(this, playlist.id), true);
+        push(new PlaylistScreen(this, this, playlist.id), true);
     }
 
     @Override
     public void openYear(int year) {
-        push(new YearScreen(this, year), true);
+        push(new YearScreen(this, this, year), true);
     }
 
     @Override

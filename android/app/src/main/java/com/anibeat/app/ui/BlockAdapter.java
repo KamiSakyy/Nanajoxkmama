@@ -318,8 +318,9 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                     chip.setText(labelText);
                     chip.setCheckable(true);
                     chip.setChecked(selected);
-                    chip.setChipStrokeWidth(0f);
-                    chip.setChipBackgroundColor(ColorStateList.valueOf(selected ? Theme.ACCENT_CONTAINER : Theme.SURFACE_3));
+                    int fill = selected ? Theme.ACCENT_CONTAINER : Theme.SURFACE_3;
+                    chip.setChipBackgroundColor(ColorStateList.valueOf(fill));
+                    chip.setChipStrokeColor(ColorStateList.valueOf(fill));
                     chip.setTextColor(selected ? Theme.ACCENT : Theme.ON_VARIANT);
                     chip.setTextSize(12.5f);
                     chip.setEnsureMinTouchTargetSize(false);
