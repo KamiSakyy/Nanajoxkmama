@@ -348,37 +348,21 @@ public final class Downloads {
     private static void saveToPublicDownloads(File source, String name) {
         try {
             if (android.os.Build.VERSION.SDK_INT >= 29) {
-                // Scoped storage: прямая запись по пути запрещена, пишем через MediaStore.
-                android.content.ContentValues values = new android.content.ContentValues();
-                values.put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name);
-                values.put(android.provider.MediaStore.Downloads.MIME_TYPE, mimeFor(name));
-                values.put(android.provider.MediaStore.Downloads.IS_PENDING, 1);
-                Uri uri = context.getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                if (uri == null) return;
-                java.io.OutputStream out = context.getContentResolver().openOutputStream(uri);
-                if (out == null) return;
-                try (InputStream in = new java.io.FileInputStream(source)) {
-                    byte[] buf = new byte[65536];
-                    int n;
-                    while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
-                } finally {
-                    out.close();
-                }
-                values.clear();
-                values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0);
-                context.getContentResolver().update(uri, values, null, null);
-            } else {
-                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                if (!dir.exists() && !dir.mkdirs()) return;
-                File target = new File(dir, name);
-                try (InputStream in = new java.io.FileInputStream(source); FileOutputStream out = new FileOutputStream(target)) {
-                    byte[] buf = new byte[65536];
-                    int n;
-                    while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
-                }
-                MediaScannerConnection.scanFile(context, new String[]{target.getAbsolutePath()}, null, null);
+                // На новых Android запись идёт через MediaStore (отдельный класс — только API 29+).
+                DownloadsPublic.save(context, source, name, mimeFor(name));
+                return;
             }
-        } catch (Exception ignored) {
+            File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            if (!dir.exists() && !dir.mkdirs()) return;
+            File target = new File(dir, name);
+            try (InputStream in = new java.io.FileInputStream(source); FileOutputStream out = new FileOutputStream(target)) {
+                byte[] buf = new byte[65536];
+                int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            }
+            MediaScannerConnection.scanFile(context, new String[]{target.getAbsolutePath()}, null, null);
+        } catch (Throwable t) {
+            com.anibeat.app.core.Ui.report(t);
         }
     }
 
