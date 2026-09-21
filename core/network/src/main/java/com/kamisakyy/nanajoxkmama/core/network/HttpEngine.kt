@@ -158,8 +158,10 @@ class HttpEngine @Inject constructor(
                 val rb = Request.Builder().url(url)
                 if (policy.body != null) {
                     rb.post(policy.body.toRequestBody(jsonMedia))
+                    rb.header("Accept-Encoding", "identity")
                 } else {
                     rb.get()
+                rb.header("Accept-Encoding", "identity")
                 }
                 client.newCall(rb.build()).execute().use { res ->
                     when {
