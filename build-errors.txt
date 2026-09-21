@@ -1,0 +1,75 @@
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:mergeReleaseArtProfile
+--
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/playback/src/main/java/com/kamisakyy/nanajoxkmama/core/playback/PlayerController.kt:106:34 Unresolved reference 'MEDIA_ITEM_TRANSITION_REASON_SKIP'.
+
+> Task :core:playback:compileReleaseKotlin FAILED
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:playback:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+----- tail -----
+> Task :core:network:extractReleaseAnnotations
+> Task :core:network:mergeReleaseConsumerProguardFiles
+> Task :core:network:mergeReleaseJavaResource
+> Task :core:database:extractReleaseAnnotations
+> Task :core:database:mergeReleaseConsumerProguardFiles
+> Task :core:database:mergeReleaseJavaResource
+> Task :core:database:syncReleaseLibJars
+> Task :core:database:bundleReleaseLocalLintAar
+> Task :core:network:syncReleaseLibJars
+> Task :core:network:bundleReleaseLocalLintAar
+> Task :feature:browse:mergeReleaseResources
+> Task :core:database:generateReleaseLintVitalModel
+> Task :core:network:generateReleaseLintVitalModel
+> Task :core:database:bundleReleaseAar
+> Task :core:database:assembleRelease
+> Task :core:network:bundleReleaseAar
+> Task :core:network:assembleRelease
+> Task :core:database:compileReleaseLibraryResources FROM-CACHE
+> Task :core:network:compileReleaseLibraryResources FROM-CACHE
+> Task :core:playback:kspReleaseKotlin
+> Task :core:playback:verifyReleaseResources
+> Task :feature:player:compileReleaseLibraryResources FROM-CACHE
+> Task :core:database:lintVitalAnalyzeRelease
+> Task :feature:details:mapReleaseSourceSetPaths
+> Task :feature:browse:verifyReleaseResources
+> Task :feature:home:mapReleaseSourceSetPaths
+> Task :feature:details:mergeReleaseResources
+
+> Task :core:playback:compileReleaseKotlin
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/playback/src/main/java/com/kamisakyy/nanajoxkmama/core/playback/PlayerController.kt:106:34 Unresolved reference 'MEDIA_ITEM_TRANSITION_REASON_SKIP'.
+
+> Task :core:playback:compileReleaseKotlin FAILED
+> Task :feature:home:mergeReleaseResources
+> Task :feature:details:verifyReleaseResources
+> Task :core:network:lintVitalAnalyzeRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789988460860.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:playback:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m 25s
+402 actionable tasks: 329 executed, 73 from cache
+[skip ci]
