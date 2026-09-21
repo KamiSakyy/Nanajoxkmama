@@ -67,22 +67,13 @@ class HttpEngine @Inject constructor(
     private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO)
     private val jsonMedia = "application/json".toMediaType()
 
+    // Official OkHttp 5.5.0 — stock configuration, timeouts only. No custom hacks.
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .writeTimeout(20, TimeUnit.SECONDS)
-            .callTimeout(40, TimeUnit.SECONDS)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .connectionPool(okhttp3.ConnectionPool(8, 5, TimeUnit.MINUTES))
-            .addInterceptor { chain ->
-                chain.proceed(
-                    chain.request().newBuilder()
-                        .header("Accept", "application/json")
-                        .header("User-Agent", "AniBeat/2.0 (Android)")
-                        .build()
-                )
-            }
             .build()
     }
 
@@ -202,7 +193,9 @@ class HttpEngine @Inject constructor(
                     attempt++
                     continue
                 }
-                throw ApiException("Сервер не отвечает. Проверьте соединение")
+                val err = e.javaClass.simpleName + (e.message?.let { ": $it" } ?: "")
+                android.util.Log.e("AniBeatHttp", "fetch failed: $url", e)
+                throw ApiException("Сервер не отвечает ($err)")
             }
         }
     }

@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -227,26 +228,46 @@ fun AppShell(np: NowPlayingViewModel) {
                 )
             }
 
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
-                tabs.forEach { t ->
-                    NavigationBarItem(
-                        selected = tab == t.route,
-                        onClick = {
-                            tab = t.route
-                            nav.navigate(t.route) {
-                                popUpTo(nav.graph.id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(t.icon, contentDescription = t.label) },
-                        label = { Text(t.label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        ),
-                    )
+            // iOS-style floating dock
+            androidx.compose.foundation.layout.Box(
+                Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 10.dp),
+            ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(28.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    tabs.forEach { t ->
+                        val sel = tab == t.route
+                        androidx.compose.foundation.layout.Box(
+                            Modifier
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
+                                .background(if (sel) MaterialTheme.colorScheme.surfaceContainerHighest else androidx.compose.ui.graphics.Color.Transparent)
+                                .clickable(interactionSource = androidx.compose.foundation.interaction.MutableInteractionSource(), indication = androidx.compose.material3.ripple()) {
+                                    tab = t.route
+                                    nav.navigate(t.route) {
+                                        popUpTo(nav.graph.id) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                t.icon,
+                                contentDescription = t.label,
+                                tint = if (sel) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
+            Spacer(Modifier.windowInsetsPadding(WindowInsets.navigationBars.only(androidx.compose.foundation.layout.WindowInsetsSides.Bottom)))
         }
 
         // full player window — overlay with slide-up motion

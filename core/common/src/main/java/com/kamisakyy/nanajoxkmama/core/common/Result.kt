@@ -16,9 +16,10 @@ inline fun <T> runApi(block: () -> T): ApiResult<T> = try {
 } catch (e: ApiException) {
     ApiResult.Err(e.message ?: "Ошибка", e.status)
 } catch (e: java.io.IOException) {
-    ApiResult.Err("Нет подключения к интернету")
+    ApiResult.Err("Нет подключения (${e.javaClass.simpleName}: ${e.message})")
 } catch (e: Exception) {
-    ApiResult.Err("Сервер не отвечает. Проверьте соединение")
+    android.util.Log.e("AniBeatApi", "api failed", e)
+    ApiResult.Err("Ошибка (${e.javaClass.simpleName}: ${e.message})")
 }
 
 class ApiException(message: String, val status: Int = 0) : Exception(message)
