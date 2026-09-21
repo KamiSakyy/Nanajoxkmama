@@ -76,14 +76,18 @@ jobs:
             exit $STATUS
           fi
 
-      - name: Upload build log on failure
+      - name: Commit build errors for debugging
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          if-no-files-found: ignore
-          retention-days: 7
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -E "error:|\.java:|FAILURE|Execution failed|What went wrong" build.log | head -80 > build-errors.txt || true
+          [ -s build-errors.txt ] || tail -n 80 build.log > build-errors.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add build-errors.txt
+          git commit -m "ci: build errors [skip ci]" || true
+          git push || true
 
       - name: Prepare release handoff
         run: |
