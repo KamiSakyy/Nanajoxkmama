@@ -304,7 +304,7 @@ public final class ApiClient {
         p.put("filter[has]", "animethemeentries.videos");
         if (type != null && !type.isEmpty()) p.put("filter[type]", type);
         JSONObject root = HttpCache.getJson(ANIME_THEMES + "/animetheme" + query(p),
-                new HttpCache.Policy().fresh(0).maxAge(2 * HttpCache.DAY).noStore());
+                new HttpCache.Policy().ttl(0).fresh(0).maxAge(2 * HttpCache.DAY).noStore());
         ArrayList<Track> out = themesToTracks(root.optJSONArray("animethemes"), false, count);
         MetaApi.warmTracks(out);
         return out;
@@ -738,7 +738,7 @@ public final class ApiClient {
 
     public static ArrayList<Track> randomAnisongs() throws IOException {
         JSONArray list = HttpCache.getArray(ANISONG_DB + "/get_50_random_songs",
-                new HttpCache.Policy().body("{}").noStore().timeout(15000));
+                new HttpCache.Policy().ttl(0).body("{}").noStore().timeout(15000));
         return anisongArrayToTracks(list, 50);
     }
 
