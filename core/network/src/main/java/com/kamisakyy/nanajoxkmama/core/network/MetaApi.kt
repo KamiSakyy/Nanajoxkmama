@@ -239,7 +239,9 @@ class MetaApi @Inject constructor(
         val ids = malIds.filterNotNull().distinct().take(8)
         if (ids.isNotEmpty()) {
             kotlinx.coroutines.withTimeoutOrNull(budgetMs) {
-                ids.map { id -> async { com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchShikiDetails(id) } } }.awaitAll()
+                for (id in ids) {
+                    com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchShikiDetails(id) }
+                }
             }
         }
         warm(malIds)
