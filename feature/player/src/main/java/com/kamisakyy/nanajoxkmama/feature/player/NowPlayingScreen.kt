@@ -151,7 +151,7 @@ fun NowPlayingScreen(
             val scale by animateFloatAsState(if (big) 1.04f else 1f, tween(400), label = "art")
             androidx.compose.foundation.layout.Box(
                 Modifier.fillMaxWidth(),
-                contentAlignment = androidx.compose.foundation.layout.Alignment.Center,
+                contentAlignment = androidx.compose.ui.Alignment.Center,
             ) {
                 Artwork(
                     track.cover ?: track.coverSmall,
@@ -164,7 +164,7 @@ fun NowPlayingScreen(
                     com.kamisakyy.nanajoxkmama.core.design.VideoThumb(
                         track.videoUrl,
                         Modifier
-                            .align(androidx.compose.foundation.layout.Alignment.BottomEnd)
+                            .align(androidx.compose.ui.Alignment.BottomEnd)
                             .padding(28.dp)
                             .size(92.dp),
                         RoundedCornerShape(16.dp),
