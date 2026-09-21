@@ -22,7 +22,24 @@ public class PlaybackService extends MediaSessionService {
     @Override
     public void onCreate() {
         super.onCreate();
+        // Источник данных с кэшем: предзагруженный трек играет сразу, без ожидания сети.
+        androidx.media3.datasource.DataSource.Factory upstream = new androidx.media3.datasource.DefaultDataSource.Factory(this);
+        androidx.media3.datasource.cache.SimpleCache mediaCache = MediaCache.get(this);
+        androidx.media3.exoplayer.source.MediaSource.Factory sourceFactory;
+        if (mediaCache != null) {
+            androidx.media3.datasource.cache.CacheDataSource.Factory cacheFactory =
+                    new androidx.media3.datasource.cache.CacheDataSource.Factory()
+                            .setCache(mediaCache)
+                            .setCacheKeyFactory(MediaCache.KEY_FACTORY)
+                            .setUpstreamDataSourceFactory(upstream)
+                            .setFlags(androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR);
+            sourceFactory = new androidx.media3.exoplayer.source.DefaultMediaSourceFactory(cacheFactory);
+        } else {
+            sourceFactory = new androidx.media3.exoplayer.source.DefaultMediaSourceFactory(upstream);
+        }
+
         player = new ExoPlayer.Builder(this)
+                .setMediaSourceFactory(sourceFactory)
                 .setAudioAttributes(new AudioAttributes.Builder()
                         .setUsage(C.USAGE_MEDIA)
                         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)

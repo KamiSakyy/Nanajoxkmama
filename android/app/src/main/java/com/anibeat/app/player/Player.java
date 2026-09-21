@@ -85,6 +85,8 @@ public final class Player {
             controller.addListener(new androidx.media3.common.Player.Listener() {
                 @Override
                 public void onIsPlayingChanged(boolean isPlaying) {
+                    if (isPlaying) schedulePreload();
+                    else PRELOAD_HANDLER.removeCallbacks(PRELOAD);
                     emit();
                 }
 
@@ -96,6 +98,7 @@ public final class Player {
                     if (track != null && controller != null && controller.getPlayWhenReady() && reason != androidx.media3.common.Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) {
                         Library.addToHistory(track);
                     }
+                    schedulePreload();
                     emit();
                 }
 
@@ -130,6 +133,45 @@ public final class Player {
 
     public static boolean isReady() {
         return controller != null;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Подготовка следующего трека (как «Готовить следующий трек» на сайте) */
+    /* ------------------------------------------------------------------ */
+
+    private static final android.os.Handler PRELOAD_HANDLER =
+            new android.os.Handler(android.os.Looper.getMainLooper());
+    private static final java.util.concurrent.ExecutorService PRELOAD_POOL =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
+    private static String preloadedUrl = "";
+    private static final Runnable PRELOAD = Player::prepareNext;
+
+    /** Планирует подготовку следующего трека через 6 секунд после начала воспроизведения. */
+    private static void schedulePreload() {
+        PRELOAD_HANDLER.removeCallbacks(PRELOAD);
+        if (!Settings.preloadNext || Settings.dataSaver || videoMode) return;
+        if (!isPlaying()) return;
+        PRELOAD_HANDLER.postDelayed(PRELOAD, 6000);
+    }
+
+    private static void prepareNext() {
+        if (!Settings.preloadNext || Settings.dataSaver || videoMode || !isPlaying()) return;
+        Models.Track now = current();
+        List<Models.Track> list = queue();
+        if (now == null || list.isEmpty()) return;
+        int at = index();
+        Models.Track next = null;
+        if (at + 1 < list.size()) next = list.get(at + 1);
+        else if ("all".equals(repeat)) next = list.get(0);
+        if (next == null || next.id.equals(now.id)) return;
+        if (Downloads.hasOffline(next.id, videoMode ? Downloads.KIND_VIDEO : Downloads.KIND_AUDIO)) return;
+        String url = videoMode ? next.videoUrl : next.audioUrl;
+        if (url == null || url.isEmpty()) url = next.audioUrl;
+        if (url == null || url.isEmpty() || url.equals(preloadedUrl)) return;
+        final String target = url;
+        final android.content.Context context = appContext;
+        preloadedUrl = target;
+        PRELOAD_POOL.execute(() -> MediaCache.preload(context, target));
     }
 
     public static void addListener(Listener l) {
@@ -524,6 +566,7 @@ public final class Player {
         controller.prepare();
         if (play) {
             controller.play();
+            schedulePreload();
             Models.Track t = current();
             if (t != null) Library.addToHistory(t);
         }
