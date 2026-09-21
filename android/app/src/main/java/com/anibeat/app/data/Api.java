@@ -22,6 +22,27 @@ import java.util.HashSet;
  */
 public final class Api {
 
+    /** Склейка слагов через запятую. StringBuilder вместо String.join: String.join есть только с Android 8.0. */
+    private static String csv(List<String> values) {
+        if (values == null || values.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append(values.get(i));
+        }
+        return sb.toString();
+    }
+
+    private static String csv(String[] values) {
+        if (values == null || values.length == 0) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(values[i]);
+        }
+        return sb.toString();
+    }
+
     public interface Cb<T> {
         void on(T value, String error);
     }
@@ -300,7 +321,7 @@ public final class Api {
         }
         List<String> chunk = need.subList(0, Math.min(80, need.size()));
         String url = Net.buildUrl(BASE, "/anime", params(
-                "filter[slug]", String.join(",", chunk),
+                "filter[slug]", csv(chunk),
                 "include", "resources",
                 "fields[anime]", "id,slug",
                 "fields[resource]", "site,link,external_id",
@@ -610,7 +631,7 @@ public final class Api {
             return;
         }
         String url = Net.buildUrl(BASE, "/anime", fields(params(
-                "filter[slug]", String.join(",", slugs),
+                "filter[slug]", csv(slugs),
                 "include", ANIME_LIST_INCLUDE,
                 "page[size]", 100), FR));
         Net.get(url, Net.DAY, 30 * Net.DAY, (json, error) -> {
@@ -635,7 +656,7 @@ public final class Api {
             return;
         }
         String url = Net.buildUrl(BASE, "/artist", fields(params(
-                "filter[slug]", String.join(",", slugs),
+                "filter[slug]", csv(slugs),
                 "include", "images",
                 "page[size]", 100), F));
         Net.get(url, Net.DAY, 30 * Net.DAY, (json, error) -> {
@@ -660,7 +681,7 @@ public final class Api {
             return;
         }
         String url = Net.buildUrl(BASE, "/anime", fields(params(
-                "filter[slug]", String.join(",", slugs),
+                "filter[slug]", csv(slugs),
                 "include", ANIME_THEMES_INCLUDE,
                 "page[size]", 100), FR));
         Net.get(url, Net.DAY, 30 * Net.DAY, (json, error) -> {
