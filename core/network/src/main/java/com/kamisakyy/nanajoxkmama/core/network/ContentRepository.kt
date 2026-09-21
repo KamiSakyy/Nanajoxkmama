@@ -60,11 +60,12 @@ class ContentRepository @Inject constructor(
                     animethemes.getSeasonAnime(y, null, 1).items.firstOrNull()?.cover
                 }
             } }
-            val fr = fresh.await(); val lr = latest.await()
-            val rr = kotlinx.coroutines.withTimeoutOrNull(5000) { random.await() }
-            val sr = kotlinx.coroutines.withTimeoutOrNull(5000) { season.await() }
-            val mc = kotlinx.coroutines.withTimeoutOrNull(4000) { mixCovers.await() }
-            val dc = kotlinx.coroutines.withTimeoutOrNull(4000) { decadeCovers.await() }
+            val fr: Result<List<Track>> = fresh.await()
+            val lr: Result<List<Track>> = latest.await()
+            val rr: Result<List<Track>>? = kotlinx.coroutines.withTimeoutOrNull(5000) { random.await() }
+            val sr: Result<List<Track>>? = kotlinx.coroutines.withTimeoutOrNull(5000) { season.await() }
+            val mc: Result<Map<String, String?>>? = kotlinx.coroutines.withTimeoutOrNull(4000) { mixCovers.await() }
+            val dc: Result<Map<Int, String?>>? = kotlinx.coroutines.withTimeoutOrNull(4000) { decadeCovers.await() }
             val errs = ArrayList<Throwable>()
             fr.exceptionOrNull()?.let { errs.add(it) }
             lr.exceptionOrNull()?.let { errs.add(it) }
@@ -73,13 +74,13 @@ class ContentRepository @Inject constructor(
             mc?.exceptionOrNull()?.let { errs.add(it) }
             dc?.exceptionOrNull()?.let { errs.add(it) }
             val feed = HomeFeed(
-                fresh = fr.getOrNull() ?: emptyList(),
-                random = rr?.getOrNull() ?: emptyList(),
-                latest = lr.getOrNull() ?: emptyList(),
-                season = sr?.getOrNull() ?: emptyList(),
+                fresh = fr.getOrNull() ?: emptyList<Track>(),
+                random = rr?.getOrNull() ?: emptyList<Track>(),
+                latest = lr.getOrNull() ?: emptyList<Track>(),
+                season = sr?.getOrNull() ?: emptyList<Track>(),
                 mixes = Curated.MIXES,
-                mixCovers = mc?.getOrNull() ?: emptyMap(),
-                decadeCovers = dc?.getOrNull() ?: emptyMap(),
+                mixCovers = mc?.getOrNull() ?: emptyMap<String, String?>(),
+                decadeCovers = dc?.getOrNull() ?: emptyMap<Int, String?>(),
             )
             if (feed.fresh.isEmpty() && feed.random.isEmpty() && feed.latest.isEmpty() &&
                 feed.season.isEmpty() && feed.mixCovers.isEmpty() && feed.decadeCovers.isEmpty() && errs.isNotEmpty()
