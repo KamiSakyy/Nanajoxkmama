@@ -716,12 +716,16 @@ public final class ApiClient {
             } catch (Exception ignored) { }
         }
         if (list == null || list.length() == 0) {
-            JSONObject body = new JSONObject();
-            body.put("anime_search_filter", obj("search", name, "partial_match", false));
-            body.put("and_logic", false);
-            addAnisongFilters(body);
-            list = HttpCache.getArray(ANISONG_DB + "/search_request",
-                    new HttpCache.Policy().body(body.toString()).fresh(7 * HttpCache.DAY).maxAge(30 * HttpCache.DAY).timeout(15000));
+            try {
+                JSONObject body = new JSONObject();
+                body.put("anime_search_filter", obj("search", name, "partial_match", false));
+                body.put("and_logic", false);
+                addAnisongFilters(body);
+                list = HttpCache.getArray(ANISONG_DB + "/search_request",
+                        new HttpCache.Policy().body(body.toString()).fresh(7 * HttpCache.DAY).maxAge(30 * HttpCache.DAY).timeout(15000));
+            } catch (Exception e) {
+                throw new IOException("AnisongDB недоступен", e);
+            }
         }
         ArrayList<Track> tracks = anisongArrayToTracks(list, 200);
         java.util.Collections.sort(tracks, (a, b) -> {
