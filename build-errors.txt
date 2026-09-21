@@ -2,28 +2,9 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 
 > Task :app:extractReleaseNativeSymbolTables
 --
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:64:87 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:64:87 Not enough information to infer type argument for 'T'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:65:87 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:65:87 Not enough information to infer type argument for 'T'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:66:90 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:66:90 Not enough information to infer type argument for 'K'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:66:90 Not enough information to infer type argument for 'V'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:67:93 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:67:93 Not enough information to infer type argument for 'K'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:67:93 Not enough information to infer type argument for 'V'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:68:55 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:68:71 Unresolved reference 'exceptionOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:71:29 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:73:29 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:75:32 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:76:35 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:79:106 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:79:106 Not enough information to infer type argument for 'T'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:80:21 Type mismatch: inferred type is 'ERROR CLASS: Cannot infer argument for type parameter R', but 'Throwable' was expected.
 e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:242:52 'fun <T> async(context: CoroutineContext = ..., start: CoroutineStart = ..., block: suspend CoroutineScope.() -> T): Deferred<T>' is deprecated. 'async' can not be called without the corresponding coroutine scope. Consider wrapping 'async' in 'coroutineScope { }', using 'runBlocking { }', or using some other 'CoroutineScope'.
 
-> Task :core:database:compileReleaseKotlin
+> Task :core:design:mergeReleaseJavaResource
 --
 FAILURE: Build failed with an exception.
 
@@ -31,6 +12,13 @@ FAILURE: Build failed with an exception.
 Execution failed for task ':core:network:compileReleaseKotlin'.
 > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
 ----- tail -----
+> Task :app:extractDeepLinksRelease FROM-CACHE
+
+> Task :app:processReleaseMainManifest
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/AndroidManifest.xml:10:5-79 Warning:
+	Element uses-permission#android.permission.ACCESS_NETWORK_STATE at AndroidManifest.xml:10:5-79 duplicated with element declared at AndroidManifest.xml:5:5-79
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/AndroidManifest.xml:11:5-68 Warning:
+	Element uses-permission#android.permission.WAKE_LOCK at AndroidManifest.xml:11:5-68 duplicated with element declared at AndroidManifest.xml:6:5-68
 /home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/AndroidManifest.xml:12:5-77 Warning:
 	Element uses-permission#android.permission.FOREGROUND_SERVICE at AndroidManifest.xml:12:5-77 duplicated with element declared at AndroidManifest.xml:7:5-77
 /home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/AndroidManifest.xml:13:5-92 Warning:
@@ -40,33 +28,26 @@ Execution failed for task ':core:network:compileReleaseKotlin'.
 
 > Task :app:processReleaseManifest
 > Task :app:processReleaseManifestForPackage
+> Task :core:design:generateReleaseLintModel
+> Task :app:processReleaseResources
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :core:design:extractReleaseAnnotations
+> Task :core:design:mergeReleaseConsumerProguardFiles
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
 
 > Task :core:network:compileReleaseKotlin FAILED
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:64:87 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:64:87 Not enough information to infer type argument for 'T'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:65:87 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:65:87 Not enough information to infer type argument for 'T'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:66:90 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:66:90 Not enough information to infer type argument for 'K'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:66:90 Not enough information to infer type argument for 'V'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:67:93 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:67:93 Not enough information to infer type argument for 'K'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:67:93 Not enough information to infer type argument for 'V'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:68:55 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:68:71 Unresolved reference 'exceptionOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:71:29 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:73:29 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:75:32 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:76:35 Unresolved reference 'getOrNull'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:79:106 Cannot infer type for this parameter. Specify it explicitly.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:79:106 Not enough information to infer type argument for 'T'.
-e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:80:21 Type mismatch: inferred type is 'ERROR CLASS: Cannot infer argument for type parameter R', but 'Throwable' was expected.
 e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:242:52 'fun <T> async(context: CoroutineContext = ..., start: CoroutineStart = ..., block: suspend CoroutineScope.() -> T): Deferred<T>' is deprecated. 'async' can not be called without the corresponding coroutine scope. Consider wrapping 'async' in 'coroutineScope { }', using 'runBlocking { }', or using some other 'CoroutineScope'.
 
+> Task :core:design:mergeReleaseJavaResource
+> Task :app:extractReleaseVersionControlInfo
 > Task :core:database:compileReleaseKotlin
-> Task :core:design:extractReleaseAnnotations
-> Task :app:processReleaseResources
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1790002770195.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1790003031838.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
 
@@ -89,6 +70,6 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD FAILED in 2m 7s
-308 actionable tasks: 239 executed, 69 from cache
+BUILD FAILED in 2m 3s
+326 actionable tasks: 253 executed, 73 from cache
 [skip ci]
