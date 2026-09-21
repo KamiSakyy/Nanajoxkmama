@@ -1,0 +1,106 @@
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+--
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:221:27 Unresolved reference 'ConcurrentHashMap'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:235:78 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:235:98 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:244:16 Return type mismatch: expected 'Map<String, Pair<Int?, Int?>>', actual 'Map<String, MatchGroup>'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:272:54 Unresolved reference 'MINUTE_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:272:72 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:300:54 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:300:75 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:318:53 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:318:74 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:353:59 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:364:50 Unresolved reference 'MINUTE_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:364:72 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:391:52 Unresolved reference 'MINUTE_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:391:67 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:391:87 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:415:49 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:415:70 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:432:49 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:432:70 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:446:45 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:446:65 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:465:45 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:465:65 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:479:45 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:479:65 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:498:49 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:498:69 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:57:52 Null cannot be a value of a non-null type 'String'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:159:43 Null cannot be a value of a non-null type 'String'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/HttpEngine.kt:13:16 Unresolved reference 'logging'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:232:24 'fun launch(context: CoroutineContext = ..., start: CoroutineStart = ..., block: suspend CoroutineScope.() -> Unit): Job' is deprecated. 'launch' can not be called without the corresponding coroutine scope. Consider wrapping 'launch' in 'coroutineScope { }', using 'runBlocking { }', or using some other 'CoroutineScope'.
+
+> Task :core:database:compileReleaseKotlin
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:network:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+----- tail -----
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:235:78 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:235:98 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:244:16 Return type mismatch: expected 'Map<String, Pair<Int?, Int?>>', actual 'Map<String, MatchGroup>'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:272:54 Unresolved reference 'MINUTE_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:272:72 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:300:54 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:300:75 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:318:53 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:318:74 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:353:59 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:364:50 Unresolved reference 'MINUTE_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:364:72 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:391:52 Unresolved reference 'MINUTE_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:391:67 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:391:87 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:415:49 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:415:70 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:432:49 Unresolved reference 'HOUR_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:432:70 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:446:45 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:446:65 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:465:45 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:465:65 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:479:45 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:479:65 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:498:49 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:498:69 Unresolved reference 'DAY_MS'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:57:52 Null cannot be a value of a non-null type 'String'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/ContentRepository.kt:159:43 Null cannot be a value of a non-null type 'String'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/HttpEngine.kt:13:16 Unresolved reference 'logging'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:232:24 'fun launch(context: CoroutineContext = ..., start: CoroutineStart = ..., block: suspend CoroutineScope.() -> Unit): Job' is deprecated. 'launch' can not be called without the corresponding coroutine scope. Consider wrapping 'launch' in 'coroutineScope { }', using 'runBlocking { }', or using some other 'CoroutineScope'.
+
+> Task :core:database:compileReleaseKotlin
+> Task :core:design:generateReleaseLintModel
+> Task :core:common:lintVitalAnalyzeRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789987653989.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:network:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m 7s
+324 actionable tasks: 255 executed, 69 from cache
+[skip ci]
