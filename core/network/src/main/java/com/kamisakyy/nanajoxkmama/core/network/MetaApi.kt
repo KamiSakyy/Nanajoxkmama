@@ -235,24 +235,19 @@ class MetaApi @Inject constructor(
         }
     }
 
-    suspend fun warmNow(malIds: List<Int?>, budgetMs: Long = 2500) {
-        val ids = malIds.filterNotNull().distinct().take(8)
-        if (ids.isNotEmpty()) {
-            kotlinx.coroutines.withTimeoutOrNull(budgetMs) {
-                for (id in ids) {
-                    com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchShikiDetails(id) }
-                }
+    /** ЛЕНИВО и ПАРАЛЛЕЛЬНО: максимум 3 Shikimori-запроса (для RU названий), без фоновой догрузки. */
+    suspend fun warmNow(malIds: List<Int?>, budgetMs: Long = 1500) {
+        val ids = malIds.filterNotNull().distinct().take(3)
+        if (ids.isEmpty()) return
+        kotlinx.coroutines.withTimeoutOrNull(budgetMs) {
+            kotlinx.coroutines.coroutineScope {
+                ids.map { id -> async { com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchShikiDetails(id) } } }.awaitAll()
             }
         }
-        warm(malIds)
     }
 
     fun warm(malIds: List<Int?>) {
-        warmScope.launch {
-            val ids = malIds.filterNotNull().distinct().take(24)
-            ids.map { id -> async { com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchShikiDetails(id) } } }.awaitAll()
-            com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchAniList(ids) }
-        }
+        // УБРАНО: фоновая догрузка 24 запросов + AniList жрала трафик. RU тянутся лениво в warmNow.
     }
 
     fun kindRu(kind: String?): String = if (kind == null) "" else KIND_RU[kind] ?: kind

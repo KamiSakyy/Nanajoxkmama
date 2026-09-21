@@ -67,7 +67,7 @@ class HttpEngine @Inject constructor(
         try {
             val base = context.cacheDir ?: return
             base.listFiles()?.forEach { f ->
-                if (f.isDirectory && (f.name == "http-cache" || f.name == "http-cache-v2")) f.deleteRecursively()
+                if (f.isDirectory && (f.name == "http-cache" || f.name == "http-cache-v2" || f.name == "http-cache-v3")) f.deleteRecursively()
             }
         } catch (_: Throwable) { }
     }
@@ -153,34 +153,15 @@ class HttpEngine @Inject constructor(
     }
 
     suspend fun getString(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): String {
+        // УЛЬТРА-ЭКОНОМИЯ ТРАФИКА: дискового кэша И фоновых перезапросов (SWR) БОЛЬШЕ НЕТ.
+        // Только памятный дедупликат в рамках сессии — 0 лишних сетевых запросов.
         val k = key(url, policy)
         val now = System.currentTimeMillis()
         if (!policy.refresh) {
             mem[k]?.let { if (now - it.ts < policy.ttl) return it.raw }
-            if (!policy.noStore) {
-                val disk = readDisk(k)
-                if (disk != null) {
-                    val age = now - disk.ts
-                    if (age < policy.maxAge) {
-                        mem[k] = disk
-                        if (age >= policy.fresh) {
-                            Thread {
-                                try {
-                                    val fresh = fetch(url, policy)
-                                    mem[k] = Entry(System.currentTimeMillis(), fresh)
-                                    writeDisk(k, fresh)
-                                } catch (_: Throwable) { }
-                            }.start()
-                        }
-                        return disk.raw
-                    }
-                }
-            }
         }
         val result = withContext(kotlinx.coroutines.Dispatchers.IO) { fetch(url, policy) }
-        val e = Entry(System.currentTimeMillis(), result)
-        mem[k] = e
-        if (!policy.noStore) writeDisk(k, result)
+        mem[k] = Entry(System.currentTimeMillis(), result)
         return result
     }
 

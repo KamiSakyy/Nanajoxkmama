@@ -171,47 +171,26 @@ private fun Modifier.combinedClickableNoIndication(onClick: () -> Unit): Modifie
 }
 
 @Composable
-fun Artwork(url: String?, modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(12.dp)) {
+fun Artwork(
+    url: String?,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(12.dp),
+    maxPx: Int = 640,
+) {
+    // ЭКОНОМИЯ: декодируем максимум maxPx px — обложки больше не грузятся в полный размер.
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val model = remember(url, maxPx) {
+        coil3.request.ImageRequest.Builder(ctx)
+            .data(url)
+            .size(maxPx, maxPx)
+            .build()
+    }
     AsyncImage(
-        model = url,
+        model = model,
         contentDescription = null,
         modifier = modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
     )
-}
-
-/** Video preview frame (site hover-preview parity) — lazy frame grab + crossfade. */
-@Composable
-fun VideoThumb(
-    url: String?,
-    modifier: Modifier = Modifier,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(12.dp),
-) {
-    val bmp by produceState<android.graphics.Bitmap?>(initialValue = null, url) {
-        if (url != null) {
-            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                runCatching {
-                    val r = android.media.MediaMetadataRetriever()
-                    r.setDataSource(url, java.util.HashMap<String, String>())
-                    val b = r.getFrameAtTime(800_000, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                    r.release()
-                    b
-                }.getOrNull()
-            }
-        }
-    }
-    Crossfade(targetState = bmp, label = "vthumb") { b ->
-        if (b != null) {
-            Image(
-                bitmap = b.asImageBitmap(),
-                contentDescription = null,
-                modifier = modifier.clip(shape),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-            )
-        } else {
-            ShimmerBox(modifier, shape)
-        }
-    }
 }
 
 @Composable

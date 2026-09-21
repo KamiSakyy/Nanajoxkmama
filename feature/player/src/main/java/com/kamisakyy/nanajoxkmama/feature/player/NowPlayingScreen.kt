@@ -161,14 +161,25 @@ fun NowPlayingScreen(
                         .clip(RoundedCornerShape(26.dp)),
                 )
                 if (track.hasVideo) {
-                    com.kamisakyy.nanajoxkmama.core.design.VideoThumb(
-                        track.videoUrl,
+                    // Статичный бейдж: видео НИКОГДА не качаем ради превью (0 сетевого трафика).
+                    Row(
                         Modifier
                             .align(androidx.compose.ui.Alignment.BottomEnd)
-                            .padding(28.dp)
-                            .size(92.dp),
-                        RoundedCornerShape(16.dp),
-                    )
+                            .padding(24.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.scrim)
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Rounded.Videocam,
+                            contentDescription = "Видео",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("Видео", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                    }
                 }
             }
         }
@@ -270,6 +281,21 @@ fun NowPlayingScreen(
                 viewModel.player.setVideoMode(i == 1)
             },
         )
+
+        // ===== СКАЧИВАНИЕ — видимые кнопки (не только в меню долгого нажатия) =====
+        Spacer(Modifier.height(12.dp))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val dlA = downloadProgress[track.id + ":a"]
+            val dlV = downloadProgress[track.id + ":v"]
+            DownloadPill(if (dlA != null) dlA else "Скачать аудио") { viewModel.download(track, false) }
+            if (track.hasVideo) {
+                DownloadPill(if (dlV != null) dlV else "Скачать видео") { viewModel.download(track, true) }
+            }
+        }
         Spacer(Modifier.height(20.dp))
     }
 
@@ -336,6 +362,19 @@ private fun VideoSurface(modifier: Modifier, controller: com.kamisakyy.nanajoxkm
             SurfaceView(ctx).also { controller.attachSurface(it) }
         },
     )
+}
+
+@Composable
+private fun DownloadPill(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .clickable(interactionSource = MutableInteractionSource(), indication = null, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 9.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
+    }
 }
 
 private fun formatMs(ms: Long): String {

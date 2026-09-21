@@ -19,7 +19,8 @@ object TrackJson {
         put("anime", JSONObject()
             .put("id", t.anime.id).put("name", t.anime.name).put("slug", t.anime.slug)
             .put("year", t.anime.year ?: -1).put("season", t.anime.season ?: "")
-            .put("malId", t.anime.malId ?: -1).put("anilistId", t.anime.anilistId ?: -1))
+            .put("malId", t.anime.malId ?: -1).put("anilistId", t.anime.anilistId ?: -1)
+            .put("ruName", t.anime.ruName ?: ""))
         put("cover", t.cover ?: ""); put("coverSmall", t.coverSmall ?: "")
         put("audioUrl", t.audioUrl); put("videoUrl", t.videoUrl)
         put("resolution", t.resolution ?: -1); put("tags", t.tags ?: "")
@@ -50,6 +51,7 @@ object TrackJson {
                 season = an.optString("season").ifEmpty { null },
                 malId = an.optInt("malId", -1).takeIf { it > 0 },
                 anilistId = an.optInt("anilistId", -1).takeIf { it > 0 },
+                ruName = an.optString("ruName").ifEmpty { null },
             ),
             cover = o.optString("cover").ifEmpty { null },
             coverSmall = o.optString("coverSmall").ifEmpty { null },

@@ -96,8 +96,10 @@ class AnimeThemesApi @Inject constructor(
             season = if (a.isNull("season")) null else a.optString("season").ifEmpty { null },
             mediaFormat = a.optString("media_format").ifEmpty { null },
             cover = pickImage(images, "Large Cover"),
-            coverSmall = pickImage(images, "Small Cover")?.takeUnless { it.endsWith(".avif", true) }
-                ?: pickImage(images, "Large Cover"),
+            coverSmall = pickImage(images, "Small Cover")?.takeUnless {
+                // AVIF декодируется с API 31; там используем крошечный Small Cover.
+                it.endsWith(".avif", true) && android.os.Build.VERSION.SDK_INT < 31
+            } ?: pickImage(images, "Large Cover"),
             banner = null,
             color = null,
             malId = externalId(a, SITE_MAL),
