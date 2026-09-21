@@ -84,7 +84,8 @@ class HttpEngine @Inject constructor(
         return sb.toString()
     }
 
-    private fun urlEncode(s: String): String = java.net.URLEncoder.encode(s, "UTF-8")
+    private fun urlEncode(s: String): String =
+        java.net.URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 
     suspend fun getJson(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): JSONObject {
         try {
@@ -170,10 +171,20 @@ class HttpEngine @Inject constructor(
     }
 
     /** v1 plain read semantics first; manual decode only if the body is wrapped. */
+    private fun charsetDecode(bytes: ByteArray): String {
+        if (bytes.size > 3 && bytes[0] == 0xEF.toByte() && bytes[1] == 0xBB.toByte() && bytes[2] == 0xBF.toByte())
+            return String(bytes, 3, bytes.size - 3, Charsets.UTF_8)
+        if (bytes.size > 1 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xFE.toByte())
+            return String(bytes, Charsets.UTF_16LE)
+        if (bytes.size > 1 && bytes[0] == 0xFE.toByte() && bytes[1] == 0xFF.toByte())
+            return String(bytes, Charsets.UTF_16BE)
+        return String(bytes, Charsets.UTF_8)
+    }
+
     private fun readPlain(input: java.io.InputStream?, encoding: String?): String {
         if (input == null) return ""
         val bytes = input.use { it.readBytes() }
-        val v1 = String(bytes, Charsets.UTF_8)
+        val v1 = charsetDecode(bytes)
         if (looksLikeJson(v1)) return v1
         return decodeChain(bytes, encoding) ?: v1
     }
@@ -188,12 +199,11 @@ class HttpEngine @Inject constructor(
             try {
                 connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection)
                 connection.requestMethod = if (policy.body != null) "POST" else "GET"
-                connection.connectTimeout = 12000
-                connection.readTimeout = 22000
+                connection.connectTimeout = 15000
+                connection.readTimeout = 30000
                 connection.useCaches = true
                 connection.setRequestProperty("Accept", "application/json")
                 connection.setRequestProperty("User-Agent", "AniBeat/1.0 (Android; Anime music player)")
-                connection.setRequestProperty("Accept-Encoding", "identity")
                 val body = policy.body
                 if (body != null) {
                     val payload = body.toByteArray(Charsets.UTF_8)
@@ -209,7 +219,7 @@ class HttpEngine @Inject constructor(
                 if (code == 429 || code >= 500) {
                     if (attempt < maxRetries) {
                         val ra = connection.getHeaderField("retry-after")?.toLongOrNull()?.times(1000) ?: 0L
-                        Thread.sleep(if (ra > 0) minOf(ra, 8000) else RETRY_DELAYS[attempt])
+                        Thread.sleep(if (ra > 0) minOf(ra, 15000) else RETRY_DELAYS[attempt])
                         attempt++
                         continue
                     }
@@ -247,5 +257,5 @@ class HttpEngine @Inject constructor(
 
     fun diskBytes(): Long = 0L
 
-    private val RETRY_DELAYS = longArrayOf(600, 1500, 3200)
+    private val RETRY_DELAYS = longArrayOf(700, 1800, 3800, 6000)
 }
