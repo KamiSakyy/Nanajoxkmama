@@ -217,7 +217,7 @@ public class CoverView extends android.view.View {
     }
 
     @Override
-    protected void onVisibilityAggregated(boolean isVisible) {
+    public void onVisibilityAggregated(boolean isVisible) {
         super.onVisibilityAggregated(isVisible);
         // В невидимых списках шиммер не крутится — не тратит кадры.
         if (!isVisible && loading) {
