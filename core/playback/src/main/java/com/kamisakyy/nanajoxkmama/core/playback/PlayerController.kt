@@ -153,7 +153,7 @@ class PlayerController @Inject constructor(
         update {
             it.copy(
                 positionMs = c.currentPosition.coerceAtLeast(0),
-                durationMs = c.duration.takeIf { d -> d > 0 } ?: 0,
+                durationMs = c.contentDuration.takeIf { d -> d > 0 } ?: c.duration.takeIf { d -> d > 0 } ?: 0,
             )
         }
     }

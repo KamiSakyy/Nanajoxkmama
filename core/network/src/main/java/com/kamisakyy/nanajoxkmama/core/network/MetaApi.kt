@@ -40,6 +40,7 @@ data class ShikiDetails(
     val genres: List<String>,
     val studios: List<String>,
     val url: String?,
+    val screenshots: List<String> = emptyList(),
 )
 
 data class AniListMeta(val banner: String?, val color: Int?, val cover: String?)
@@ -58,9 +59,10 @@ class MetaApi @Inject constructor(
 ) {
     companion object {
         private val SHIKI_HOSTS = listOf(
-            "https://shikimori.tv",
-            "https://shikimori.one",
             "https://shikimori.io",
+            "https://shikimori.one",
+            "https://shikimori.su",
+            "https://shikimori.tv",
             "https://shikimori.me",
         )
         private val SHIKI_RE = Regex("^https?://([a-z0-9-]+\\.)?shikimori\\.(one|io|me|org|tv|cc)", RegexOption.IGNORE_CASE)
@@ -176,6 +178,14 @@ class MetaApi @Inject constructor(
         o.optJSONArray("studios")?.let { g ->
             for (i in 0 until g.length()) g.optJSONObject(i)?.optString("name")?.takeIf { it.isNotEmpty() }?.let { studios.add(it) }
         }
+        val shots = ArrayList<String>()
+        o.optJSONArray("screenshots")?.let { sc ->
+            for (i in 0 until sc.length()) {
+                val s0 = sc.optJSONObject(i) ?: continue
+                val u = fixShikiUrl(s0.optString("original").ifEmpty { s0.optString("preview") })
+                if (!u.isNullOrEmpty()) shots.add(u)
+            }
+        }
         val details = ShikiDetails(
             malId = malId,
             name = o.optString("name"),
@@ -189,6 +199,7 @@ class MetaApi @Inject constructor(
             genres = genres,
             studios = studios,
             url = fixShikiUrl(o.optString("url").ifEmpty { null }),
+            screenshots = shots,
         )
         detailsCache[malId] = details
         return details
@@ -222,6 +233,16 @@ class MetaApi @Inject constructor(
             if (e is java.util.concurrent.CancellationException) throw e
             emptyMap()
         }
+    }
+
+    suspend fun warmNow(malIds: List<Int?>, budgetMs: Long = 2500) {
+        val ids = malIds.filterNotNull().distinct().take(8)
+        if (ids.isNotEmpty()) {
+            kotlinx.coroutines.withTimeoutOrNull(budgetMs) {
+                ids.map { id -> kotlinx.coroutines.async { com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchShikiDetails(id) } } }.awaitAll()
+            }
+        }
+        warm(malIds)
     }
 
     fun warm(malIds: List<Int?>) {

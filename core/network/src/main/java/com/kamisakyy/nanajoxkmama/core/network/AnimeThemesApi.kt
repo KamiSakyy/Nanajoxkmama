@@ -269,8 +269,11 @@ class AnimeThemesApi @Inject constructor(
             if (withId.anime.ruName != null) withId
             else withId.copy(anime = withId.anime.copy(ruName = meta.ruNameOf(withId.anime.malId)))
         }
-        meta.warm(out.mapNotNull { it.anime.malId })
-        return out
+        meta.warmNow(out.mapNotNull { it.anime.malId })
+        return out.map { t ->
+            if (t.anime.ruName != null) t
+            else t.copy(anime = t.anime.copy(ruName = meta.ruNameOf(t.anime.malId)))
+        }
     }
 
     /* ----------------------- public API ----------------------- */

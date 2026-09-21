@@ -60,8 +60,11 @@ class ContentRepository @Inject constructor(
                     animethemes.getSeasonAnime(y, null, 1).items.firstOrNull()?.cover
                 }
             } }
-            val fr = fresh.await(); val lr = latest.await(); val rr = random.await()
-            val sr = season.await(); val mc = mixCovers.await(); val dc = decadeCovers.await()
+            val fr = fresh.await(); val lr = latest.await()
+            val rr = kotlinx.coroutines.withTimeoutOrNull(5000) { random.await() } ?: emptyList()
+            val sr = kotlinx.coroutines.withTimeoutOrNull(5000) { season.await() } ?: emptyList()
+            val mc = kotlinx.coroutines.withTimeoutOrNull(4000) { mixCovers.await() } ?: emptyMap()
+            val dc = kotlinx.coroutines.withTimeoutOrNull(4000) { decadeCovers.await() } ?: emptyMap()
             val errs = listOf(fr, lr, rr, sr, mc, dc).mapNotNull { it.exceptionOrNull() }
             val feed = HomeFeed(
                 fresh = fr.getOrNull() ?: emptyList(),
@@ -144,6 +147,7 @@ class ContentRepository @Inject constructor(
                 malId = base.summary.malId ?: shiki?.malId,
             ),
             tracks = (base.tracks + extraTracks),
+            screenshots = shiki?.screenshots ?: emptyList(),
         )
         detail
     }

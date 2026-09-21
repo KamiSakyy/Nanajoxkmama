@@ -26,3 +26,7 @@
 -keep class * extends androidx.lifecycle.ViewModel { *; }
 
 -keep class org.brotli.** { *; }
+
+# Coil3 (images)
+-keep class coil3.** { *; }
+-keep class okhttp3.** { *; }

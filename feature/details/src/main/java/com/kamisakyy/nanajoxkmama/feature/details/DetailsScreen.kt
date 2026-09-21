@@ -87,7 +87,19 @@ fun DetailsScreen(
                                 Artwork(a.summary.coverSmall ?: a.summary.cover, Modifier.size(84.dp), RoundedCornerShape(16.dp))
                                 Spacer(Modifier.width(14.dp))
                                 Column(Modifier.weight(1f)) {
-                                    Text(a.summary.ruName ?: a.summary.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    androidx.compose.foundation.lazy.LazyRow(
+                                        Modifier.padding(bottom = 12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        items(a.screenshots.size) { si ->
+                                            com.kamisakyy.nanajoxkmama.core.design.Artwork(
+                                                a.screenshots[si],
+                                                Modifier.size(148.dp, 92.dp),
+                                                RoundedCornerShape(12.dp),
+                                            )
+                                        }
+                                    }
+                                Text(a.summary.ruName ?: a.summary.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     Text(
                                         listOfNotNull(
                                             a.kind?.let { if (it.isNotBlank()) it else null },

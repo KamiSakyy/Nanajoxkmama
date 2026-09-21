@@ -87,6 +87,7 @@ data class AnimeDetail(
     val studios: List<String>,
     val series: List<String>,
     val tracks: List<Track>,
+    val screenshots: List<String> = emptyList(),
 )
 
 data class ArtistSummary(

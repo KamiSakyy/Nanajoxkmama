@@ -195,7 +195,8 @@ fun NowPlayingScreen(
         Spacer(Modifier.height(18.dp))
 
         // ===== SEEK =====
-        val pos = scrubbing ?: (if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f)
+        val targetPos = scrubbing ?: (if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f)
+        val pos by animateFloatAsState(targetPos, tween(280), label = "seekPos")
         Slider(
             value = pos,
             onValueChange = { scrubbing = it },
