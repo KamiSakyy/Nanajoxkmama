@@ -89,11 +89,13 @@ class HttpEngine @Inject constructor(
         try {
             return JSONObject(getString(url, policy))
         } catch (e: Exception) {
+            if (e is java.util.concurrent.CancellationException) throw e
             if (e is ApiException) throw e
             // one clean refetch before giving up
             try {
                 return JSONObject(getString(url, policy))
             } catch (e2: Exception) {
+                if (e2 is java.util.concurrent.CancellationException) throw e2
                 if (e2 is ApiException) throw e2
                 throw ApiException("Неверный ответ сервера")
             }
@@ -104,10 +106,12 @@ class HttpEngine @Inject constructor(
         try {
             return JSONArray(getString(url, policy))
         } catch (e: Exception) {
+            if (e is java.util.concurrent.CancellationException) throw e
             if (e is ApiException) throw e
             try {
                 return JSONArray(getString(url, policy))
             } catch (e2: Exception) {
+                if (e2 is java.util.concurrent.CancellationException) throw e2
                 if (e2 is ApiException) throw e2
                 throw ApiException("Неверный ответ сервера")
             }
@@ -221,6 +225,7 @@ class HttpEngine @Inject constructor(
             } catch (e: ApiException) {
                 throw e
             } catch (e: Exception) {
+                if (e is java.util.concurrent.CancellationException) throw e
                 if (attempt < maxRetries) {
                     Thread.sleep(RETRY_DELAYS[attempt])
                     attempt++

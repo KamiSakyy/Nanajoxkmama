@@ -243,7 +243,9 @@ class AnimeThemesApi @Inject constructor(
                     idCache[a.optString("slug")] = (externalId(a, SITE_MAL) to externalId(a, SITE_AL))
                 }
                 chunk.forEach { idCache.putIfAbsent(it, (null to null)) }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                if (e is java.util.concurrent.CancellationException) throw e
+            }
         }
         val outMap = LinkedHashMap<String, Pair<Int?, Int?>>()
         for (sl in slugs) {

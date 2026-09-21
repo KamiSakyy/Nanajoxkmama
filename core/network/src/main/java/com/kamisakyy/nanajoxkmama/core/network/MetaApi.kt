@@ -87,7 +87,10 @@ class MetaApi @Inject constructor(
         try {
             val arr = http.getArray("$host/api/animes?limit=1", HttpCachePolicy.default().ttl(0).noStore().timeout(5000).retries(0))
             if (arr is JSONArray) host else null
-        } catch (_: Exception) { null }
+        } catch (e: Exception) {
+            if (e is java.util.concurrent.CancellationException) throw e
+            null
+        }
     }
 
     /** First mirror that answers wins (website resolveShikiHost). */
@@ -213,14 +216,17 @@ class MetaApi @Inject constructor(
                 )
             }
             out
-        } catch (_: Exception) { emptyMap() }
+        } catch (e: Exception) {
+            if (e is java.util.concurrent.CancellationException) throw e
+            emptyMap()
+        }
     }
 
     fun warm(malIds: List<Int?>) {
         warmScope.launch {
             val ids = malIds.filterNotNull().distinct().take(24)
-            ids.map { id -> async { runCatching { fetchShikiDetails(id) } } }.awaitAll()
-            runCatching { fetchAniList(ids) }
+            ids.map { id -> async { com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchShikiDetails(id) } } }.awaitAll()
+            com.kamisakyy.nanajoxkmama.core.common.safeRun { fetchAniList(ids) }
         }
     }
 

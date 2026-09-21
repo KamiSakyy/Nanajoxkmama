@@ -145,7 +145,8 @@ class AnisongDbApi @Inject constructor(
                     .apply { FILTERS.forEach { (k, v) -> put(k, v) } }.toString()
                 list = http.getArray("$BASE/malIDs_request",
                     HttpCachePolicy.default().body(body).fresh(7 * DAY_MS).maxAge(30 * DAY_MS).timeout(15_000))
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                if (e is java.util.concurrent.CancellationException) throw e
                 list = null
             }
         }
@@ -163,7 +164,9 @@ class AnisongDbApi @Inject constructor(
                         list = r
                         break
                     }
-                } catch (_: Exception) { }
+                } catch (e: Exception) {
+                    if (e is java.util.concurrent.CancellationException) throw e
+                }
             }
         }
         return mapAll(list ?: JSONArray(), Int.MAX_VALUE)
