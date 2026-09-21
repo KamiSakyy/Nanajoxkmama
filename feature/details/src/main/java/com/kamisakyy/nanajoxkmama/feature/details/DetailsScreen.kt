@@ -99,10 +99,11 @@ fun DetailsScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
-                                Button(onClick = { if (a.tracks.isNotEmpty()) onPlay(a.tracks, 0) }) {
-                                    Icon2()
-                                    Text("Играть")
-                                }
+                                com.kamisakyy.nanajoxkmama.core.design.PillButton(
+                                    text = "Играть",
+                                    onClick = { if (a.tracks.isNotEmpty()) onPlay(a.tracks, 0) },
+                                    icon = { Icon2() },
+                                )
                             }
                             if (a.genres.isNotEmpty() || a.studios.isNotEmpty()) {
                                 FlowRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -206,10 +207,11 @@ private fun MixDecadeList(
                 Text(title, style = MaterialTheme.typography.headlineMedium)
                 Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = { if (tracks.isNotEmpty()) onPlay(tracks, 0) }) {
-                    Icon2()
-                    Text("Слушать подборку")
-                }
+                com.kamisakyy.nanajoxkmama.core.design.PillButton(
+                    text = "Слушать подборку",
+                    onClick = { if (tracks.isNotEmpty()) onPlay(tracks, 0) },
+                    icon = { Icon2() },
+                )
                 Spacer(Modifier.height(8.dp))
             }
         },

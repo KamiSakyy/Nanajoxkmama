@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -232,5 +233,36 @@ fun ErrorState(
             Spacer(Modifier.height(14.dp))
             androidx.compose.material3.OutlinedButton(onClick = onRetry) { Text(retryLabel) }
         }
+    }
+}
+
+/** iOS-style primary CTA — white pill, black label, spring micro-press. */
+@Composable
+fun PillButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: (@Composable () -> Unit)? = null,
+) {
+    val scale = androidx.compose.animation.core.animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = 0.6f,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessHigh,
+        ),
+        label = "pill",
+    )
+    androidx.compose.material3.Button(
+        onClick = onClick,
+        modifier = modifier.graphicsLayer { scaleX = scale.value; scaleY = scale.value },
+        shape = RoundedCornerShape(50),
+        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 22.dp, vertical = 12.dp),
+    ) {
+        icon?.invoke()
+        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }

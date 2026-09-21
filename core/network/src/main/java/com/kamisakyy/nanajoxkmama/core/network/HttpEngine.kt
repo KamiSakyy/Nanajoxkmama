@@ -79,7 +79,6 @@ class HttpEngine @Inject constructor(
                 chain.proceed(
                     chain.request().newBuilder()
                         .header("Accept", "application/json")
-                        .header("Accept-Encoding", "gzip")
                         .header("User-Agent", "AniBeat/2.0 (Android)")
                         .build()
                 )

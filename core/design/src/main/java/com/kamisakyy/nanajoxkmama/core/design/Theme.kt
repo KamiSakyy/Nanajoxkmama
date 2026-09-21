@@ -40,9 +40,11 @@ object Spacing {
 }
 
 private val DarkScheme = darkColorScheme(
-    primary = AppColors.Accent,
-    onPrimary = Color(0xFF0B0B0C),
+    primary = Color(0xFFFFFFFF),
+    onPrimary = Color(0xFF000000),
     secondary = AppColors.S5,
+    onSecondary = Color(0xFFFFFFFF),
+    tertiary = AppColors.Accent,
     background = AppColors.Bg,
     onBackground = AppColors.On,
     surface = AppColors.Bg,
@@ -61,8 +63,8 @@ private val DarkScheme = darkColorScheme(
 )
 
 private val LightScheme = lightColorScheme(
-    primary = Color(0xFF3B6FD4),
-    onPrimary = Color.White,
+    primary = Color(0xFF0B0B0C),
+    onPrimary = Color(0xFFFFFFFF),
     secondary = Color(0xFFE3E3E8),
     background = Color(0xFFF6F6F8),
     onBackground = Color(0xFF0B0B0C),
