@@ -167,6 +167,11 @@ jobs:
             tail -c 200000 test.log 2>/dev/null || echo "no test.log"
           } > ci-logs/last-build.log
           tail -c 120000 test.log 2>/dev/null > ci-logs/tests.log || true
+          if [ -f test.log ]; then
+            grep -nE "at com\\.anibeat|Caused by|Exception|FAILED|нажатий|→" test.log | head -14 | while IFS= read -r line; do
+              echo "::warning title=Прогон::$(printf '%s' "$line" | sed 's/%/%25/g' | tr -d '\r' | cut -c1-900)"
+            done
+          fi
           if [ -s ci-logs/tests.log ]; then
             TESTFAIL=$(grep -E "FAILED|AssertionError|Exception|нажатий|→" ci-logs/tests.log | head -20 | tr '\r' ' ' | sed 's/%/%25/g' | cut -c1-1200 | tr '\n' '~')
             [ -n "$TESTFAIL" ] && echo "::warning title=Тесты::${TESTFAIL}"
@@ -183,7 +188,8 @@ jobs:
             grep -E "error:|Execution failed" build.log 2>/dev/null | head -140 > ci-logs/errors.txt || true
             grep -E "com\\.anibeat|FAILED|Exception|AssertionError" test.log 2>/dev/null | head -140 >> ci-logs/errors.txt || true
           fi
-          git add -f ci-logs/last-build.log ci-logs/errors.txt ci-logs/tests.log 2>/dev/null || git add -f ci-logs/last-build.log
+          for f in ci-logs/last-build.log ci-logs/errors.txt ci-logs/tests.log; do [ -f "$f" ] && git add -f "$f"; done
+          git add -f ci-logs/last-build.log
           git commit -m "chore(ci): build log [skip ci]" || echo "nothing"
           for i in 1 2 3 4 5; do
             git pull --rebase --autostash -q || true

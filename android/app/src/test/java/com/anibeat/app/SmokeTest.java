@@ -28,7 +28,15 @@ public class SmokeTest {
 
     @Test
     public void everythingIsClickableWithoutCrash() {
-        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        ActivityController<MainActivity> controller;
+        try {
+            controller = Robolectric.buildActivity(MainActivity.class).setup();
+        } catch (Throwable t) {
+            t.printStackTrace(System.out);
+            failures.add("запуск приложения → " + describe(t));
+            assertTrue("нажатий: " + clicks + ", падений: " + failures.size() + "\n" + String.join("\n", failures), failures.isEmpty());
+            return;
+        }
         MainActivity activity = controller.get();
 
         for (int tab = 0; tab < 4; tab++) {

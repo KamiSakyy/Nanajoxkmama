@@ -84,22 +84,27 @@ public class MainActivity extends Activity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Prefs.init(this);
         Ui.attach(this, this);
-        Net.init(this);
-        Image.init(this);
-        Settings.init();
-        Library.init();
-        Downloads.init(this);
-        Player.init(this);
+        // Ни один сбой запуска не должен закрывать приложение.
+        Ui.safe(() -> Prefs.init(this));
+        Ui.safe(() -> Net.init(this));
+        Ui.safe(() -> Image.init(this));
+        Ui.safe(Settings::init);
+        Ui.safe(Library::init);
+        Ui.safe(() -> Downloads.init(this));
+        Ui.safe(() -> Player.init(this));
 
         Window window = getWindow();
-        window.setStatusBarColor(Color.BLACK);
-        window.setNavigationBarColor(Color.BLACK);
-        WindowCompat.setDecorFitsSystemWindows(window, false);
-        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
-        controller.setAppearanceLightStatusBars(false);
-        controller.setAppearanceLightNavigationBars(false);
+        Ui.safe(() -> {
+            window.setStatusBarColor(Color.BLACK);
+            window.setNavigationBarColor(Color.BLACK);
+            WindowCompat.setDecorFitsSystemWindows(window, false);
+            WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
+            if (controller != null) {
+                controller.setAppearanceLightStatusBars(false);
+                controller.setAppearanceLightNavigationBars(false);
+            }
+        });
 
         root = new FrameLayout(this);
         root.setBackgroundColor(Theme.BG);
@@ -188,6 +193,7 @@ public class MainActivity extends Activity {
         content.removeAllViews();
         content.addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         currentView = view;
+        miniVisible = false;
         view.setPadding(0, 0, 0, Theme.dp(this, Nav.BAR_HEIGHT_DP + 8));
         if (animate) {
             view.setAlpha(0f);
@@ -247,9 +253,13 @@ public class MainActivity extends Activity {
     }
 
     public void updateBars() {
+        updateBars(false);
+    }
+
+    public void updateBars(boolean force) {
         boolean mini = Player.current() != null && !nowPlaying.isOpen();
         miniPlayer.getView().setVisibility(mini ? View.VISIBLE : View.GONE);
-        if (mini != miniVisible && currentView != null) {
+        if ((mini != miniVisible || force) && currentView != null) {
             miniVisible = mini;
             int bottom = Nav.BAR_HEIGHT_DP + 8 + (mini ? MiniPlayer.HEIGHT_DP + 8 : 0);
             currentView.setPadding(0, 0, 0, Theme.dp(this, bottom));
