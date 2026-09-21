@@ -75,7 +75,7 @@ public class BarsView extends android.view.View {
     }
 
     @Override
-    protected void onVisibilityAggregated(boolean isVisible) {
+    public void onVisibilityAggregated(boolean isVisible) {
         super.onVisibilityAggregated(isVisible);
         visibleOnScreen = isVisible;
         sync();
