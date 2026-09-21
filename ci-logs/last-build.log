@@ -1,5 +1,5 @@
-run: 35573812919  job: build-apk  status: success
-version: 1.0.24
+run: 35574190837  job: build-apk  status: success
+version: 1.0.25
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -22,11 +22,11 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
 > Task :app:processReleaseManifestForPackage
-> Task :app:mergeReleaseResources
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
@@ -36,24 +36,24 @@ Daemon will be stopped at the end of the build
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseJavaRes NO-SOURCE
 > Task :app:processReleaseResources
+> Task :app:collectReleaseDependencies
 > Task :app:compileReleaseJavaWithJavac FROM-CACHE
+> Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseJavaResource
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
-> Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
 > Task :app:optimizeReleaseResources
-> Task :app:mergeExtDexRelease
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 47s
+BUILD SUCCESSFUL in 50s
 39 actionable tasks: 34 executed, 5 from cache
 
 --- тесты ---
@@ -77,37 +77,40 @@ Daemon will be stopped at the end of the build
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
+> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:bundleDebugClassesToCompileJar
 > Task :app:generateDebugUnitTestConfig
-> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:compileDebugUnitTestJavaWithJavac
 
-> Task :app:compileDebugUnitTestJavaWithJavac FAILED
-/home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/src/test/java/com/anibeat/app/SmokeTest.java:35: error: local variables referenced from a lambda expression must be final or effectively final
-            clickSafely("showTab(" + tab + ")", () -> activity.showTab(tab, false));
-                                                                       ^
-1 error
+> Task :app:testDebugUnitTest
+
+SmokeTest > everythingIsClickableWithoutCrash FAILED
+    java.lang.NullPointerException at SmokeTest.java:31
+
+1 test completed, 1 failed
+
+> Task :app:testDebugUnitTest FAILED
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':app:compileDebugUnitTestJavaWithJavac'.
-> Compilation failed; see the compiler error output for details.
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/build/reports/tests/testDebugUnitTest/index.html
 
 * Try:
-> Run with --info option to get more log output.
 > Run with --scan to get full insights.
 
-BUILD FAILED in 53s
-23 actionable tasks: 22 executed, 1 from cache
+BUILD FAILED in 1m 2s
+24 actionable tasks: 23 executed, 1 from cache
