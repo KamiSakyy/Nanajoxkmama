@@ -1,5 +1,5 @@
-run: 35640396566  job: build-apk  status: success
-version: 1.0.47
+run: 35641274456  job: build-apk  status: success
+version: 1.0.49
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -26,9 +26,9 @@ Daemon will be stopped at the end of the build
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
-> Task :app:mergeReleaseArtProfile
 > Task :app:processReleaseManifestForPackage
 > Task :app:mergeExtDexRelease
+> Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
@@ -40,12 +40,12 @@ Daemon will be stopped at the end of the build
 > Task :app:mergeReleaseJavaResource
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
-> Task :app:processReleaseResources
 > Task :app:writeReleaseAppMetadata
+> Task :app:processReleaseResources
+> Task :app:writeReleaseSigningConfigVersions
 > Task :app:compileReleaseJavaWithJavac FROM-CACHE
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
-> Task :app:writeReleaseSigningConfigVersions
 > Task :app:optimizeReleaseResources
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
@@ -53,7 +53,7 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 12s
+BUILD SUCCESSFUL in 15s
 39 actionable tasks: 34 executed, 5 from cache
 
 --- тесты ---
@@ -61,9 +61,9 @@ To honour the JVM settings for this build a single-use Daemon process will be fo
 Daemon will be stopped at the end of the build 
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preDebugBuild UP-TO-DATE
-> Task :app:checkDebugAarMetadata
 > Task :app:generateDebugResValues
 > Task :app:javaPreCompileDebug
+> Task :app:checkDebugAarMetadata
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
@@ -95,5 +95,5 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :app:generateDebugUnitTestConfig
 > Task :app:testDebugUnitTest
 
-BUILD SUCCESSFUL in 55s
+BUILD SUCCESSFUL in 1m 11s
 24 actionable tasks: 23 executed, 1 from cache
