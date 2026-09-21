@@ -10,6 +10,7 @@ public final class AnimeInfo {
     public int year = -1;
     public String season = "";
     public String format = "";
+    public String studio = "";
     public String synopsis = "";
     public String cover = "";
     public String coverSmall = "";
@@ -24,6 +25,11 @@ public final class AnimeInfo {
         out.year = a.has("year") && !a.isNull("year") ? a.optInt("year", -1) : -1;
         out.season = a.optString("season", "");
         out.format = a.optString("media_format", "");
+        org.json.JSONArray studios = a.optJSONArray("studios");
+        if (studios != null && studios.length() > 0) {
+            JSONObject s = studios.optJSONObject(0);
+            if (s != null) out.studio = s.optString("name", "");
+        }
         out.synopsis = a.optString("synopsis", "");
         out.cover = ApiClient.pickImage(a.optJSONArray("images"), "Large Cover");
         out.coverSmall = ApiClient.pickImage(a.optJSONArray("images"), "Small Cover");
