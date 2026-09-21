@@ -70,8 +70,7 @@ public class Toaster extends FrameLayout {
     }
 
     private void showNow(String message) {
-        {
-            Context c = getContext();
+        Context c = getContext();
             TextView tv = Ui.text(c, message, 14f, Theme.ON, true);
             tv.setBackground(Ui.rounded(Theme.SURFACE_3, Theme.dpF(c, 14)));
             tv.setPadding(Theme.dp(c, 16), Theme.dp(c, 12), Theme.dp(c, 16), Theme.dp(c, 12));
@@ -85,8 +84,7 @@ public class Toaster extends FrameLayout {
             handler.postDelayed(() -> {
                 tv.animate().alpha(0f).translationY(Theme.dpF(c, 8f)).setDuration(Theme.DUR_FAST).withEndAction(() -> stack.removeView(tv)).start();
             }, 2600);
-            while (stack.getChildCount() > 3) stack.removeViewAt(0);
-        });
+        while (stack.getChildCount() > 3) stack.removeViewAt(0);
     }
 
     public void refreshDownloads() {
