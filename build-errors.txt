@@ -3,7 +3,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:extractReleaseNativeSymbolTables
 --
 e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:306:26 Unresolved reference 'fillMaxWidth'.
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789991611672.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789991929359.json
 
 --
 FAILURE: Build failed with an exception.
@@ -12,42 +12,42 @@ FAILURE: Build failed with an exception.
 Execution failed for task ':app:compileReleaseKotlin'.
 > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
 ----- tail -----
-> Task :feature:browse:assembleRelease
-> Task :feature:details:compileReleaseJavaWithJavac
-> Task :feature:home:bundleReleaseAar
-> Task :feature:home:assembleRelease
-> Task :feature:library:bundleReleaseAar
-> Task :feature:library:assembleRelease
-> Task :feature:player:bundleReleaseAar
-> Task :feature:details:processReleaseJavaRes
-> Task :feature:details:transformReleaseClassesWithAsm
-> Task :feature:player:assembleRelease
-> Task :feature:search:bundleReleaseAar
-> Task :feature:search:assembleRelease
-> Task :feature:settings:bundleReleaseAar
-> Task :feature:settings:assembleRelease
 > Task :feature:details:generateReleaseLintModel
-> Task :feature:details:mergeReleaseGeneratedProguardFiles
-> Task :feature:details:exportReleaseConsumerProguardFiles
-> Task :feature:details:bundleLibCompileToJarRelease
-> Task :feature:details:bundleLibRuntimeToJarRelease
-> Task :feature:details:createFullJarRelease
 > Task :feature:details:extractReleaseAnnotations
 > Task :feature:details:mergeReleaseConsumerProguardFiles
 > Task :feature:details:mergeReleaseJavaResource
 > Task :feature:details:syncReleaseLibJars
 > Task :feature:details:bundleReleaseLocalLintAar
+> Task :feature:settings:syncReleaseLibJars
+> Task :feature:settings:bundleReleaseLocalLintAar
+> Task :feature:player:lintVitalAnalyzeRelease
 > Task :feature:search:lintVitalAnalyzeRelease
 > Task :feature:details:generateReleaseLintVitalModel
+> Task :feature:library:generateReleaseLintVitalModel
+> Task :feature:player:generateReleaseLintVitalModel
+> Task :feature:search:generateReleaseLintVitalModel
+> Task :feature:settings:generateReleaseLintVitalModel
+> Task :feature:browse:bundleReleaseAar
+> Task :feature:browse:assembleRelease
 > Task :feature:details:bundleReleaseAar
 > Task :feature:details:assembleRelease
-> Task :feature:settings:lintVitalAnalyzeRelease
+> Task :feature:home:bundleReleaseAar
+> Task :feature:home:assembleRelease
+> Task :feature:library:bundleReleaseAar
+> Task :feature:library:assembleRelease
+> Task :feature:player:bundleReleaseAar
+> Task :feature:player:assembleRelease
+> Task :feature:search:bundleReleaseAar
+> Task :feature:search:assembleRelease
 > Task :feature:details:lintVitalAnalyzeRelease
+> Task :feature:settings:bundleReleaseAar
+> Task :feature:settings:assembleRelease
+> Task :feature:settings:lintVitalAnalyzeRelease
 > Task :app:kspReleaseKotlin
 
 > Task :app:compileReleaseKotlin FAILED
 e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/MainActivity.kt:306:26 Unresolved reference 'fillMaxWidth'.
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789991611672.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789991929359.json
 
 [Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
 
@@ -70,6 +70,6 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD FAILED in 3m 2s
-567 actionable tasks: 491 executed, 76 from cache
+BUILD FAILED in 3m 8s
+567 actionable tasks: 494 executed, 73 from cache
 [skip ci]
