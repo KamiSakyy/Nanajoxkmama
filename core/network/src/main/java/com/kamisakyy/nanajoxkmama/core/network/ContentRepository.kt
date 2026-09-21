@@ -40,7 +40,7 @@ class ContentRepository @Inject constructor(
             val latest = async { safeRun { animethemes.getLatestTracks(20) } }
             val random = async { safeRun {
                 val primary = animethemes.getRandomTracks(if (extras) 10 else 20, "OP")
-                val extra = if (extras) (safeRun { anisongdb.random() }.getOrNull() ?: emptyList()).shuffled().take(10) else emptyList()
+                val extra = if (extras) (safeRun { animethemes.attachIds(anisongdb.random()) }.getOrNull() ?: emptyList()).shuffled().take(10) else emptyList()
                 (primary + extra).shuffled().take(20)
             } }
             val season = async { safeRun {
@@ -96,7 +96,7 @@ class ContentRepository @Inject constructor(
             val primary = async { animethemes.searchAll(q) }
             val extraTracks = async {
                 if (extras) {
-                    try { anisongdb.search(q) } catch (e: Exception) {
+                    try { animethemes.attachIds(anisongdb.search(q)) } catch (e: Exception) {
                         if (e is java.util.concurrent.CancellationException) throw e
                         emptyList()
                     }
@@ -118,7 +118,7 @@ class ContentRepository @Inject constructor(
         val names = listOfNotNull(base.summary.name, base.summary.ruName)
         val extraTracks = if (extras) {
             try {
-                anisongdb.forAnime(malId, names).filter { x ->
+                animethemes.attachIds(anisongdb.forAnime(malId, names)).filter { x ->
                     base.tracks.none { it.title.equals(x.title, true) && it.type == x.type }
                 }
             } catch (e: Exception) {
@@ -166,7 +166,7 @@ class ContentRepository @Inject constructor(
     suspend fun random(extras: Boolean, count: Int = 24): ApiResult<List<Track>> = runApi {
         coroutineScope {
             val p = async { animethemes.getRandomTracks(count / 2 + 2, "OP") }
-            val e = async { if (extras) safeRun { anisongdb.random() }.getOrNull() ?: emptyList() else emptyList() }
+            val e = async { if (extras) safeRun { animethemes.attachIds(anisongdb.random()) }.getOrNull() ?: emptyList() else emptyList() }
             (p.await() + e.await()).shuffled().take(count)
         }
     }
@@ -178,7 +178,7 @@ class ContentRepository @Inject constructor(
         val extra = if (extras) {
             val withMal = m.slugs.mapNotNull { s -> covers[s]?.let { it to s } }
             withMal.flatMap { (mal, _) ->
-                try { anisongdb.forAnime(mal, emptyList()) } catch (e: Exception) {
+                try { animethemes.attachIds(anisongdb.forAnime(mal, emptyList())) } catch (e: Exception) {
                     if (e is java.util.concurrent.CancellationException) throw e
                     emptyList()
                 }
@@ -200,7 +200,7 @@ class ContentRepository @Inject constructor(
         if (!extras) return@runApi primary
         val withMal = primary.mapNotNull { t -> t.anime.malId }.distinct().take(8)
         val extra = withMal.flatMap { mal ->
-            try { anisongdb.forAnime(mal, emptyList()).take(4) } catch (e: Exception) {
+            try { animethemes.attachIds(anisongdb.forAnime(mal, emptyList())).take(4) } catch (e: Exception) {
                 if (e is java.util.concurrent.CancellationException) throw e
                 emptyList()
             }
@@ -210,6 +210,6 @@ class ContentRepository @Inject constructor(
 
     suspend fun tracksForAnime(malId: Int?, names: List<String>, extras: Boolean): ApiResult<List<Track>> = runApi {
         if (!extras) return@runApi emptyList()
-        anisongdb.forAnime(malId, names)
+        animethemes.attachIds(anisongdb.forAnime(malId, names))
     }
 }

@@ -65,6 +65,14 @@ fun TrackColumnList(
                 onLongClick = { sheetTrack = t },
                 trailing = {
                     if (isCurrent) PulseBars()
+                    // ВИДИМАЯ кнопка скачивания в каждой строке (не только в меню долгого нажатия)
+                    androidx.compose.material3.IconButton(onClick = { onDownload(t, false) }) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Rounded.Download,
+                            contentDescription = "Скачать аудио",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 },
             )
         }

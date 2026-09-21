@@ -162,6 +162,7 @@ class MetaApi @Inject constructor(
     }
 
     fun ruNameOf(malId: Int?): String? = malId?.let { detailsCache[it]?.ru }
+    fun detailsOf(malId: Int?): ShikiDetails? = malId?.let { detailsCache[it] }
 
     suspend fun fetchShikiDetails(malId: Int): ShikiDetails {
         detailsCache[malId]?.let { return it }
@@ -239,8 +240,8 @@ class MetaApi @Inject constructor(
     }
 
     /** ЛЕНИВО и ПАРАЛЛЕЛЬНО: максимум 3 Shikimori-запроса (для RU названий), без фоновой догрузки. */
-    suspend fun warmNow(malIds: List<Int?>, budgetMs: Long = 1500) {
-        val ids = malIds.filterNotNull().distinct().take(3)
+    suspend fun warmNow(malIds: List<Int?>, budgetMs: Long = 2500) {
+        val ids = malIds.filterNotNull().distinct().take(6)
         if (ids.isEmpty()) return
         kotlinx.coroutines.withTimeoutOrNull(budgetMs) {
             kotlinx.coroutines.coroutineScope {

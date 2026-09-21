@@ -257,24 +257,34 @@ class AnimeThemesApi @Inject constructor(
         return outMap
     }
 
+    /** RU-название И обложка из Shikimori-кэша (обложки null = «чёрные квадраты»). */
+    private fun applyMeta(t: Track): Track {
+        val d = meta.detailsOf(t.anime.malId) ?: return t
+        var a = t.anime
+        if (a.ruName == null && d.ru != null) a = a.copy(ruName = d.ru)
+        if (a.coverSmall == null && d.poster != null) a = a.copy(coverSmall = d.poster)
+        if (a.cover == null && d.poster != null) a = a.copy(cover = d.poster)
+        return t.copy(anime = a)
+    }
+
     suspend fun attachIds(tracks: List<Track>): List<Track> {
         val missing = tracks.filter { it.anime.malId == null && it.anime.slug.isNotEmpty() }.map { it.anime.slug }
-        if (missing.isEmpty()) return tracks
-        val map = resolveIds(missing)
+        val map = if (missing.isEmpty()) emptyMap<String, Pair<Int?, Int?>>() else resolveIds(missing)
         val out = tracks.map { t ->
             val withId = if (t.anime.malId != null) t
             else {
                 val v = map[t.anime.slug]
                 t.copy(anime = t.anime.copy(malId = v?.first, anilistId = v?.second))
             }
-            if (withId.anime.ruName != null) withId
-            else withId.copy(anime = withId.anime.copy(ruName = meta.ruNameOf(withId.anime.malId)))
+            applyMeta(withId)
         }
-        meta.warmNow(out.mapNotNull { it.anime.malId })
-        return out.map { t ->
-            if (t.anime.ruName != null) t
-            else t.copy(anime = t.anime.copy(ruName = meta.ruNameOf(t.anime.malId)))
-        }
+        // Греем Shikimori только для строк БЕЗ RU или БЕЗ обложки (лениво, параллельно).
+        val need = out.mapNotNull { t ->
+            val a = t.anime
+            if (a.ruName == null || (a.coverSmall == null && a.cover == null)) a.malId else null
+        }.distinct()
+        meta.warmNow(need)
+        return out.map { applyMeta(it) }
     }
 
     /* ----------------------- public API ----------------------- */
