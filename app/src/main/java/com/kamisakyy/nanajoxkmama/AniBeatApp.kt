@@ -12,8 +12,7 @@ class AniBeatApp : Application() {
         super.onCreate()
         SingletonImageLoader.setSafe { ctx ->
             ImageLoader.Builder(ctx)
-                .components { add(OkHttpNetworkFetcherFactory { okHttp() }) }
-                .crossfade(true)
+                .components { add(OkHttpNetworkFetcherFactory(callFactory = { okHttp() })) }
                 .build()
         }
     }
