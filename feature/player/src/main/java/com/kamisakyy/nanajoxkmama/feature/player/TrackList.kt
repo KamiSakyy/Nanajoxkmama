@@ -21,6 +21,10 @@ import com.kamisakyy.nanajoxkmama.core.design.PulseBars
 import com.kamisakyy.nanajoxkmama.core.design.TrackRow
 import com.kamisakyy.nanajoxkmama.core.model.Playlist
 import com.kamisakyy.nanajoxkmama.core.model.Track
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 
 /**
  * Reusable track list with long-press action sheet (queue ops / playlists / downloads).
@@ -66,9 +70,9 @@ fun TrackColumnList(
                 trailing = {
                     if (isCurrent) PulseBars()
                     // ВИДИМАЯ кнопка скачивания в каждой строке (не только в меню долгого нажатия)
-                    androidx.compose.material3.IconButton(onClick = { onDownload(t, false) }) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Rounded.Download,
+                    IconButton(onClick = { onDownload(t, false) }) {
+                        Icon(
+                            Icons.Rounded.Download,
                             contentDescription = "Скачать аудио",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
