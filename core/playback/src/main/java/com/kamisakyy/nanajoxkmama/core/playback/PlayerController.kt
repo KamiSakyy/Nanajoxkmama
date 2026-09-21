@@ -103,7 +103,7 @@ class PlayerController @Inject constructor(
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
                 reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK ||
                 reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED ||
-                reason == Player.MEDIA_ITEM_TRANSITION_REASON_SKIP
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_USER_REQUEST
             ) {
                 val id = mediaItem?.mediaId
                 val idx = _state.value.queue.indexOfFirst { it.id == id }
