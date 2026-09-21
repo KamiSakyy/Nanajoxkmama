@@ -1,0 +1,80 @@
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+--
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:265:15 Unresolved reference 'coverSmall'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:265:66 No parameter with name 'coverSmall' found.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:266:15 Unresolved reference 'cover'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:266:61 No parameter with name 'cover' found.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:284:40 Unresolved reference 'coverSmall'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:284:64 Unresolved reference 'cover'.
+
+> Task :core:database:compileReleaseJavaWithJavac
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:network:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+----- tail -----
+> Task :core:design:mergeReleaseConsumerProguardFiles
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :core:design:mergeReleaseJavaResource
+> Task :core:design:syncReleaseLibJars
+> Task :core:design:bundleReleaseLocalLintAar
+> Task :app:mergeReleaseAssets
+> Task :core:common:extractReleaseAnnotations
+> Task :app:compressReleaseAssets
+> Task :core:common:mergeReleaseConsumerProguardFiles
+> Task :core:common:mergeReleaseJavaResource
+> Task :core:common:syncReleaseLibJars
+> Task :core:common:bundleReleaseLocalLintAar
+> Task :core:model:mergeReleaseConsumerProguardFiles
+> Task :core:model:mergeReleaseJavaResource
+> Task :core:model:syncReleaseLibJars
+> Task :core:model:bundleReleaseLocalLintAar
+> Task :app:extractReleaseVersionControlInfo
+> Task :core:database:compileReleaseKotlin
+
+> Task :core:network:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:265:15 Unresolved reference 'coverSmall'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:265:66 No parameter with name 'coverSmall' found.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:266:15 Unresolved reference 'cover'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:266:61 No parameter with name 'cover' found.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:284:40 Unresolved reference 'coverSmall'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:284:64 Unresolved reference 'cover'.
+
+> Task :core:database:compileReleaseJavaWithJavac
+> Task :core:common:lintVitalAnalyzeRelease
+> Task :core:design:lintVitalAnalyzeRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1790009774069.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:network:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m 13s
+342 actionable tasks: 271 executed, 71 from cache
+[skip ci]
