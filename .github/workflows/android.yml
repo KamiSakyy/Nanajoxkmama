@@ -146,11 +146,13 @@ jobs:
             if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
             sleep 5
           done
-          gh release create "v${{ steps.v.outputs.name }}" \
-            "handoff/AniBeat-${{ steps.v.outputs.name }}.apk#AniBeat APK" \
+          NAME="${{ steps.v.outputs.name }}"
+          gh release create "v$NAME" \
+            "handoff/AniBeat-$NAME.apk#AniBeat APK" \
             "handoff/anibeat-release.apk#anibeat-release.apk (постоянная ссылка)" \
-            --title "AniBeat Android ${{ steps.v.outputs.name }}" \
+            --title "AniBeat Android $NAME" \
             --notes "Подписанный APK приложения AniBeat (versionCode ${{ steps.v.outputs.code }}). Устанавливается поверх предыдущей версии как обновление. Файл также лежит в папке handoff/ репозитория." \
+            || gh release upload "v$NAME" "handoff/AniBeat-$NAME.apk#AniBeat APK" "handoff/anibeat-release.apk#anibeat-release.apk (постоянная ссылка)" --clobber \
             || echo "release exists"
 
       - name: Store the build log (readable from the repository)
