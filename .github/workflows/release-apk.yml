@@ -70,7 +70,7 @@ jobs:
           if [ $STATUS -ne 0 ]; then
             echo "## Gradle build failed" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-            grep -E "error:|\.java:|FAILURE|Execution failed|What went wrong" build.log | head -60 >> "$GITHUB_STEP_SUMMARY"
+            grep -E -A2 "error:|FAILURE|What went wrong" build.log | head -120 >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             echo "::error::gradle assembleRelease failed — see job summary"
             exit $STATUS
@@ -81,7 +81,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -E "error:|\.java:|FAILURE|Execution failed|What went wrong" build.log | head -80 > build-errors.txt || true
+          grep -E -A2 "error:|FAILURE|What went wrong" build.log | head -120 > build-errors.txt || true
           [ -s build-errors.txt ] || tail -n 80 build.log > build-errors.txt
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

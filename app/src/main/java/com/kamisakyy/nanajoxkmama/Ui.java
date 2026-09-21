@@ -905,7 +905,7 @@ public final class Ui {
             s.setMaxLines(1);
             mid.addView(s);
         }
-        l.addView(mid, new LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        l.addView(mid, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         l.setOnClickListener(click);
         tapScale(l);
         return l;

@@ -1,6 +1,0 @@
-/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/Ui.java:908: error: cannot find symbol
-/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/NowPlayingView.java:143: error: incompatible types: possible lossy conversion from float to long
-/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/NowPlayingView.java:144: error: incompatible types: possible lossy conversion from float to long
-FAILURE: Build failed with an exception.
-* What went wrong:
-Execution failed for task ':app:compileReleaseJavaWithJavac'.

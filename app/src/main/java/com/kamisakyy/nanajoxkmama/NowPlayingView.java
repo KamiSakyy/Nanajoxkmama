@@ -134,7 +134,7 @@ public final class NowPlayingView extends FrameLayout {
 
         slider = new Ui.SliderView(host);
         slider.setListener(new Ui.SliderView.OnSeek() {
-            float scrubMs = -1;
+            long scrubMs = -1;
             @Override public void onScrub(float fraction) {
                 Track t = Store.getCurrentTrack();
                 long dur = Store.getDuration();
