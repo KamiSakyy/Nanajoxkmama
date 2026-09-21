@@ -52,25 +52,19 @@ jobs:
           fi
 
       - name: Assemble signed release APK only
-        id: assemble
-        continue-on-error: true
         env:
           ANIBEAT_KEYSTORE_PASSWORD: ${{ secrets.ANIBEAT_KEYSTORE_PASSWORD }}
           ANIBEAT_KEY_ALIAS: ${{ secrets.ANIBEAT_KEY_ALIAS }}
           ANIBEAT_KEY_PASSWORD: ${{ secrets.ANIBEAT_KEY_PASSWORD }}
         run: |
-          set +e
+          set -euo pipefail
           VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
           VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
-          gradle --no-daemon --stacktrace --console=plain assembleRelease \
+          gradle --no-daemon assembleRelease \
             -PversionCode="$VERSION_CODE" \
-            -PversionName="$VERSION_NAME" > "$GITHUB_WORKSPACE/gradle-build.log" 2>&1
-          CODE=$?
-          tail -240 "$GITHUB_WORKSPACE/gradle-build.log"
-          exit "$CODE"
+            -PversionName="$VERSION_NAME"
 
       - name: Prepare release handoff
-        if: steps.assemble.outcome == 'success'
         run: |
           set -euo pipefail
           VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
@@ -83,7 +77,6 @@ jobs:
           test "$BYTES" -le 4194304 || { echo "APK is ${BYTES} bytes; the 4 MiB limit was exceeded"; exit 1; }
 
       - name: Upload release APK artifact
-        if: steps.assemble.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: AniBeat-release-${{ github.run_number }}
@@ -94,25 +87,8 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Save Gradle diagnostic temporarily
-        if: steps.assemble.outcome == 'failure'
-        run: |
-          set -euo pipefail
-          mkdir -p handoff
-          cp gradle-build.log handoff/gradle-build.log
-
-      - name: Save Gradle diagnostic in the branch
-        if: steps.assemble.outcome == 'failure' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
-        run: |
-          set -euo pipefail
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add handoff/gradle-build.log
-          git commit -m "chore: save release build diagnostic [skip ci]"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-
       - name: Put the current APK in handoff/
-        if: steps.assemble.outcome == 'success' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
