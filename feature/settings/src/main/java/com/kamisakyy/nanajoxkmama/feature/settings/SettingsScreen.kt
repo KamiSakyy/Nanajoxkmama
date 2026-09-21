@@ -58,7 +58,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 
         Text("Данные", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         SettingSwitch("Экономия трафика", snap.dataSaver, viewModel::setDataSaver)
-        SettingSwitch("Предзагрузка следующего трека", snap.preloadNext, viewModel::setPreloadNext)
+        SettingSwitch("Предзагрузка следующего трека", snap.preloadNext, viewModel::setPreload)
         SettingSwitch("Скачивать видео по умолчанию", snap.downloadVideo, viewModel::setDownloadVideo)
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

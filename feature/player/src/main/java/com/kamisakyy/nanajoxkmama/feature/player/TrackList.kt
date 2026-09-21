@@ -32,7 +32,7 @@ fun TrackColumnList(
     currentId: String?,
     playlists: List<Playlist>,
     downloadProgress: Map<String, String>,
-    onPlay: (Track, Int) -> Unit,
+    onPlay: (List<Track>, Int) -> Unit,
     onPlayNext: (Track) -> Unit,
     onEnqueue: (Track) -> Unit,
     onAddToPlaylist: (String, Track) -> Unit,
@@ -61,7 +61,7 @@ fun TrackColumnList(
             TrackRow(
                 track = t,
                 isCurrent = isCurrent,
-                onClick = { onPlay(t, tracks.indexOf(t)) },
+                onClick = { onPlay(tracks, tracks.indexOfFirst { x -> x.id == t.id }) },
                 onLongClick = { sheetTrack = t },
                 trailing = {
                     if (isCurrent) PulseBars()
@@ -76,7 +76,7 @@ fun TrackColumnList(
             track = t,
             playlists = playlists,
             downloadProgress = downloadProgress[t.id + ":a"] ?: downloadProgress[t.id + ":v"],
-            onPlay = { onPlay(t, tracks.indexOf(t)) },
+            onPlay = { onPlay(tracks, tracks.indexOfFirst { x -> x.id == t.id }) },
             onPlayNext = { onPlayNext(t) },
             onEnqueue = { onEnqueue(t) },
             onAddToPlaylist = { id -> onAddToPlaylist(id, t) },
