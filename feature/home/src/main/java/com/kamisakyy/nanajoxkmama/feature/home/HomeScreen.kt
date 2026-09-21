@@ -50,6 +50,7 @@ import com.kamisakyy.nanajoxkmama.core.model.Track
  * Home — website App shell port: greeting, Fresh (+period toggle), Random (with
  * extras), Latest, season mix, curated mixes, decade shortcuts.
  */
+@androidx.compose.material3.ExperimentalMaterial3Api
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
