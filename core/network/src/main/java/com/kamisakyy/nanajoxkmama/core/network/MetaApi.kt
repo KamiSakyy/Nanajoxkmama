@@ -182,7 +182,8 @@ class MetaApi @Inject constructor(
         o.optJSONArray("screenshots")?.let { sc ->
             for (i in 0 until sc.length()) {
                 val s0 = sc.optJSONObject(i) ?: continue
-                val u = fixShikiUrl(s0.optString("original").ifEmpty { s0.optString("preview") })
+                // ЭКОНОМИЯ: preview (десятки КБ) вместо original (1-3 МБ на скриншот)
+                val u = fixShikiUrl(s0.optString("preview").ifEmpty { s0.optString("original") })
                 if (!u.isNullOrEmpty()) shots.add(u)
             }
         }
@@ -190,7 +191,9 @@ class MetaApi @Inject constructor(
             malId = malId,
             name = o.optString("name"),
             ru = o.optString("russian").ifEmpty { null },
-            poster = fixShikiUrl(o.optJSONObject("image")?.optString("original")),
+            poster = fixShikiUrl(
+                o.optJSONObject("image")?.let { im -> im.optString("preview").ifEmpty { im.optString("original") } }
+            ),
             description = cleanShikiText(o.optString("description").ifEmpty { null }),
             score = o.optString("score").toDoubleOrNull(),
             kind = o.optString("kind").ifEmpty { null },

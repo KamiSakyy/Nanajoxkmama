@@ -84,6 +84,7 @@ class PlayerController @Inject constructor(
     private var controller: MediaController? = null
     private var loadToken = 0
     private var retriedOtherUrl = false
+    private var errorStreak = 0
     private var shuffleOrder: List<Int> = emptyList()
     @Volatile private var offlineIndex: Map<String, String> = emptyMap()
 
@@ -102,7 +103,7 @@ class PlayerController @Inject constructor(
         override fun onPlaybackStateChanged(playbackState: Int) {
             update { it.copy(buffering = playbackState == Player.STATE_BUFFERING) }
             syncPosition()
-            if (playbackState == Player.STATE_READY) retriedOtherUrl = false
+            if (playbackState == Player.STATE_READY) { retriedOtherUrl = false; errorStreak = 0 }
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -255,12 +256,12 @@ class PlayerController @Inject constructor(
             }
         }
         retriedOtherUrl = false
+        errorStreak++
         toast("Не удалось воспроизвести «${track.title}»")
-        if (s.queue.size > 1 && !networkMonitor.isOffline()) {
-            scope.launch {
-                delay(1500)
-                next()
-            }
+        if (errorStreak >= 3) {
+            // СТОП: безлимитные авто-переключения штормили загрузками и съедали весь трафик.
+            toast("Источники недоступны — воспроизведение остановлено")
+            update { it.copy(isPlaying = false) }
         } else if (s.queue.size > 1) {
             scope.launch {
                 delay(1500)
