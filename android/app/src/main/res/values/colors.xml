@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="anibeat_black">#FF000000</color>
+    <color name="anibeat_bg">#FF000000</color>
+    <color name="anibeat_surface_1">#FF0B0B0C</color>
+    <color name="anibeat_surface_2">#FF141416</color>
+    <color name="anibeat_surface_3">#FF1E1E21</color>
+    <color name="anibeat_surface_4">#FF28282C</color>
+    <color name="anibeat_on">#FFFFFFFF</color>
+    <color name="anibeat_on_variant">#FF9A9AA2</color>
+    <color name="anibeat_on_dim">#FF63636B</color>
+    <color name="anibeat_outline">#FF3A3A40</color>
+    <color name="anibeat_outline_variant">#FF232326</color>
+    <color name="anibeat_accent">#FF8AB4F8</color>
+    <color name="anibeat_on_accent">#FF06121F</color>
+    <color name="anibeat_accent_container">#FF1B2736</color>
+    <color name="anibeat_tertiary">#FF7EE0C0</color>
+    <color name="anibeat_warning">#FFFFB340</color>
+    <color name="anibeat_error">#FFFF6B62</color>
+    <color name="anibeat_ripple">#33FFFFFF</color>
 </resources>

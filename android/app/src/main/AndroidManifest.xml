@@ -12,15 +12,13 @@
     <application
         android:name=".AniBeatApp"
         android:allowBackup="true"
-        android:enableOnBackInvokedCallback="false"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
         android:theme="@style/Theme.AniBeat"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
@@ -35,7 +33,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Фоновое воспроизведение: обычная служба (чистая Java), без media3-session. -->
         <service
             android:name=".player.PlaybackService"
             android:exported="false"

@@ -1,35 +1,43 @@
 package com.anibeat.app;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowInsets;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
-import com.anibeat.app.core.Image;
 import com.anibeat.app.core.Net;
 import com.anibeat.app.core.Prefs;
 import com.anibeat.app.core.Theme;
 import com.anibeat.app.core.Ui;
-import com.anibeat.app.ui.ScreenBase;
 import com.anibeat.app.data.Downloads;
 import com.anibeat.app.data.Library;
+import com.anibeat.app.data.Models;
 import com.anibeat.app.data.Settings;
 import com.anibeat.app.player.Player;
-import com.anibeat.app.ui.MiniPlayer;
-import com.anibeat.app.ui.Nav;
-import com.anibeat.app.ui.NowPlaying;
+import com.anibeat.app.ui.Host;
+import com.anibeat.app.ui.Img;
+import com.anibeat.app.ui.ListScreen;
+import com.anibeat.app.ui.MiniPlayerView;
+import com.anibeat.app.ui.NowPlayingView;
+import com.anibeat.app.ui.Screen;
 import com.anibeat.app.ui.Sheets;
-import com.anibeat.app.ui.Toaster;
 import com.anibeat.app.ui.screens.AnimeScreen;
 import com.anibeat.app.ui.screens.ArtistScreen;
 import com.anibeat.app.ui.screens.BrowseScreen;
@@ -37,167 +45,210 @@ import com.anibeat.app.ui.screens.HomeScreen;
 import com.anibeat.app.ui.screens.LibraryScreen;
 import com.anibeat.app.ui.screens.PlaylistScreen;
 import com.anibeat.app.ui.screens.SearchScreen;
+import com.anibeat.app.ui.screens.TracksScreen;
 import com.anibeat.app.ui.screens.YearScreen;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.navigation.NavigationBarView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * AniBeat — полностью нативное приложение (Java + Android SDK).
- * Ни одной строки веба: экраны, анимации и логика перенесены с сайта
- * на системные View, Media3 (ExoPlayer) и собственный API-слой.
+ * Единый экран приложения: четыре вкладки, мини-плеер, полноэкранный плеер и панели.
+ * Код полностью на Java, интерфейс — Material 3.
  */
-public class MainActivity extends Activity {
-
-    public interface Screen {
-        View view();
-
-        default void onShow() {
-        }
-
-        default void onHide() {
-        }
-
-        default String title() {
-            return "";
-        }
-    }
+public class MainActivity extends AppCompatActivity implements Host {
 
     private FrameLayout root;
     private FrameLayout content;
-    /** Мини-плеер и отступы контента пересчитываются при любом изменении плеера. */
-    private final com.anibeat.app.player.Player.Listener playerListener = () -> runOnUiThread(() -> Ui.safe(this::updateBars));
-    private Nav nav;
-    private MiniPlayer miniPlayer;
-    private NowPlaying nowPlaying;
-    private Sheets sheets;
-    private Toaster toaster;
+    private MiniPlayerView mini;
+    private NowPlayingView nowPlaying;
+    private BottomNavigationView nav;
 
     private final List<Screen> stack = new ArrayList<>();
     private final Screen[] tabs = new Screen[4];
     private int tabIndex;
-    private View currentView;
+    private int insetTop;
+    private int insetBottom;
     private boolean miniVisible;
+    private boolean started;
+
+    private final Player.Listener playerListener = () -> Ui.postSafe(() -> {
+        updateBars(true);
+        if (mini != null) mini.refresh();
+        if (nowPlaying != null && nowPlaying.isOpen()) nowPlaying.refresh();
+        Screen current = currentScreen();
+        if (current instanceof ListScreen) ((ListScreen) current).refreshPlaying();
+    });
+
+    private final android.os.Handler ticker = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable tickTask = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (mini != null && mini.getVisibility() == View.VISIBLE) mini.tick();
+                if (nowPlaying != null && nowPlaying.isOpen()) nowPlaying.tick();
+            } catch (Throwable t) {
+                Ui.report(t);
+            }
+            ticker.postDelayed(this, 500);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        try {
+            boot();
+        } catch (Throwable t) {
+            Ui.report(t);
+            AniBeatApp.write(this, "запуск", t);
+            emergency(t);
+        }
+    }
 
-        Ui.attach(this, this);
-        // Ни один сбой запуска не должен закрывать приложение.
+    private void boot() {
+        Ui.attach(this);
         Ui.safe(() -> Prefs.init(this));
         Ui.safe(() -> Net.init(this));
-        Ui.safe(() -> Image.init(this));
+        Ui.safe(() -> Img.init(this));
         Ui.safe(() -> Settings.init(this));
+        Ui.safe(() -> Img.setDataSaver(Settings.dataSaver));
         Ui.safe(Library::init);
         Ui.safe(() -> Downloads.init(this));
         Ui.safe(() -> Player.init(this));
+        Player.setAutoConnect(true);
+        Player.addListener(playerListener);
 
-        Window window = getWindow();
-        Ui.safe(() -> {
-            window.setStatusBarColor(Color.BLACK);
-            window.setNavigationBarColor(Color.BLACK);
-            // Классический способ разметки под системные полосы: работает на всех версиях.
-            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        });
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
 
         root = new FrameLayout(this);
         root.setBackgroundColor(Theme.BG);
 
         content = new FrameLayout(this);
-        root.addView(content, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(content, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        nav = new Nav(this);
-        toaster = new Toaster(this);
-        miniPlayer = new MiniPlayer(this);
-        sheets = new Sheets(this);
-        nowPlaying = new NowPlaying(this);
+        mini = new MiniPlayerView(this);
+        mini.setVisibility(View.GONE);
+        FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(this, MiniPlayerView.HEIGHT_DP));
+        miniParams.gravity = Gravity.BOTTOM;
+        miniParams.leftMargin = Theme.dp(this, 10);
+        miniParams.rightMargin = Theme.dp(this, 10);
+        root.addView(mini, miniParams);
 
-        FrameLayout.LayoutParams miniParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        miniParams.gravity = android.view.Gravity.BOTTOM;
-        miniParams.bottomMargin = Theme.dp(this, Nav.BAR_HEIGHT_DP + 6);
-        root.addView(miniPlayer, miniParams);
-        root.addView(nav);
-        root.addView(nowPlaying, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        root.addView(sheets, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        root.addView(toaster, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        nav = buildNav();
+        FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        navParams.gravity = Gravity.BOTTOM;
+        root.addView(nav, navParams);
 
-        // Отступы под строку состояния и навигацию — системный слушатель вставок.
-        root.setOnApplyWindowInsetsListener((v, insets) -> {
-            // Метод есть во всех версиях Android (на новых — устаревший, но рабочий).
-            v.setPadding(0, insets.getSystemWindowInsetTop(), 0, insets.getSystemWindowInsetBottom());
+        nowPlaying = new NowPlayingView(this);
+        root.addView(nowPlaying, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            insetTop = bars.top;
+            insetBottom = bars.bottom;
+            content.setPadding(0, insetTop, 0, 0);
+            nav.setPadding(0, 0, 0, insetBottom);
+            updateBars(true);
             return insets;
         });
 
-        try {
-            setContentView(root);
-            Player.addListener(playerListener);
-            showTab(0, false);
-            requestNotificationPermissionIfNeeded();
-        } catch (Throwable t) {
-            // Приложение обязано открыться: вместо закрытия показываем причину и кнопку возврата.
-            Ui.report(t);
-            showFallback(t);
-        }
+        setContentView(root);
+        getOnBackPressedDispatcher().addCallback(this, backCallback);
+        showTab(0, false);
+        askForNotifications();
+        reportCrashIfAny();
+        started = true;
     }
 
-    /** Экран аварийного запуска: приложение открыто, видно, что произошло. */
-    private void showFallback(Throwable error) {
+    private BottomNavigationView buildNav() {
+        BottomNavigationView view = new BottomNavigationView(this);
+        view.setBackgroundColor(Theme.SURFACE_1);
+        ColorStateList colors = new ColorStateList(
+                new int[][]{new int[]{android.R.attr.state_checked}, new int[]{}},
+                new int[]{Theme.ACCENT, Theme.ON_VARIANT});
+        view.setItemIconTintList(colors);
+        view.setItemTextColor(colors);
+        view.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
+        Menu menu = view.getMenu();
+        menu.add(0, 1, 0, "Главная").setIcon(R.drawable.ic_home);
+        menu.add(0, 2, 1, "Поиск").setIcon(R.drawable.ic_search);
+        menu.add(0, 3, 2, "Обзор").setIcon(R.drawable.ic_explore);
+        menu.add(0, 4, 3, "Медиатека").setIcon(R.drawable.ic_library_music);
+        view.setOnItemSelectedListener(item -> {
+            showTab(item.getItemId() - 1, true);
+            return true;
+        });
+        view.setSelectedItemId(1);
+        return view;
+    }
+
+    private void askForNotifications() {
+        Ui.safe(() -> {
+            if (Build.VERSION.SDK_INT >= 33
+                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 900);
+            }
+        });
+    }
+
+    private void reportCrashIfAny() {
+        Ui.postDelayed(() -> Ui.safe(() -> {
+            String text = AniBeatApp.read(this);
+            if (text == null || text.isEmpty()) return;
+            AniBeatApp.clear(this);
+            Sheets.showText(this, "Предыдущий запуск завершился сбоем", text);
+        }), 700);
+    }
+
+    /** Аварийный экран: приложение открыто и видно, что произошло. */
+    private void emergency(Throwable error) {
         try {
             LinearLayout column = new LinearLayout(this);
             column.setOrientation(LinearLayout.VERTICAL);
             column.setBackgroundColor(Color.BLACK);
-            column.setPadding(Theme.dp(this, 24), Theme.dp(this, 80), Theme.dp(this, 24), Theme.dp(this, 24));
-
+            column.setPadding(Theme.dp(this, 22), Theme.dp(this, 90), Theme.dp(this, 22), Theme.dp(this, 22));
             TextView title = new TextView(this);
-            title.setText("Не удалось открыть экран");
+            title.setText("Не удалось открыть приложение");
             title.setTextColor(Color.WHITE);
             title.setTextSize(19f);
-
+            title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
             TextView message = new TextView(this);
-            String text = error.getClass().getSimpleName()
-                    + (error.getMessage() == null ? "" : ": " + error.getMessage());
-            StackTraceElement[] stack = error.getStackTrace();
-            StringBuilder sb = new StringBuilder(text);
-            for (int i = 0; i < stack.length && i < 6; i++) {
-                if (stack[i].getClassName().startsWith("com.anibeat")) sb.append("\n  ").append(stack[i]);
-            }
-            message.setText(sb.toString());
+            message.setText(AniBeatApp.describe(error));
             message.setTextColor(0xFF9A9AA2);
-            message.setTextSize(12.5f);
-            LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            mp.topMargin = Theme.dp(this, 12);
-
+            message.setTextSize(12f);
+            message.setTextIsSelectable(true);
             TextView retry = new TextView(this);
             retry.setText("Открыть заново");
             retry.setTextColor(Color.BLACK);
             retry.setTextSize(15f);
-            retry.setGravity(android.view.Gravity.CENTER);
-            retry.setBackground(com.anibeat.app.core.Ui.rounded(Color.WHITE, Theme.dpF(this, 12f)));
-            retry.setPadding(Theme.dp(this, 16), Theme.dp(this, 12), Theme.dp(this, 16), Theme.dp(this, 12));
+            retry.setGravity(Gravity.CENTER);
+            retry.setBackground(Ui.rounded(this, Color.WHITE, 12f));
+            retry.setPadding(Theme.dp(this, 18), Theme.dp(this, 12), Theme.dp(this, 18), Theme.dp(this, 12));
             retry.setOnClickListener(v -> recreate());
+            column.addView(title);
+            LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            mp.topMargin = Theme.dp(this, 12);
+            column.addView(message, mp);
             LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            rp.topMargin = Theme.dp(this, 18);
-
-            column.addView(title);
-            column.addView(message, mp);
+            rp.topMargin = Theme.dp(this, 20);
             column.addView(retry, rp);
             setContentView(column);
         } catch (Throwable ignored) {
         }
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Навигация                                                           */
-    /* ------------------------------------------------------------------ */
-
-    public void showTab(int index) {
-        showTab(index, true);
-    }
+    /* ----------------------------- вкладки -------------------------------- */
 
     public void showTab(int index, boolean animate) {
         try {
@@ -207,9 +258,17 @@ public class MainActivity extends Activity {
         }
     }
 
+    public void showTab(int index) {
+        showTab(index, true);
+    }
+
     private void showTabSafe(int index, boolean animate) {
         if (index < 0 || index >= 4) return;
         tabIndex = index;
+        for (Screen screen : stack) {
+            content.removeView(screen.view());
+            screen.release();
+        }
         stack.clear();
         if (tabs[index] == null) {
             switch (index) {
@@ -220,7 +279,7 @@ public class MainActivity extends Activity {
                     tabs[index] = new SearchScreen(this);
                     break;
                 case 2:
-                    tabs[index] = new com.anibeat.app.ui.screens.BrowseScreen(this);
+                    tabs[index] = new BrowseScreen(this);
                     break;
                 default:
                     tabs[index] = new LibraryScreen(this);
@@ -228,7 +287,35 @@ public class MainActivity extends Activity {
             }
         }
         setContent(tabs[index], animate);
-        nav.setActive(index);
+        if (nav != null) nav.setSelectedItemId(index + 1);
+        updateBars(true);
+    }
+
+    private void setContent(Screen screen, boolean animate) {
+        View view = screen.view();
+        if (view.getParent() == null) content.addView(view);
+        for (int i = 0; i < content.getChildCount(); i++) {
+            View child = content.getChildAt(i);
+            child.setVisibility(child == view ? View.VISIBLE : View.GONE);
+        }
+        if (animate) {
+            view.setTranslationX(Theme.dp(this, 26));
+            view.setAlpha(0f);
+            view.animate().translationX(0f).alpha(1f)
+                    .setDuration(Theme.DUR_SEGMENT).setInterpolator(Theme.EASE_OUT).start();
+        } else {
+            view.setAlpha(1f);
+            view.setTranslationX(0f);
+        }
+        screen.onShow();
+        applyPadding(view);
+    }
+
+    private void applyPadding(View view) {
+        if (view instanceof ListScreen) {
+            int bottom = Theme.dp(this, MiniPlayerView.HEIGHT_DP + 84) + insetBottom + (miniVisible ? Theme.dp(this, 8) : 0);
+            ((ListScreen) view).setContentPadding(insetTop, bottom);
+        }
     }
 
     public void push(Screen screen, boolean animate) {
@@ -245,215 +332,257 @@ public class MainActivity extends Activity {
             current.onHide();
             stack.add(current);
         }
-        setContent(screen, animate);
+        View view = screen.view();
+        content.addView(view, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        for (int i = 0; i < content.getChildCount(); i++) {
+            View child = content.getChildAt(i);
+            child.setVisibility(child == view ? View.VISIBLE : View.GONE);
+        }
+        if (animate) {
+            view.setTranslationX(Theme.dp(this, 34));
+            view.animate().translationX(0f).setDuration(Theme.DUR_SEGMENT).setInterpolator(Theme.EASE_OUT).start();
+        }
+        screen.onShow();
+        applyPadding(view);
+        updateBars(true);
     }
 
-    /** Экран вкладки (нужно для проверки интерфейса). */
-    public Screen screenAt(int index) {
-        return index >= 0 && index < tabs.length ? tabs[index] : null;
+    public void pop() {
+        try {
+            if (stack.isEmpty()) return;
+            Screen leaving = currentScreen();
+            Screen back = stack.remove(stack.size() - 1);
+            final View leavingView = leaving == null ? null : leaving.view();
+            View backView = back.view();
+            for (int i = 0; i < content.getChildCount(); i++) {
+                View child = content.getChildAt(i);
+                child.setVisibility(child == backView ? View.VISIBLE : View.GONE);
+            }
+            back.onShow();
+            if (leavingView != null) {
+                leavingView.animate().translationX(Theme.dp(this, 34)).alpha(0f)
+                        .setDuration(Theme.DUR_FAST)
+                        .withEndAction(() -> Ui.safe(() -> {
+                            content.removeView(leavingView);
+                            if (leaving != null) leaving.release();
+                        }))
+                        .start();
+                leavingView.setAlpha(1f);
+            }
+            applyPadding(backView);
+            updateBars(true);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
     }
 
-    private Screen currentScreen() {
+    public Screen currentScreen() {
         if (!stack.isEmpty()) return stack.get(stack.size() - 1);
         return tabs[tabIndex];
     }
 
-    private void setContent(Screen screen, boolean animate) {
-        try {
-            setContentSafe(screen, animate);
-        } catch (Throwable t) {
-            Ui.report(t);
-        }
+    public Screen screenAt(int index) {
+        return index >= 0 && index < tabs.length ? tabs[index] : null;
     }
 
-    private void setContentSafe(Screen screen, boolean animate) {
-        View view = screen.view();
-        content.removeAllViews();
-        content.addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        currentView = view;
-        miniVisible = false;
-        view.setPadding(0, 0, 0, Theme.dp(this, Nav.BAR_HEIGHT_DP + 8));
-        if (animate) {
-            view.setAlpha(0f);
-            view.setTranslationY(Theme.dpF(this, 12f));
-            view.animate().alpha(1f).translationY(0f).setDuration(Theme.DUR).setInterpolator(Theme.EASE_OUT).start();
-        }
-        screen.onShow();
-        updateBars();
-    }
-
-    public void pop() {
-        if (stack.isEmpty()) {
-            showTab(0, true);
-            return;
-        }
-        Screen leaving = currentScreen();
-        if (leaving != null) leaving.onHide();
-        stack.remove(stack.size() - 1);
-        Screen screen = currentScreen();
-        if (screen != null) setContent(screen, true);
-    }
-
-    public void open(Screen screen) {
-        push(screen, true);
-    }
-
-    /** Медиатека на конкретной вкладке (site: /library?tab=downloads|history). */
-    public void showLibraryTab(int tab) {
-        showTab(3, true);
-        Screen screen = tabs[3];
-        if (screen instanceof com.anibeat.app.ui.screens.LibraryScreen) {
-            ((com.anibeat.app.ui.screens.LibraryScreen) screen).openTab(tab);
-        }
-    }
-
-    public void openAnime(String slug) {
-        if (slug == null || slug.isEmpty()) return;
-        push(new AnimeScreen(this, slug), true);
-    }
-
-    public void openArtist(String slug) {
-        if (slug == null || slug.isEmpty()) return;
-        push(new ArtistScreen(this, slug), true);
-    }
-
-    public void openYear(int year) {
-        push(new YearScreen(this, year), true);
-    }
-
-    public void openPlaylist(String id) {
-        push(new PlaylistScreen(this, id), true);
-    }
-
-    public void showBrowse(String type) {
-        showTab(2, true);
-        if (tabs[2] instanceof BrowseScreen) ((BrowseScreen) tabs[2]).setType(type);
-    }
-
-    public void updateBars() {
-        updateBars(false);
-    }
-
-    public void updateBars(boolean force) {
-        try {
-            updateBarsSafe(force);
-        } catch (Throwable t) {
-            Ui.report(t);
-        }
-    }
-
-    private void updateBarsSafe(boolean force) {
-        boolean mini = Player.current() != null && !nowPlaying.isOpen();
-        miniPlayer.getView().setVisibility(mini ? View.VISIBLE : View.GONE);
-        if ((mini != miniVisible || force) && currentView != null) {
-            miniVisible = mini;
-            int bottom = Nav.BAR_HEIGHT_DP + 8 + (mini ? MiniPlayer.HEIGHT_DP + 8 : 0);
-            currentView.setPadding(0, 0, 0, Theme.dp(this, bottom));
-        }
-        if (mini) {
-            miniPlayer.resumeTick();
-            miniPlayer.refresh();
-        } else {
-            miniPlayer.pauseTick();
-        }
-        toaster.bringToFront();
-        sheets.bringToFront();
-    }
-
-    public Sheets sheets() {
-        return sheets;
-    }
-
-    public Toaster toaster() {
-        return toaster;
-    }
-
-    public NowPlaying nowPlaying() {
+    public com.anibeat.app.ui.NowPlayingView nowPlaying() {
         return nowPlaying;
     }
 
-    public Nav nav() {
-        return nav;
+    public MiniPlayerView miniPlayer() {
+        return mini;
     }
 
-    public int tabIndex() {
-        return tabIndex;
+    /* ------------------------------ полосы ------------------------------- */
+
+    public void updateBars(boolean force) {
+        Ui.safe(() -> {
+            boolean visible = Player.current() != null;
+            if (visible != miniVisible || force) {
+                miniVisible = visible;
+                mini.setVisibility(visible ? View.VISIBLE : View.GONE);
+            }
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mini.getLayoutParams();
+            int bottom = Theme.dp(this, 72) + insetBottom;
+            if (params.bottomMargin != bottom) {
+                params.bottomMargin = bottom;
+                mini.setLayoutParams(params);
+            }
+            View current = content.getChildCount() > 0 ? content.getChildAt(content.getChildCount() - 1) : null;
+            for (int i = 0; i < content.getChildCount(); i++) {
+                if (content.getChildAt(i).getVisibility() == View.VISIBLE) current = content.getChildAt(i);
+            }
+            if (current != null) applyPadding(current);
+        });
     }
 
-    public boolean hasStack() {
-        return !stack.isEmpty();
-    }
-
-    /* ------------------------------------------------------------------ */
+    /* ------------------------------- цикл -------------------------------- */
 
     @Override
-    public void onBackPressed() {
-        if (nowPlaying.isOpen()) {
-            nowPlaying.close();
-            return;
-        }
-        if (sheets.isOpen()) {
-            sheets.close();
-            return;
-        }
-        if (!stack.isEmpty()) {
-            pop();
-            return;
-        }
-        if (tabIndex != 0) {
-            showTab(0, true);
-            return;
-        }
-        super.onBackPressed();
+    protected void onResume() {
+        super.onResume();
+        ticker.removeCallbacks(tickTask);
+        ticker.postDelayed(tickTask, 500);
+        Ui.postSafe(() -> {
+            if (mini != null) mini.refresh();
+            if (nowPlaying != null && nowPlaying.isOpen()) nowPlaying.refresh();
+            updateBars(true);
+        });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        ticker.removeCallbacks(tickTask);
     }
 
     @Override
     protected void onDestroy() {
-        // Закрываем окно: снимаем слушателей и таймеры, чтобы ничего не осталось висеть.
         try {
+            ticker.removeCallbacks(tickTask);
             Player.removeListener(playerListener);
-            for (Screen screen : tabs) if (screen instanceof ScreenBase) ((ScreenBase) screen).release();
-            for (Screen screen : stack) if (screen instanceof ScreenBase) ((ScreenBase) screen).release();
-            if (sheets != null) sheets.release();
-            if (nowPlaying != null) nowPlaying.release();
-            if (miniPlayer != null) miniPlayer.release();
-            if (toaster != null) toaster.release();
+            for (Screen screen : stack) screen.release();
+            stack.clear();
+            for (Screen screen : tabs) if (screen != null) screen.release();
         } catch (Throwable t) {
             Ui.report(t);
         }
         super.onDestroy();
     }
 
+    private final OnBackPressedCallback backCallback = new OnBackPressedCallback(true) {
+        @Override
+        public void handleOnBackPressed() {
+            try {
+                if (nowPlaying != null && nowPlaying.isOpen()) {
+                    nowPlaying.close();
+                    return;
+                }
+                if (!stack.isEmpty()) {
+                    pop();
+                    return;
+                }
+                if (tabIndex != 0) {
+                    showTab(0, false);
+                    return;
+                }
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+                setEnabled(true);
+            } catch (Throwable t) {
+                Ui.report(t);
+            }
+        }
+    };
+
+    /* ------------------------------- Host -------------------------------- */
+
     @Override
-    protected void onResume() {
-        super.onResume();
-        updateBars();
+    public android.app.Activity activity() {
+        return this;
     }
 
     @Override
-    public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+    public void playTrack(Models.Track track, List<Models.Track> list, int index) {
+        if (track == null) return;
         try {
-            return super.dispatchTouchEvent(event);
+            List<Models.Track> queue = list == null || list.isEmpty() ? java.util.Collections.singletonList(track) : list;
+            Player.play(queue, Math.max(0, Math.min(index, queue.size() - 1)));
+            updateBars(true);
+            if (mini != null) mini.refresh();
         } catch (Throwable t) {
-            // Ошибка внутри обработчика касания не должна закрывать приложение.
             Ui.report(t);
-            return true;
         }
     }
 
     @Override
-    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
-        try {
-            return super.dispatchKeyEvent(event);
-        } catch (Throwable t) {
-            Ui.report(t);
-            return true;
-        }
+    public void enqueue(Models.Track track, boolean next) {
+        if (next) Player.playNext(track);
+        else Player.enqueue(track);
+        updateBars(true);
     }
 
-    private void requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < 33) return;
-        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return;
-        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+    @Override
+    public void trackMenu(Models.Track track, View anchor) {
+        Sheets.trackMenu(this, track, anchor);
+    }
+
+    @Override
+    public void openAnime(Models.AnimeRef anime) {
+        if (anime == null) return;
+        if (anime.slug == null || anime.slug.isEmpty()) {
+            toast("Не удалось определить аниме");
+            return;
+        }
+        push(new AnimeScreen(this, anime.slug), true);
+    }
+
+    @Override
+    public void openArtist(Models.ArtistRef artist) {
+        if (artist == null) return;
+        if (artist.slug == null || artist.slug.isEmpty()) {
+            toast("Не удалось определить исполнителя");
+            return;
+        }
+        push(new ArtistScreen(this, artist.slug), true);
+    }
+
+    @Override
+    public void openMix(final Models.Mix mix) {
+        if (mix == null) return;
+        push(new TracksScreen(this, this, mix.title, "Подборка: " + mix.subtitle, (refresh, sink) ->
+                com.anibeat.app.data.Api.getTracksForAnimeSlugs(Arrays.asList(mix.slugs), (tracks, error) -> {
+                    if (error != null) sink.tracks(null, error);
+                    else sink.tracks(tracks, null);
+                })), true);
+    }
+
+    @Override
+    public void openPlaylist(Models.Playlist playlist) {
+        if (playlist == null) return;
+        push(new PlaylistScreen(this, playlist.id), true);
+    }
+
+    @Override
+    public void openYear(int year) {
+        push(new YearScreen(this, year), true);
+    }
+
+    @Override
+    public void openGenre(final String genreId, final String title) {
+        push(new TracksScreen(this, this, title, "Треки жанра", (refresh, sink) ->
+                com.anibeat.app.data.Api.getFreshTracks("all", 60, (tracks, error) -> {
+                    if (error != null) {
+                        sink.tracks(null, error);
+                        return;
+                    }
+                    List<Models.Track> filtered = com.anibeat.app.ui.Genres.filter(tracks, genreId);
+                    sink.tracks(filtered.isEmpty() ? tracks : filtered, null);
+                })), true);
+    }
+
+    @Override
+    public void pushScreen(Screen screen) {
+        push(screen, true);
+    }
+
+    @Override
+    public void popScreen() {
+        pop();
+    }
+
+    @Override
+    public void openNowPlaying() {
+        if (nowPlaying != null) nowPlaying.open();
+    }
+
+    @Override
+    public void toast(String message) {
+        Ui.toast(this, message);
+    }
+
+    public boolean isStarted() {
+        return started;
     }
 }

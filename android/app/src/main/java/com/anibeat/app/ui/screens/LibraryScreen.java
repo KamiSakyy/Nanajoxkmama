@@ -1,417 +1,165 @@
 package com.anibeat.app.ui.screens;
 
 import android.content.Context;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
-import com.anibeat.app.MainActivity;
-import com.anibeat.app.core.CoverView;
-import com.anibeat.app.core.Theme;
+import com.anibeat.app.R;
 import com.anibeat.app.core.Ui;
 import com.anibeat.app.data.Downloads;
 import com.anibeat.app.data.Library;
 import com.anibeat.app.data.Models;
-import com.anibeat.app.player.Player;
-import com.anibeat.app.ui.Cards;
+import com.anibeat.app.ui.Block;
 import com.anibeat.app.ui.Format;
-import com.anibeat.app.ui.ScreenBase;
-import com.anibeat.app.ui.TopBar;
+import com.anibeat.app.ui.Host;
+import com.anibeat.app.ui.ListScreen;
+import com.anibeat.app.ui.Sheets;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/** Медиатека — порт pages/Library.tsx (Избранное / Скачано / Плейлисты / История). */
-public class LibraryScreen extends ScreenBase {
+/** Медиатека: избранное, плейлисты, скачанное и история. */
+public class LibraryScreen extends ListScreen {
 
-    private int tab; // 0 избранное, 1 скачано, 2 плейлисты, 3 история
-    private TopBar topBar;
-    private LinearLayout tabsHolder;
-    private LinearLayout bodyHolder;
+    public static final String TAB_FAVORITES = "favorites";
+    public static final String TAB_PLAYLISTS = "playlists";
+    public static final String TAB_DOWNLOADS = "downloads";
+    public static final String TAB_HISTORY = "history";
 
-    /** Живой прогресс загрузок (как на сайте: полоса растёт без перерисовки экрана). */
-    private final java.util.List<FrameLayout> liveBars = new java.util.ArrayList<>();
-    private final java.util.List<TextView> liveLabels = new java.util.ArrayList<>();
-    private final java.util.List<Downloads.Job> liveJobs = new java.util.ArrayList<>();
-    private final android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private final Runnable progressTick = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                tickOnce();
-            } catch (Throwable t) {
-                Ui.report(t);
-            }
-        }
+    private String tab = TAB_FAVORITES;
+    private final Library.Listener libraryListener = () -> Ui.postSafe(this::rebuild);
+    private final Downloads.Listener downloadsListener = () -> Ui.postSafe(this::rebuild);
+    private boolean watching;
 
-        private void tickOnce() {
-            boolean alive = false;
-            for (int i = 0; i < liveBars.size() && i < liveJobs.size(); i++) {
-                Downloads.Job job = liveJobs.get(i);
-                FrameLayout bar = liveBars.get(i);
-                TextView label = i < liveLabels.size() ? liveLabels.get(i) : null;
-                float percent = job.total > 0 ? job.received * 100f / job.total : 0f;
-                Ui.setProgress(bar, percent);
-                if (label != null) label.setText(jobStatus(job));
-                if (job.status == Downloads.Status.QUEUED || job.status == Downloads.Status.DOWNLOADING) alive = true;
-            }
-            if (alive) progressHandler.postDelayed(this, 400);
-        }
-    };
-
-    public LibraryScreen(MainActivity activity) {
-        super(activity);
-    }
-
-    /** Открыть конкретную вкладку (вызывается из переходов с других экранов). */
-    public void openTab(int index) {
-        setTab(index);
-    }
-
-    private void setTab(int index) {
-        tab = index;
-        fillBody();
-        updateTopActions();
+    public LibraryScreen(Context context, Host host) {
+        super(context, host);
     }
 
     @Override
-    public void onHide() {
-        super.onHide();
-        progressHandler.removeCallbacks(progressTick);
+    protected void load(boolean refresh) {
+        if (refresh) setRefreshing(true);
+        rebuild();
     }
 
     @Override
-    protected void onRelease() {
-        super.onRelease();
-        progressHandler.removeCallbacks(progressTick);
-    }
+    protected void rebuild() {
+        Ui.safe(() -> {
+            List<Block> blocks = new ArrayList<>();
+            List<Models.Track> trackList = new ArrayList<>();
+            blocks.add(Block.header("Медиатека"));
+            Block chips = Block.chips("", tabIds(), tabLabels(), tab);
+            chips.onChip = (id, label) -> {
+                tab = id;
+                rebuild();
+            };
+            blocks.add(chips);
 
-    @Override
-    protected View build() {
-        Context c = ctx();
-        LinearLayout root = Ui.column(c);
-        root.setBackgroundColor(Theme.BG);
-        topBar = new TopBar(activity, "Медиатека", false, true, false);
-        root.addView(topBar);
-        tabsHolder = Ui.column(c);
-        root.addView(tabsHolder);
-        bodyHolder = Ui.column(c);
-        bodyHolder.setPadding(0, 0, 0, dp(24));
-        View scroll = scroller(bodyHolder);
-        root.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-        if (scroll instanceof LinearLayout) topBar.bindScroll(scrollViewOf((LinearLayout) scroll));
-        updateTabs();
-        fillBody();
-        updateTopActions();
-        return root;
-    }
-
-    private void updateTabs() {
-        tabsHolder.removeAllViews();
-        Ui.Segmented segmented = new Ui.Segmented(ctx(), new String[]{"Избранное", "Скачано", "Плейлисты", "История"}, tab, this::setTab);
-        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(32));
-        sp.leftMargin = dp(16);
-        sp.rightMargin = dp(16);
-        sp.topMargin = dp(8);
-        sp.bottomMargin = dp(6);
-        tabsHolder.addView(segmented, sp);
-    }
-
-    private void updateTopActions() {
-        topBar.actions().removeAllViews();
-        Context c = ctx();
-        if (tab == 3 && !Library.history().isEmpty()) {
-            topBar.addAction(Ui.iconButton(c, "delete", 20, Theme.ON, () -> {
-                Library.clearHistory();
-                activity.toaster().show("История очищена");
-                fillBody();
-                updateTopActions();
-            }));
-        } else if (tab == 2) {
-            topBar.addAction(Ui.iconButton(c, "add", 22, Theme.ON, () -> {
-                activity.sheets().openCreatePlaylist(() -> {
-                    tab = 2;
-                    fillBody();
-                });
-            }));
-        }
-    }
-
-    @Override
-    public void rebuild() {
-        if (bodyHolder == null) {
-            super.rebuild();
-            return;
-        }
-        fillBody();
-        updateTopActions();
-    }
-
-    private void fillBody() {
-        if (bodyHolder == null) return;
-        Context c = ctx();
-        bodyHolder.removeAllViews();
-        switch (tab) {
-            case 0:
-                fillFavorites(c);
-                break;
-            case 1:
-                fillDownloads(c);
-                break;
-            case 2:
-                fillPlaylists(c);
-                break;
-            default:
-                fillHistory(c);
-                break;
-        }
-    }
-
-    private void fillFavorites(Context c) {
-        List<Models.Track> favorites = Library.favorites();
-        if (favorites.isEmpty()) {
-            bodyHolder.addView(Ui.emptyState(c, "favorite_border", "Пока пусто", "Нажмите сердечко у трека — он появится здесь.", "Найти музыку", () -> activity.showTab(1, true)));
-            return;
-        }
-        bodyHolder.addView(playBar(favorites, false));
-        bodyHolder.addView(trackList(favorites, false));
-    }
-
-    private void fillHistory(Context c) {
-        List<Models.Track> history = Library.history();
-        if (history.isEmpty()) {
-            bodyHolder.addView(Ui.emptyState(c, "history", "История пуста", "Здесь появятся треки, которые вы слушали.", null, null));
-            return;
-        }
-        bodyHolder.addView(playBar(history, false));
-        bodyHolder.addView(trackList(history, false));
-    }
-
-    private void fillDownloads(Context c) {
-        List<Downloads.Job> jobs = Downloads.jobs();
-        List<Models.Track> offlineTracks = Format.uniqueBy(Downloads.offlineTracks(), t -> t.id);
-
-        if (!jobs.isEmpty()) {
-            TextView title = Ui.text(c, "Загрузки", 15f, Theme.ON, true);
-            TextView clear = Ui.text(c, "Очистить", 14f, Theme.PRIMARY);
-            clear.setOnClickListener(v -> {
-                Downloads.clearFinished();
-                fillBody();
-            });
-            Ui.tap(clear);
-            LinearLayout head = Ui.row(c);
-            head.setPadding(dp(16), dp(16), dp(16), dp(4));
-            head.addView(title, Ui.lpw(1f));
-            head.addView(clear);
-            bodyHolder.addView(head);
-
-            LinearLayout group = Ui.listGroup(c, null, null);
-            LinearLayout body = Ui.groupBody(group);
-            liveBars.clear();
-            liveLabels.clear();
-            liveJobs.clear();
-            progressHandler.removeCallbacks(progressTick);
-            for (Downloads.Job job : jobs) {
-                LinearLayout row = Ui.row(c);
-                row.setPadding(dp(12), dp(10), dp(12), dp(10));
-                CoverView cover = new CoverView(c);
-                cover.setRadiusDp(8f);
-                cover.setIconSizeDp(14f);
-                cover.setUrl(job.track.coverSmall != null ? job.track.coverSmall : job.track.cover, null);
-                row.addView(cover, Ui.lp(dp(40), dp(40)));
-                LinearLayout texts = Ui.column(c);
-                TextView name = Ui.text(c, job.track.title, 15f, Theme.ON);
-                name.setSingleLine(true);
-                name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                String status = jobStatus(job);
-                TextView sub = Ui.text(c, status, 12.5f, Theme.ON_VARIANT);
-                texts.addView(name);
-                texts.addView(sub);
-                LinearLayout.LayoutParams tp = Ui.lpw(1f);
-                tp.leftMargin = dp(12);
-                row.addView(texts, tp);
-                boolean live = job.status == Downloads.Status.QUEUED || job.status == Downloads.Status.DOWNLOADING;
-                row.addView(Ui.iconButton(c, live ? "stop" : "close", live ? 14 : 16, Theme.ON_DIM, () -> {
-                    if (live) Downloads.cancel(job.key);
-                    else Downloads.dismiss(job.key);
-                    fillBody();
-                }));
-                body.addView(row);
-                if (live) {
-                    FrameLayout bar = Ui.progressBar(c, 4f);
-                    LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(4));
-                    bp.leftMargin = dp(12);
-                    bp.rightMargin = dp(12);
-                    bp.bottomMargin = dp(10);
-                    body.addView(bar, bp);
-                    bar.post(() -> Ui.setProgress(bar, job.total > 0 ? job.received * 100f / job.total : 0f));
-                    liveBars.add(bar);
-                    liveLabels.add(sub);
-                    liveJobs.add(job);
-                    progressHandler.removeCallbacks(progressTick);
-                    progressHandler.postDelayed(progressTick, 400);
+            if (TAB_FAVORITES.equals(tab)) {
+                List<Models.Track> favorites = Library.favorites();
+                if (favorites.isEmpty()) {
+                    blocks.add(Block.empty("В избранном пусто", "Нажмите ♥ в плеере или удерживайте трек в списке"));
+                } else {
+                    Block.Row shuffle = new Block.Row("shuffle", "Перемешать избранное", Format.plural(favorites.size(), "трек", "трека", "треков"), R.drawable.ic_shuffle);
+                    shuffle.action = () -> host.playTrack(favorites.get(0), com.anibeat.app.ui.Format.shuffled(favorites), 0);
+                    blocks.add(Block.row(shuffle));
+                    trackList.addAll(favorites);
+                    for (int i = 0; i < favorites.size(); i++) {
+                        Models.Track track = favorites.get(i);
+                        blocks.add(Block.track(track, i, track.id != null && track.id.equals(playingId())));
+                    }
+                }
+            } else if (TAB_PLAYLISTS.equals(tab)) {
+                Block.Row create = new Block.Row("create", "Создать плейлист", "Свой список треков", R.drawable.ic_add);
+                create.chevron = false;
+                create.action = () -> Sheets.createPlaylist(host, this::rebuild);
+                blocks.add(Block.row(create));
+                List<Models.Playlist> playlists = Library.playlists();
+                if (playlists.isEmpty()) {
+                    blocks.add(Block.empty("Плейлистов нет", "Создайте первый плейлист и добавляйте туда треки"));
+                }
+                for (Models.Playlist playlist : playlists) {
+                    blocks.add(Block.playlistRow(playlist));
+                }
+            } else if (TAB_DOWNLOADS.equals(tab)) {
+                List<Models.Track> offline = Downloads.offlineTracks();
+                Block.Row queue = new Block.Row("queue", "Очередь загрузок", Downloads.activeCount() + " активных", R.drawable.ic_cloud_download);
+                queue.chevron = false;
+                queue.action = () -> Sheets.downloads(host);
+                blocks.add(Block.row(queue));
+                blocks.add(Block.text("Занято на устройстве", Downloads.formatBytes(Downloads.offlineTotalSize())));
+                if (offline.isEmpty()) {
+                    blocks.add(Block.empty("Скачанного нет", "Долгое нажатие на трек → «Скачать аудио». Файл попадёт и в папку «Загрузки»"));
+                } else {
+                    Block.Row clear = new Block.Row("clear", "Удалить все скачанные", null, R.drawable.ic_delete);
+                    clear.chevron = false;
+                    clear.action = () -> Sheets.confirm(host.activity(), "Удалить скачанное?",
+                            "Файлы будут удалены с устройства.", "Удалить", () -> {
+                                Downloads.clearOffline();
+                                rebuild();
+                            });
+                    blocks.add(Block.row(clear));
+                    trackList.addAll(offline);
+                    for (int i = 0; i < offline.size(); i++) {
+                        Models.Track track = offline.get(i);
+                        blocks.add(Block.track(track, i, track.id != null && track.id.equals(playingId())));
+                    }
+                }
+            } else {
+                List<Models.Track> history = Library.history();
+                if (history.isEmpty()) {
+                    blocks.add(Block.empty("История пуста", "Включите любой трек — он появится здесь"));
+                } else {
+                    Block.Row clear = new Block.Row("clear", "Очистить историю", Format.plural(history.size(), "запись", "записи", "записей"), R.drawable.ic_delete);
+                    clear.action = () -> {
+                        Library.clearHistory();
+                        rebuild();
+                    };
+                    blocks.add(Block.row(clear));
+                    trackList.addAll(history);
+                    for (int i = 0; i < history.size(); i++) {
+                        Models.Track track = history.get(i);
+                        blocks.add(Block.track(track, i, track.id != null && track.id.equals(playingId())));
+                    }
                 }
             }
-            LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            gp.topMargin = dp(4);
-            bodyHolder.addView(group, gp);
-        }
-
-        if (offlineTracks.isEmpty()) {
-            bodyHolder.addView(Ui.emptyState(c, "cloud_download", "Нет загрузок", "В меню трека выберите «Сохранить офлайн» — он будет играть без интернета.", "Найти музыку", () -> activity.showTab(1, true)));
-            return;
-        }
-        bodyHolder.addView(playBar(offlineTracks, true));
-        TextView stats = Ui.text(c, Format.plural(Downloads.offlineList().size(), "файл", "файла", "файлов") + " · " + Downloads.formatBytes(Downloads.offlineTotalSize()), 12.5f, Theme.ON_VARIANT);
-        stats.setPadding(dp(20), dp(6), dp(20), dp(4));
-        bodyHolder.addView(stats);
-
-        LinearLayout list = Ui.column(c);
-        list.setPadding(dp(16), 0, 0, 0);
-        for (Models.Track t : offlineTracks) {
-            final Models.Track track = t;
-            list.addView(Cards.trackRow(activity, t, offlineTracks, true, false, false, () -> {
-                Downloads.removeOffline(track.id, Downloads.KIND_AUDIO);
-                fillBody();
-            }, null));
-        }
-        bodyHolder.addView(list);
-    }
-
-    private static String jobStatus(Downloads.Job j) {
-        switch (j.status) {
-            case QUEUED:
-                return "В очереди";
-            case DOWNLOADING:
-                return j.total > 0 ? Math.round(j.received * 100f / j.total) + "% · " + Downloads.formatBytes(j.total) : Downloads.formatBytes(j.received);
-            case DONE:
-                return "Готово · " + Downloads.formatBytes(j.received);
-            case ERROR:
-                return j.error != null ? j.error : "Ошибка";
-            case CANCELLED:
-                return "Отменено";
-            default:
-                return "";
-        }
-    }
-
-    private void fillPlaylists(Context c) {
-        List<Models.Playlist> playlists = Library.playlists();
-        if (playlists.isEmpty()) {
-            bodyHolder.addView(Ui.emptyState(c, "queue_music", "Нет плейлистов", "Создайте плейлист и соберите в нём любимые темы.", "Создать", () -> activity.sheets().openCreatePlaylist(() -> {
-                tab = 2;
-                fillBody();
-            })));
-            return;
-        }
-        LinearLayout group = Ui.listGroup(c, null, null);
-        LinearLayout body = Ui.groupBody(group);
-        for (Models.Playlist pl : playlists) {
-            LinearLayout row = Ui.row(c);
-            row.setPadding(dp(12), dp(8), dp(14), dp(8));
-            FrameLayout mosaic = new FrameLayout(c);
-            mosaic.setBackground(Ui.rounded(Theme.SURFACE_3, Theme.dpF(c, 9f)));
-            int cell = dp(24);
-            for (int i = 0; i < Math.min(4, pl.tracks.size()); i++) {
-                CoverView cv = new CoverView(c);
-                cv.setRadiusDp(0f);
-                cv.setIconSizeDp(11f);
-                cv.setUrl(pl.tracks.get(i).coverSmall != null ? pl.tracks.get(i).coverSmall : pl.tracks.get(i).cover, null);
-                FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(cell, cell);
-                cp.leftMargin = (i % 2) * cell;
-                cp.topMargin = (i / 2) * cell;
-                mosaic.addView(cv, cp);
-            }
-            if (pl.tracks.isEmpty()) {
-                placeholder(mosaic, cell);
-            }
-            row.addView(mosaic, Ui.lp(dp(48), dp(48)));
-            LinearLayout texts = Ui.column(c);
-            TextView name = Ui.text(c, pl.name, 16f, Theme.ON);
-            name.setSingleLine(true);
-            name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            texts.addView(name);
-            texts.addView(Ui.text(c, Format.plural(pl.tracks.size(), "трек", "трека", "треков"), 13f, Theme.ON_VARIANT));
-            LinearLayout.LayoutParams tp = Ui.lpw(1f);
-            tp.leftMargin = dp(12);
-            row.addView(texts, tp);
-            row.addView(Ui.icon(c, "chevron_right", 15, Theme.ON_DIM));
-            row.setOnClickListener(v -> activity.openPlaylist(pl.id));
-            Ui.tap(row);
-            body.addView(row);
-        }
-        LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        gp.topMargin = dp(12);
-        gp.leftMargin = dp(0);
-        bodyHolder.addView(group, gp);
-    }
-
-    private void placeholder(FrameLayout mosaic, int cell) {
-        FrameLayout holder = new FrameLayout(ctx());
-        FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(dp(20), dp(20));
-        hp.gravity = android.view.Gravity.CENTER;
-        holder.addView(Ui.icon(ctx(), "queue_music", 20, Theme.ON_DIM), hp);
-        mosaic.addView(holder, new FrameLayout.LayoutParams(cell * 2, cell * 2));
-    }
-
-    private View playBar(List<Models.Track> tracks, boolean shuffle) {
-        Context c = ctx();
-        LinearLayout row = Ui.row(c);
-        row.setPadding(dp(16), dp(10), dp(16), dp(6));
-        LinearLayout play = Ui.row(c);
-        play.setGravity(android.view.Gravity.CENTER);
-        play.setBackground(Ui.rounded(Theme.SURFACE_2, Theme.dpF(c, 11f)));
-        play.setPadding(0, dp(11), 0, dp(11));
-        play.addView(Ui.icon(c, "play_arrow", 18, Theme.PRIMARY));
-        TextView label = Ui.text(c, "Слушать", 15f, Theme.PRIMARY, true);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.leftMargin = dp(6);
-        play.addView(label, lp);
-        play.setOnClickListener(v -> {
-            if (tracks.isEmpty()) return;
-            Player.playTracks(tracks, 0, false);
-            activity.nowPlaying().open();
+            render(blocks, trackList);
         });
-        Ui.tapScale(play);
-        row.addView(play, Ui.lpw(1f));
-
-        if (shuffle) {
-            LinearLayout mix = Ui.row(c);
-            mix.setGravity(android.view.Gravity.CENTER);
-            mix.setBackground(Ui.rounded(Theme.SURFACE_2, Theme.dpF(c, 11f)));
-            mix.setPadding(0, dp(11), 0, dp(11));
-            mix.addView(Ui.icon(c, "shuffle", 18, Theme.PRIMARY));
-            TextView mixLabel = Ui.text(c, "Вперемешку", 15f, Theme.PRIMARY, true);
-            LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            mp.leftMargin = dp(6);
-            mix.addView(mixLabel, mp);
-            mix.setOnClickListener(v -> {
-                if (tracks.size() < 2) return;
-                Player.playTracks(tracks, 0, true);
-                activity.nowPlaying().open();
-            });
-            Ui.tapScale(mix);
-            LinearLayout.LayoutParams rp = Ui.lpw(1f);
-            rp.leftMargin = dp(8);
-            row.addView(mix, rp);
-        }
-        return row;
-    }
-
-    private View trackList(List<Models.Track> tracks, boolean withRemove) {
-        Context c = ctx();
-        LinearLayout list = Ui.column(c);
-        list.setPadding(dp(16), dp(4), 0, 0);
-        for (Models.Track t : tracks) {
-            list.addView(Cards.trackRow(activity, t, tracks, true, false, false, null, null));
-        }
-        return list;
     }
 
     @Override
-    public String title() {
-        return "Медиатека";
+    public void onShow() {
+        super.onShow();
+        if (!watching) {
+            Library.addListener(libraryListener);
+            Downloads.addListener(downloadsListener);
+            watching = true;
+        }
+        rebuild();
+    }
+
+    @Override
+    public void release() {
+        if (watching) {
+            Library.removeListener(libraryListener);
+            Downloads.removeListener(downloadsListener);
+            watching = false;
+        }
+        super.release();
+    }
+
+    private static List<String> tabIds() {
+        List<String> ids = new ArrayList<>();
+        ids.add(TAB_FAVORITES);
+        ids.add(TAB_PLAYLISTS);
+        ids.add(TAB_DOWNLOADS);
+        ids.add(TAB_HISTORY);
+        return ids;
+    }
+
+    private static List<String> tabLabels() {
+        List<String> labels = new ArrayList<>();
+        labels.add("Избранное");
+        labels.add("Плейлисты");
+        labels.add("Скачанное");
+        labels.add("История");
+        return labels;
     }
 }

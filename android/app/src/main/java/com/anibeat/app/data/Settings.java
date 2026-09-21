@@ -2,7 +2,6 @@ package com.anibeat.app.data;
 
 import android.content.Context;
 
-import com.anibeat.app.core.Image;
 import com.anibeat.app.core.Prefs;
 
 import java.util.ArrayList;
@@ -40,7 +39,7 @@ public final class Settings {
         extraSources = Prefs.getBool("settings.extraSources", true);
         period = Prefs.getString("period", "all");
         mature = Prefs.getString("mature", "off");
-        Image.setDataSaver(dataSaver);
+        com.anibeat.app.ui.Img.setDataSaver(dataSaver);
     }
 
     public static void addListener(Listener l) {
@@ -79,7 +78,7 @@ public final class Settings {
     public static void setDataSaver(boolean value) {
         dataSaver = value;
         Prefs.put("settings.dataSaver", value);
-        Image.setDataSaver(value);
+        com.anibeat.app.ui.Img.setDataSaver(value);
         emit();
     }
 

@@ -1,7 +1,6 @@
 package com.anibeat.app.ui.screens;
 
 import android.content.Context;
-import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.Editable;
@@ -10,219 +9,84 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.anibeat.app.MainActivity;
+import com.anibeat.app.R;
 import com.anibeat.app.core.Theme;
 import com.anibeat.app.core.Ui;
-import com.anibeat.app.data.AnisongDb;
 import com.anibeat.app.data.Api;
 import com.anibeat.app.data.Library;
-import com.anibeat.app.data.Meta;
 import com.anibeat.app.data.Models;
 import com.anibeat.app.data.Settings;
-import com.anibeat.app.player.Player;
-import com.anibeat.app.ui.Cards;
-import com.anibeat.app.ui.ScreenBase;
+import com.anibeat.app.ui.Block;
+import com.anibeat.app.ui.Host;
+import com.anibeat.app.ui.ListScreen;
+import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
-/** Поиск — порт pages/Search.tsx (debounce 380мс, вкладки, расширенная база). */
-public class SearchScreen extends ScreenBase {
+/** Поиск по темам, аниме и исполнителям. */
+public class SearchScreen extends ListScreen {
 
-    private static final String[] SUGGESTIONS = {"Атака титанов", "Gurenge", "Наруто", "Unravel", "Тетрадь смерти", "Idol", "Магическая битва", "Blue Bird", "Kaikai Kitan", "Ван-Пис", "Tank!", "Sparkle"};
-
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private final Runnable debounceTask = this::runSearch;
-
+    private final EditText input;
+    private final Handler debounce = new Handler(Looper.getMainLooper());
+    private final Runnable searchTask = () -> Ui.safe(this::search);
+    private Models.SearchResults results;
+    private String mode = "all";
     private String query = "";
-    private int tab;
-    private EditText input;
-    private LinearLayout header;
-    private LinearLayout bodyHolder;
-    private LinearLayout tabsHolder;
-    private ScrollState scrollState;
+    private boolean searching;
 
-    private List<Models.AnimeSummary> anime = new ArrayList<>();
-    private List<Models.Track> tracks = new ArrayList<>();
-    private List<Models.Track> extraTracks = new ArrayList<>();
-    private List<Models.ArtistSummary> artists = new ArrayList<>();
-    private boolean loading;
-    private boolean extraLoading;
-    private String error;
-    private boolean searched;
-    private int requestSeq;
+    public SearchScreen(Context context, Host host) {
+        super(context, host);
 
-    public SearchScreen(MainActivity activity) {
-        super(activity);
-    }
-
-    private static final class ScrollState {
-    }
-
-    private boolean enabled() {
-        return query.trim().length() >= 2;
-    }
-
-    private void scheduleSearch() {
-        handler.removeCallbacks(debounceTask);
-        if (!enabled()) {
-            reset();
-            fillBody();
-            updateTabs();
-            return;
-        }
-        loading = true;
-        fillBody();
-        updateTabs();
-        handler.postDelayed(debounceTask, 380);
-    }
-
-    private void reset() {
-        anime = new ArrayList<>();
-        tracks = new ArrayList<>();
-        extraTracks = new ArrayList<>();
-        artists = new ArrayList<>();
-        searched = false;
-        error = null;
-        loading = false;
-        extraLoading = false;
-    }
-
-    private void runSearch() {
-        final String q = query.trim();
-        if (q.length() < 2) return;
-        final int seq = ++requestSeq;
-        final boolean extra = Settings.extraSources;
-        final boolean needByTitle = Settings.ruTitles || com.anibeat.app.ui.Format.hasCyrillic(q);
-        final List<Models.AnimeSummary> byTitle = new ArrayList<>();
-        final boolean[] done = {false, !extra, !needByTitle};
-
-        Runnable finish = () -> {
-            if (seq != requestSeq) return;
-            loading = false;
-            extraLoading = false;
-            searched = true;
-            fillBody();
-        };
-
-        Api.searchAll(q, (results, err) -> {
-            if (seq != requestSeq) return;
-            if (results != null) {
-                tracks = results.tracks;
-                artists = results.artists;
-                List<Models.AnimeSummary> merged = new ArrayList<>(byTitle);
-                merged.addAll(results.anime);
-                anime = uniqueAnime(merged);
-                Meta.warm(metaIds(tracks));
-                Library.addRecentSearch(q);
-            } else {
-                error = err;
-            }
-            done[0] = true;
-            if (done[0] && done[1] && done[2]) finish.run();
-        });
-
-        if (extra) {
-            extraLoading = true;
-            AnisongDb.search(q, (list, err) -> {
-                if (seq != requestSeq) return;
-                if (list != null) {
-                    Set<String> known = new LinkedHashSet<>();
-                    for (Models.Track t : tracks) known.add(key(t));
-                    List<Models.Track> filtered = new ArrayList<>();
-                    for (Models.Track t : list) {
-                        if (t.anime == null || t.anime.malId == null || !known.contains(key(t))) filtered.add(t);
-                    }
-                    extraTracks = filtered;
-                    Meta.warm(metaIds(extraTracks));
-                }
-                done[1] = true;
-                if (done[0] && done[1] && done[2]) finish.run();
-            });
-        }
-
-        if (needByTitle) {
-            Meta.searchShikimori(q, (hits, err) -> {
-                if (seq != requestSeq) return;
-                if (hits == null || hits.isEmpty()) {
-                    done[2] = true;
-                    if (done[0] && done[1] && done[2]) finish.run();
-                    return;
-                }
-                List<Integer> ids = new ArrayList<>();
-                for (Meta.ShikiHit hit : hits) ids.add(hit.malId);
-                Api.getAnimeByMalIds(ids, (list, err2) -> {
-                    if (seq != requestSeq) return;
-                    if (list != null) {
-                        List<Models.AnimeSummary> merged = new ArrayList<>(list);
-                        merged.addAll(anime);
-                        anime = uniqueAnime(merged);
-                        byTitle.clear();
-                        byTitle.addAll(list);
-                    }
-                    done[2] = true;
-                    if (done[0] && done[1] && done[2]) finish.run();
-                });
-            });
-        }
-    }
-
-    private static String key(Models.Track t) {
-        Integer mal = t.anime == null ? null : t.anime.malId;
-        return (mal == null ? "" : String.valueOf(mal)) + "|" + t.type + (t.sequence == null ? "" : t.sequence);
-    }
-
-    private static List<Models.AnimeSummary> uniqueAnime(List<Models.AnimeSummary> list) {
-        List<Models.AnimeSummary> out = new ArrayList<>();
-        Set<String> seen = new LinkedHashSet<>();
-        for (Models.AnimeSummary a : list) {
-            if (a == null || a.slug == null || seen.contains(a.slug)) continue;
-            seen.add(a.slug);
-            out.add(a);
-        }
-        return out;
-    }
-
-    private static List<Integer> metaIds(List<Models.Track> items) {
-        List<Integer> ids = new ArrayList<>();
-        for (Models.Track t : items) if (t.anime != null && t.anime.malId != null) ids.add(t.anime.malId);
-        return ids;
-    }
-
-    /* ------------------------------------------------------------------ */
-
-    @Override
-    protected View build() {
-        Context c = ctx();
-        LinearLayout root = Ui.column(c);
-        root.setBackgroundColor(Theme.BG);
-
-        header = Ui.column(c);
-        LinearLayout row = Ui.row(c);
-        row.setPadding(dp(16), dp(8), dp(12), dp(8));
-        LinearLayout field = Ui.row(c);
-        field.setBackground(Ui.rounded(Theme.SURFACE_3, Theme.dpF(c, 10f)));
-        field.setPadding(dp(10), 0, dp(10), 0);
-        field.addView(Ui.icon(c, "search", 17, Theme.ON_DIM));
-        input = new EditText(c);
-        input.setHint("Аниме, песня, исполнитель");
+        MaterialCardView bar = new MaterialCardView(context);
+        bar.setCardBackgroundColor(Theme.SURFACE_3);
+        bar.setRadius(Theme.dpF(context, 16));
+        bar.setCardElevation(0f);
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(Theme.dp(context, 14), Theme.dp(context, 4), Theme.dp(context, 8), Theme.dp(context, 4));
+        ImageView icon = new ImageView(context);
+        icon.setImageResource(R.drawable.ic_search);
+        icon.setColorFilter(Theme.ON_VARIANT);
+        row.addView(icon, new LinearLayout.LayoutParams(Theme.dp(context, 20), Theme.dp(context, 20)));
+        input = new EditText(context);
+        input.setHint("Поиск: аниме, тема, исполнитель");
         input.setHintTextColor(Theme.ON_DIM);
         input.setTextColor(Theme.ON);
-        input.setTextSize(17f);
+        input.setTextSize(15f);
+        input.setBackground(null);
         input.setSingleLine(true);
-        input.setBackgroundColor(0x00000000);
+        input.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
         input.setInputType(InputType.TYPE_CLASS_TEXT);
-        input.setText(query);
-        input.setPadding(dp(6), 0, dp(6), 0);
+        LinearLayout.LayoutParams inputParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        inputParams.leftMargin = Theme.dp(context, 10);
+        row.addView(input, inputParams);
+        ImageView clear = new ImageView(context);
+        clear.setImageResource(R.drawable.ic_close);
+        clear.setColorFilter(Theme.ON_VARIANT);
+        clear.setPadding(Theme.dp(context, 10), Theme.dp(context, 10), Theme.dp(context, 10), Theme.dp(context, 10));
+        row.addView(clear, new LinearLayout.LayoutParams(Theme.dp(context, 40), Theme.dp(context, 40)));
+        clear.setOnClickListener(v -> {
+            input.setText("");
+            results = null;
+            query = "";
+            showStart();
+        });
+        bar.addView(row);
+        FrameLayout.LayoutParams barParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        barParams.setMargins(Theme.dp(context, 12), Theme.dp(context, 8), Theme.dp(context, 12), 0);
+        addView(bar, barParams);
+        setContentPadding(Theme.dp(context, 68), Theme.dp(context, 150));
+
         input.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -234,262 +98,174 @@ public class SearchScreen extends ScreenBase {
 
             @Override
             public void afterTextChanged(Editable s) {
-                String value = s.toString();
-                if (value.equals(query)) return;
-                query = value;
-                scheduleSearch();
+                query = s == null ? "" : s.toString().trim();
+                debounce.removeCallbacks(searchTask);
+                if (query.length() >= 2) debounce.postDelayed(searchTask, 420);
+                else if (query.isEmpty()) {
+                    results = null;
+                    showStart();
+                }
             }
         });
-        field.addView(input, Ui.lpw(1f));
-
-        final FrameLayout clearBox = new FrameLayout(c);
-        clearBox.setBackground(Ui.rounded(Theme.SURFACE_5, Theme.dpF(c, 10f)));
-        ImageView close = Ui.icon(c, "close", 12, 0xFF000000);
-        FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(dp(12), dp(12));
-        cp.gravity = Gravity.CENTER;
-        clearBox.addView(close, cp);
-        clearBox.setOnClickListener(v -> {
-            query = "";
-            input.setText("");
-            reset();
-            fillBody();
-            updateTabs();
-            rebuildClearVisibility();
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            debounce.removeCallbacks(searchTask);
+            search();
+            return true;
         });
-        clearBox.setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
-        field.addView(clearBox, Ui.lp(dp(20), dp(20)));
-
-        row.addView(field, Ui.lpw(1f));
-
-        final TextView cancel = Ui.text(c, "Отмена", 17f, Theme.PRIMARY);
-        cancel.setPadding(dp(10), dp(10), dp(4), dp(10));
-        cancel.setOnClickListener(v -> {
-            query = "";
-            input.setText("");
-            input.clearFocus();
-            View focus = activity.getCurrentFocus();
-            if (focus != null) {
-                InputMethodManager imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
-                if (imm != null) imm.hideSoftInputFromWindow(focus.getWindowToken(), 0);
-            }
-            reset();
-            fillBody();
-            updateTabs();
-            rebuildClearVisibility();
-        });
-        row.addView(cancel);
-        header.addView(row, Ui.lp(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
-
-        tabsHolder = Ui.column(c);
-        header.addView(tabsHolder);
-        root.addView(header);
-
-        bodyHolder = Ui.column(c);
-        bodyHolder.setPadding(0, 0, 0, dp(24));
-        View scroll = scroller(bodyHolder);
-        root.addView(scroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-
-        fillBody();
-        updateTabs();
-        return root;
-    }
-
-    private void rebuildClearVisibility() {
-        input.post(() -> {
-            ViewGroup field = (ViewGroup) input.getParent();
-            if (field != null && field.getChildCount() > 2) {
-                field.getChildAt(field.getChildCount() - 1).setVisibility(query.isEmpty() ? View.GONE : View.VISIBLE);
-            }
-        });
-    }
-
-    private void updateTabs() {
-        if (tabsHolder == null) return;
-        tabsHolder.removeAllViews();
-        if (!enabled()) return;
-        Ui.Segmented segmented = new Ui.Segmented(ctx(), new String[]{"Всё", "Треки", "Аниме", "Артисты"}, tab, index -> {
-            tab = index;
-            fillBody();
-        });
-        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(32));
-        sp.leftMargin = dp(16);
-        sp.rightMargin = dp(16);
-        sp.bottomMargin = dp(10);
-        tabsHolder.addView(segmented, sp);
+        showStart();
     }
 
     @Override
-    public void rebuild() {
-        if (bodyHolder == null) {
-            super.rebuild();
+    protected void load(boolean refresh) {
+        if (query.length() >= 2) search();
+        else showStart();
+    }
+
+    private void search() {
+        if (query.length() < 2) {
+            showStart();
             return;
         }
-        fillBody();
-        updateTabs();
-        rebuildClearVisibility();
-    }
-
-    private void fillBody() {
-        if (bodyHolder == null) return;
-        Context c = ctx();
-        View scrollY = bodyHolder.getParent() instanceof android.widget.ScrollView ? (View) bodyHolder.getParent() : null;
-        int keepScroll = scrollY instanceof android.widget.ScrollView ? ((android.widget.ScrollView) scrollY).getScrollY() : 0;
-        bodyHolder.removeAllViews();
-
-        if (!enabled()) {
-            bodyHolder.addView(suggestions());
-        } else if (loading && anime.isEmpty() && tracks.isEmpty() && artists.isEmpty()) {
-            bodyHolder.addView(Cards.trackRowSkeleton(c, 5));
-        } else if (error != null && anime.isEmpty() && extraTracks.isEmpty()) {
-            bodyHolder.addView(Ui.errorState(c, error, this::scheduleSearch));
-        } else {
-            int total = anime.size() + tracks.size() + artists.size() + extraTracks.size();
-            if (searched && total == 0 && !extraLoading) {
-                bodyHolder.addView(Ui.emptyState(c, "search", "Ничего не найдено", "Попробуйте другое написание — по-русски или латиницей.", null, null));
-            } else {
-                if ((tab == 0 || tab == 2) && !anime.isEmpty()) {
-                    bodyHolder.addView(sectionTitle("Аниме"));
-                    List<View> cards = new ArrayList<>();
-                    for (Models.AnimeSummary a : anime) cards.add(Cards.animeCard(activity, a, tab == 2));
-                    if (tab == 2) {
-                        LinearLayout grid = gridRow(cards, 3);
-                        grid.setPadding(dp(10), 0, dp(10), 0);
-                        bodyHolder.addView(grid);
-                    } else {
-                        LinearLayout holder = Ui.column(c);
-                        addCardRow(holder, cards);
-                        bodyHolder.addView(holder);
-                    }
-                }
-                List<Models.Track> all = new ArrayList<>(tracks);
-                all.addAll(extraTracks);
-                if ((tab == 0 || tab == 1) && !tracks.isEmpty()) {
-                    bodyHolder.addView(sectionTitleWithAction("Треки", "Слушать", () -> {
-                        Player.playTracks(all, 0, false);
-                        activity.nowPlaying().open();
-                    }));
-                    bodyHolder.addView(trackList(tab == 0 ? tracks.subList(0, Math.min(8, tracks.size())) : tracks, all));
-                }
-                if ((tab == 0 || tab == 1) && (!extraTracks.isEmpty() || extraLoading)) {
-                    bodyHolder.addView(sectionTitle("Ещё треки"));
-                    if (extraLoading && extraTracks.isEmpty()) {
-                        bodyHolder.addView(Cards.trackRowSkeleton(c, 3));
-                    } else {
-                        bodyHolder.addView(trackList(tab == 0 ? extraTracks.subList(0, Math.min(6, extraTracks.size())) : extraTracks, all));
-                    }
-                }
-                if ((tab == 0 || tab == 3) && !artists.isEmpty()) {
-                    bodyHolder.addView(sectionTitle("Исполнители"));
-                    List<View> cards = new ArrayList<>();
-                    for (Models.ArtistSummary artist : artists) cards.add(Cards.artistCard(activity, artist));
-                    LinearLayout holder = Ui.column(c);
-                    addCardRow(holder, cards);
-                    bodyHolder.addView(holder);
-                }
+        if (searching) return;
+        searching = true;
+        setRefreshing(true);
+        Library.addRecentSearch(query);
+        Api.searchAll(query, (found, error) -> Ui.postSafe(() -> {
+            searching = false;
+            setRefreshing(false);
+            if (error != null || found == null) {
+                fail(error == null ? "Поиск не удался" : error);
+                return;
             }
-        }
-        if (scrollY instanceof android.widget.ScrollView && keepScroll > 0) {
-            final android.widget.ScrollView sv = (android.widget.ScrollView) scrollY;
-            sv.post(() -> sv.scrollTo(0, keepScroll));
-        }
+            results = found;
+            renderResults();
+        }));
     }
 
-    private View trackList(List<Models.Track> items, List<Models.Track> context) {
-        Context c = ctx();
-        LinearLayout col = Ui.column(c);
-        col.setPadding(dp(16), 0, 0, 0);
-        for (Models.Track t : items) col.addView(Cards.trackRow(activity, t, context, true, false, false, null, null));
-        return col;
-    }
-
-    private View suggestions() {
-        Context c = ctx();
-        LinearLayout col = Ui.column(c);
-        col.setPadding(dp(16), dp(12), dp(16), 0);
-        List<String> recent = Library.recentSearches();
-        if (!recent.isEmpty()) {
-            LinearLayout head = Ui.row(c);
-            TextView title = Ui.text(c, "Недавние", 15f, Theme.ON, true);
-            head.addView(title, Ui.lpw(1f));
-            TextView clear = Ui.text(c, "Очистить", 14f, Theme.PRIMARY);
-            clear.setOnClickListener(v -> {
+    private void showStart() {
+        List<Block> blocks = new ArrayList<>();
+        List<Block.Row> rows = new ArrayList<>();
+        for (final String recent : Library.recentSearches()) {
+            Block.Row row = new Block.Row(recent, recent, "Недавний запрос");
+            row.icon = R.drawable.ic_history;
+            row.chevron = false;
+            row.action = () -> {
+                input.setText(recent);
+                input.setSelection(recent.length());
+            };
+            rows.add(row);
+        }
+        if (!rows.isEmpty()) {
+            blocks.add(Block.section("Недавние запросы", "Очистить"));
+            Block recent = Block.rows(rows);
+            recent.onAction = () -> {
                 Library.clearRecentSearches();
-                fillBody();
-            });
-            Ui.tap(clear);
-            head.addView(clear);
-            col.addView(head);
-            LinearLayout group = Ui.listGroup(c, null, null);
-            LinearLayout body = Ui.groupBody(group);
-            boolean first = true;
-            for (String value : recent) {
-                LinearLayout row = Ui.row(c);
-                row.setPadding(dp(16), dp(12), dp(14), dp(12));
-                row.addView(Ui.icon(c, "history", 17, Theme.ON_DIM));
-                TextView label = Ui.text(c, value, 16f, Theme.ON);
-                LinearLayout.LayoutParams lp = Ui.lpw(1f);
-                lp.leftMargin = dp(12);
-                row.addView(label, lp);
-                row.setOnClickListener(v -> {
-                    query = value;
-                    input.setText(value);
-                    scheduleSearch();
-                });
-                Ui.tap(row);
-                body.addView(row);
-                first = false;
-            }
-            LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            gp.bottomMargin = dp(20);
-            col.addView(group, gp);
+                showStart();
+            };
+            blocks.add(recent);
         }
-        col.addView(Ui.text(c, "Попробуйте", 15f, Theme.ON, true));
-        LinearLayout wrap = Ui.column(c);
-        LinearLayout current = null;
-        for (int i = 0; i < SUGGESTIONS.length; i++) {
-            if (i % 2 == 0) {
-                current = Ui.row(c);
-                LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                rp.topMargin = dp(8);
-                wrap.addView(current, rp);
-            }
-            final String value = SUGGESTIONS[i];
-            TextView chipView = Ui.chip(c, value, null, false, () -> {
-                query = value;
-                input.setText(value);
-                scheduleSearch();
-            });
-            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            cp.rightMargin = dp(8);
-            current.addView(chipView, cp);
-        }
-        LinearLayout.LayoutParams wp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        wp.topMargin = dp(8);
-        col.addView(wrap, wp);
-        return col;
+        blocks.add(Block.text("Подсказка", "Начните вводить название аниме, темы или исполнителя — "
+                + "поиск работает по всем источникам сразу."));
+        Block genres = Block.chips("Жанры", genreIds(), genreNames(), null);
+        genres.onChip = (id, label) -> host.openGenre(id, label);
+        blocks.add(genres);
+        blocks.add(Block.mixRow("Подборки", Api.MIXES));
+        render(blocks, new ArrayList<>());
     }
 
-    private View sectionTitle(String title) {
-        return sectionTitleWithAction(title, null, null);
-    }
+    private void renderResults() {
+        List<Block> blocks = new ArrayList<>();
+        List<Models.Track> trackList = new ArrayList<>();
+        blocks.add(Block.header("Найдено: " + query));
+        Block chips = Block.chips("", ids(), labels(), mode);
+        chips.onChip = (id, label) -> {
+            mode = id;
+            renderResults();
+        };
+        blocks.add(chips);
 
-    private View sectionTitleWithAction(String title, String action, Runnable onAction) {
-        LinearLayout wrap = Ui.column(ctx());
-        LinearLayout headerRow = Cards.sectionHeader(ctx(), title, action, onAction == null ? null : onAction::run);
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        p.topMargin = dp(20);
-        wrap.addView(headerRow, p);
-        return wrap;
+        if (results.tracks != null && !results.tracks.isEmpty() && ("all".equals(mode) || "tracks".equals(mode))) {
+            List<Models.Track> found = Settings.filterMature(results.tracks);
+            blocks.add(Block.section("Темы"));
+            trackList.addAll(found);
+            for (int i = 0; i < found.size(); i++) {
+                Models.Track track = found.get(i);
+                blocks.add(Block.track(track, i, track.id != null && track.id.equals(playingId())));
+            }
+        }
+        if (results.anime != null && !results.anime.isEmpty() && ("all".equals(mode) || "anime".equals(mode))) {
+            if (results.anime.size() > 3) {
+                blocks.add(Block.animeRow("Аниме", results.anime.subList(0, Math.min(20, results.anime.size()))));
+            } else {
+                blocks.add(Block.section("Аниме"));
+                blocks.add(Block.animePair(results.anime));
+            }
+        }
+        if (results.artists != null && !results.artists.isEmpty() && ("all".equals(mode) || "artists".equals(mode))) {
+            blocks.add(Block.artistRow("Исполнители", results.artists));
+        }
+        if (trackList.isEmpty() && (results.anime == null || results.anime.isEmpty())
+                && (results.artists == null || results.artists.isEmpty())) {
+            blocks.add(Block.empty("Ничего не найдено", "Попробуйте другое написание или русское название"));
+        }
+        render(blocks, trackList);
     }
 
     @Override
-    public void onHide() {
-        super.onHide();
-        handler.removeCallbacks(debounceTask);
+    public void onShow() {
+        super.onShow();
+        Ui.postSafe(() -> {
+            if (query.isEmpty()) showStart();
+        });
     }
 
     @Override
-    public String title() {
-        return "Поиск";
+    protected void rebuild() {
+        if (results == null) showStart();
+        else renderResults();
+    }
+
+    private static List<String> ids() {
+        List<String> ids = new ArrayList<>();
+        ids.add("all");
+        ids.add("tracks");
+        ids.add("anime");
+        ids.add("artists");
+        return ids;
+    }
+
+    private static List<String> labels() {
+        List<String> labels = new ArrayList<>();
+        labels.add("Всё");
+        labels.add("Темы");
+        labels.add("Аниме");
+        labels.add("Исполнители");
+        return labels;
+    }
+
+    private static List<String> genreIds() {
+        List<String> ids = new ArrayList<>();
+        for (Models.GenreDef def : Api.GENRES) ids.add(def.id);
+        return ids;
+    }
+
+    private static List<String> genreNames() {
+        List<String> names = new ArrayList<>();
+        for (Models.GenreDef def : Api.GENRES) names.add(def.name);
+        return names;
+    }
+
+    /** Поле поиска доступно из тестов. */
+    public EditText field() {
+        return input;
+    }
+
+    /** Запустить поиск без клавиатуры. */
+    public void searchNow(String text) {
+        input.setText(text);
+        input.setSelection(input.getText().length());
+        debounce.removeCallbacks(searchTask);
+        query = text == null ? "" : text.trim();
+        search();
     }
 }
