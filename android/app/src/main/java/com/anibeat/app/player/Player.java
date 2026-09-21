@@ -136,25 +136,41 @@ public final class Player {
         created.setListener(new Engine.Listener() {
             @Override
             public void onReady() {
-                emit();
-                PlaybackService.notifyState(appContext, engine != null && engine.isPlaying());
+                try {
+                    emit();
+                    PlaybackService.notifyState(appContext, engine != null && engine.isPlaying());
+                } catch (Throwable t) {
+                    Ui.report(t);
+                }
             }
 
             @Override
             public void onCompletion() {
-                next(true);
+                try {
+                    next(true);
+                } catch (Throwable t) {
+                    Ui.report(t);
+                }
             }
 
             @Override
             public void onError() {
                 // Битый или недоступный трек — переходим к следующему, музыка не прерывается.
-                if (QUEUE.size() > 1) next(true);
-                else emit();
+                try {
+                    if (QUEUE.size() > 1) next(true);
+                    else emit();
+                } catch (Throwable t) {
+                    Ui.report(t);
+                }
             }
 
             @Override
             public void onBuffering(boolean buffering) {
-                emit();
+                try {
+                    emit();
+                } catch (Throwable t) {
+                    Ui.report(t);
+                }
             }
         });
         emit();
@@ -572,6 +588,14 @@ public final class Player {
 
     /** Открывает текущий трек очереди. */
     private static void openCurrent(boolean play) {
+        try {
+            openCurrentSafe(play);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private static void openCurrentSafe(boolean play) {
         Models.Track t = current();
         if (t == null) return;
         if (engine == null) {
@@ -586,7 +610,13 @@ public final class Player {
             return;
         }
         engine.open(url, play);
-        if (play) Library.addToHistory(t);
+        if (play) {
+            try {
+                Library.addToHistory(t);
+            } catch (Throwable e) {
+                Ui.report(e);
+            }
+        }
         PlaybackService.notifyState(appContext, play);
         emit();
     }
@@ -634,6 +664,14 @@ public final class Player {
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    /** Другой плеер или звонок забрал звук — ставим на паузу, как на сайте. */
+    static void onFocusLost() {
+        MAIN.post(() -> Ui.safe(() -> {
+            emit();
+            PlaybackService.notifyState(appContext, false);
+        }));
     }
 
     /** Ссылка на файл скачанного трека — нужна другим частям приложения. */

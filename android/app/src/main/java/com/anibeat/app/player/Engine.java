@@ -2,7 +2,10 @@ package com.anibeat.app.player;
 
 import android.content.Context;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.net.Uri;
 import android.view.Surface;
 
@@ -24,7 +27,22 @@ public final class Engine {
         void onBuffering(boolean buffering);
     }
 
+    private final Context context;
     private final MediaPlayer player = new MediaPlayer();
+    private AudioManager audioManager;
+    private AudioFocusRequest focusRequest;
+    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
+        if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            try {
+                playAfterPrepare = false;
+                if (prepared && player.isPlaying()) player.pause();
+                if (listener != null) listener.onBuffering(false);
+                com.anibeat.app.player.Player.onFocusLost();
+            } catch (Throwable t) {
+                Ui.report(t);
+            }
+        }
+    };
     private Listener listener;
     private Surface surface;
     private boolean preparing;
@@ -34,6 +52,7 @@ public final class Engine {
     private boolean playAfterPrepare;
 
     private Engine(Context context) {
+        this.context = context;
         player.setAudioAttributes(new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -138,8 +157,48 @@ public final class Engine {
         }
     }
 
+    /** Просит фокус аудио, чтобы звонок или другой плеер корректно ставили нас на паузу. */
+    private void requestFocus() {
+        try {
+            if (audioManager == null) {
+                audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            }
+            if (audioManager == null) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (focusRequest == null) {
+                    focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                            .setAudioAttributes(new AudioAttributes.Builder()
+                                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                    .build())
+                            .setOnAudioFocusChangeListener(focusListener)
+                            .build();
+                }
+                audioManager.requestAudioFocus(focusRequest);
+            } else {
+                audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+            }
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void abandonFocus() {
+        try {
+            if (audioManager == null) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (focusRequest != null) audioManager.abandonAudioFocusRequest(focusRequest);
+            } else {
+                audioManager.abandonAudioFocus(focusListener);
+            }
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
     public void play() {
         try {
+            requestFocus();
             if (prepared) {
                 player.start();
             } else if (preparing) {
@@ -231,6 +290,7 @@ public final class Engine {
 
     public void release() {
         try {
+            abandonFocus();
             player.reset();
             player.release();
         } catch (Throwable t) {
