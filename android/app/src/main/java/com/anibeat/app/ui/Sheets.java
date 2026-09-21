@@ -56,6 +56,14 @@ public class Sheets extends FrameLayout {
     private final Runnable sheetTick = new Runnable() {
         @Override
         public void run() {
+            try {
+                tickOnce();
+            } catch (Throwable t) {
+                Ui.report(t);
+            }
+        }
+
+        private void tickOnce() {
             boolean alive = false;
             for (int i = 0; i < sheetBars.size() && i < sheetJobs.size(); i++) {
                 Downloads.Job job = sheetJobs.get(i);

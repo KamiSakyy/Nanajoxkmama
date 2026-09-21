@@ -39,6 +39,14 @@ public class LibraryScreen extends ScreenBase {
     private final Runnable progressTick = new Runnable() {
         @Override
         public void run() {
+            try {
+                tickOnce();
+            } catch (Throwable t) {
+                Ui.report(t);
+            }
+        }
+
+        private void tickOnce() {
             boolean alive = false;
             for (int i = 0; i < liveBars.size() && i < liveJobs.size(); i++) {
                 Downloads.Job job = liveJobs.get(i);

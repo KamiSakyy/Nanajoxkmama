@@ -37,10 +37,14 @@ public class MiniPlayer extends FrameLayout {
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
-            // Полоса прогресса считается только когда карточка действительно на экране.
-            if (getVisibility() != VISIBLE) return;
-            refresh();
-            handler.postDelayed(this, 500);
+            try {
+                // Полоса прогресса считается только когда карточка действительно на экране.
+                if (getVisibility() == VISIBLE) refresh();
+            } catch (Throwable t) {
+                Ui.report(t);
+            } finally {
+                handler.postDelayed(this, 500);
+            }
         }
     };
 
@@ -163,6 +167,14 @@ public class MiniPlayer extends FrameLayout {
     }
 
     public void refresh() {
+        try {
+            refreshSafe();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void refreshSafe() {
         Models.Track track = Player.current();
         if (track == null || getVisibility() != VISIBLE) return;
         Display d = Display.track(track);

@@ -59,6 +59,14 @@ public class Spinner extends android.view.View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        try {
+            drawSpinner(canvas);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void drawSpinner(Canvas canvas) {
         super.onDraw(canvas);
         float inset = Math.max(2f, getWidth() * 0.08f);
         float stroke = Math.max(2f, getWidth() * 0.11f);

@@ -104,6 +104,14 @@ public class SliderView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        try {
+            drawSlider(canvas);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void drawSlider(Canvas canvas) {
         if (getWidth() <= 0) return;
         float w = getWidth();
         float cy = getHeight() / 2f;

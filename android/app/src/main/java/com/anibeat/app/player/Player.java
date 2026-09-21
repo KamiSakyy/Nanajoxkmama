@@ -72,6 +72,18 @@ public final class Player {
         restore(context);
         SessionToken token = new SessionToken(context, new ComponentName(context, PlaybackService.class));
         MediaController.Builder builder = new MediaController.Builder(context, token);
+        // Служба может отключиться (система остановила сервис). Тогда контроллер сбрасываем,
+        // и следующее нажатие поднимет его заново — вместо падения приложения.
+        builder.setListener(new MediaController.Listener() {
+            @Override
+            public void onDisconnected(MediaController disconnected) {
+                if (controller == disconnected) {
+                    controller = null;
+                    ready = false;
+                }
+                emit();
+            }
+        });
         com.google.common.util.concurrent.ListenableFuture<MediaController> future = builder.buildAsync();
         // Подключение уже идёт: повторные init() не должны создавать новые контроллеры.
         ready = true;
@@ -138,6 +150,23 @@ public final class Player {
 
     public static void removeListener(Listener l) {
         LISTENERS.remove(l);
+    }
+
+    /** Выполняет действие с контроллером; если он отвалился — поднимает службу заново. */
+    private static boolean withController(java.util.function.Consumer<MediaController> action) {
+        MediaController c = controller;
+        if (c == null) return false;
+        try {
+            action.accept(c);
+            return true;
+        } catch (Throwable t) {
+            // Контроллер перестал отвечать: забываем его, следующий тап подключит службу заново.
+            controller = null;
+            ready = false;
+            if (appContext != null) init(appContext);
+            com.anibeat.app.core.Ui.report(t);
+            return false;
+        }
     }
 
     private static void emit() {
@@ -295,9 +324,15 @@ public final class Player {
             if (appContext != null) init(appContext);
             return;
         }
-        if (controller.isPlaying()) controller.pause();
-        else {
-            controller.play();
+        if (controller == null) {
+            pendingIndex = index;
+            pendingPlay = true;
+            if (appContext != null) init(appContext);
+            return;
+        }
+        boolean wasPlaying = controller.isPlaying();
+        if (!withController(c -> { if (wasPlaying) c.pause(); else c.play(); })) return;
+        if (!wasPlaying) {
             Models.Track t = current();
             if (t != null) Library.addToHistory(t);
         }
@@ -312,14 +347,14 @@ public final class Player {
             if (appContext != null) init(appContext);
             return;
         }
-        controller.play();
+        if (!withController(MediaController::play)) return;
         Models.Track t = current();
         if (t != null) Library.addToHistory(t);
         emit();
     }
 
     public static void pause() {
-        if (controller != null) controller.pause();
+        if (controller != null) withController(MediaController::pause);
         emit();
     }
 
@@ -363,7 +398,7 @@ public final class Player {
     }
 
     public static void seekTo(long ms) {
-        if (controller != null) controller.seekTo(Math.max(0, ms));
+        if (controller != null) withController(c -> c.seekTo(Math.max(0, ms)));
         emit();
     }
 
@@ -484,14 +519,14 @@ public final class Player {
     public static void setVolume(float value) {
         volume = Math.max(0f, Math.min(1f, value));
         if (value > 0) muted = false;
-        if (controller != null) controller.setVolume(muted ? 0f : volume);
+        if (controller != null) withController(c -> c.setVolume(muted ? 0f : volume));
         save();
         emit();
     }
 
     public static void toggleMute() {
         muted = !muted;
-        if (controller != null) controller.setVolume(muted ? 0f : volume);
+        if (controller != null) withController(c -> c.setVolume(muted ? 0f : volume));
         save();
         emit();
     }
@@ -518,12 +553,23 @@ public final class Player {
         }
         List<MediaItem> items = new ArrayList<>();
         for (Models.Track t : QUEUE) items.add(toMediaItem(t));
-        controller.setMediaItems(items, Math.max(0, Math.min(startIndex, Math.max(0, items.size() - 1))), 0);
-        controller.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
-        controller.setVolume(muted ? 0f : volume);
-        controller.prepare();
+        final int start = Math.max(0, Math.min(startIndex, Math.max(0, items.size() - 1)));
+        boolean ok = withController(c -> {
+            c.setMediaItems(items, start, 0);
+            c.setRepeatMode("one".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ONE : "all".equals(repeat) ? androidx.media3.common.Player.REPEAT_MODE_ALL : androidx.media3.common.Player.REPEAT_MODE_OFF);
+            c.setVolume(muted ? 0f : volume);
+            c.prepare();
+            if (play) c.play();
+        });
+        if (!ok) {
+            // Служба отвалилась — запомним, что играть, и подключимся заново.
+            pendingIndex = startIndex;
+            pendingPlay = play;
+            if (appContext != null) init(appContext);
+            emit();
+            return;
+        }
         if (play) {
-            controller.play();
             Models.Track t = current();
             if (t != null) Library.addToHistory(t);
         }

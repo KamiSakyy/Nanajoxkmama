@@ -66,7 +66,11 @@ public class Toaster extends FrameLayout {
     }
 
     public void show(String message) {
-        post(() -> {
+        post(() -> Ui.safe(() -> showNow(message)));
+    }
+
+    private void showNow(String message) {
+        {
             Context c = getContext();
             TextView tv = Ui.text(c, message, 14f, Theme.ON, true);
             tv.setBackground(Ui.rounded(Theme.SURFACE_3, Theme.dpF(c, 14)));

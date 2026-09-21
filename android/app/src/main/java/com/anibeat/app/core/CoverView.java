@@ -193,6 +193,14 @@ public class CoverView extends android.view.View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        try {
+            drawCover(canvas);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void drawCover(Canvas canvas) {
         int w = getWidth();
         int h = getHeight();
         if (w <= 0 || h <= 0) return;

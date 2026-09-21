@@ -48,6 +48,14 @@ public final class Cards {
 
     /** Подсветка активного трека без пересборки экрана (быстро и без рывков). */
     public static void refreshPlaybackIndicators() {
+        try {
+            refreshIndicators();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private static void refreshIndicators() {
         Models.Track current = Player.current();
         boolean playing = Player.isPlaying();
         for (int i = ROWS.size() - 1; i >= 0; i--) {

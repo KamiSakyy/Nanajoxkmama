@@ -26,7 +26,7 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
     private boolean scheduled;
     private final Runnable refreshTask = () -> {
         scheduled = false;
-        if (visible) rebuild();
+        if (visible) Ui.safe(this::rebuild);
     };
 
     private final Meta.Listener metaListener = this::scheduleRefresh;
@@ -70,6 +70,14 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
 
     /** Пересборка содержимого при внешних обновлениях — позиция скролла сохраняется. */
     public void rebuild() {
+        try {
+            rebuildContent();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void rebuildContent() {
         int scrollY = currentScrollY();
         removeAllViews();
         content = build();

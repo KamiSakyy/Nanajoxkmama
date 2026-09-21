@@ -89,7 +89,8 @@ public class BarsView extends android.view.View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        paint.setColor(color);
+        try {
+            paint.setColor(color);
         float h = getHeight();
         float center = h / 2f;
         float x = 0;
@@ -100,6 +101,9 @@ public class BarsView extends android.view.View {
             float r = barWidth / 2f;
             canvas.drawRoundRect(rect, r, r, paint);
             x += barWidth + gap;
+        }
+        } catch (Throwable t) {
+            Ui.report(t);
         }
     }
 

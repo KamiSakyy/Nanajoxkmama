@@ -74,8 +74,13 @@ public class NowPlaying extends FrameLayout {
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
-            refreshTime();
-            handler.postDelayed(this, 250);
+            try {
+                refreshTime();
+            } catch (Throwable t) {
+                Ui.report(t);
+            } finally {
+                handler.postDelayed(this, 250);
+            }
         }
     };
     private final Runnable hideControls = () -> {
@@ -565,6 +570,14 @@ public class NowPlaying extends FrameLayout {
     }
 
     public void refresh() {
+        try {
+            refreshSafe();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void refreshSafe() {
         Models.Track t = Player.current();
         if (t == null) return;
         Display d = Display.track(t);

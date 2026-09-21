@@ -68,7 +68,7 @@ public class MainActivity extends Activity {
     private FrameLayout root;
     private FrameLayout content;
     /** Мини-плеер и отступы контента пересчитываются при любом изменении плеера. */
-    private final com.anibeat.app.player.Player.Listener playerListener = () -> runOnUiThread(this::updateBars);
+    private final com.anibeat.app.player.Player.Listener playerListener = () -> runOnUiThread(() -> Ui.safe(this::updateBars));
     private Nav nav;
     private MiniPlayer miniPlayer;
     private NowPlaying nowPlaying;
@@ -152,6 +152,14 @@ public class MainActivity extends Activity {
     }
 
     public void showTab(int index, boolean animate) {
+        try {
+            showTabSafe(index, animate);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void showTabSafe(int index, boolean animate) {
         if (index < 0 || index >= 4) return;
         tabIndex = index;
         stack.clear();
@@ -176,6 +184,14 @@ public class MainActivity extends Activity {
     }
 
     public void push(Screen screen, boolean animate) {
+        try {
+            pushSafe(screen, animate);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void pushSafe(Screen screen, boolean animate) {
         Screen current = currentScreen();
         if (current != null) {
             current.onHide();
@@ -195,6 +211,14 @@ public class MainActivity extends Activity {
     }
 
     private void setContent(Screen screen, boolean animate) {
+        try {
+            setContentSafe(screen, animate);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void setContentSafe(Screen screen, boolean animate) {
         View view = screen.view();
         content.removeAllViews();
         content.addView(view, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -263,6 +287,14 @@ public class MainActivity extends Activity {
     }
 
     public void updateBars(boolean force) {
+        try {
+            updateBarsSafe(force);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void updateBarsSafe(boolean force) {
         boolean mini = Player.current() != null && !nowPlaying.isOpen();
         miniPlayer.getView().setVisibility(mini ? View.VISIBLE : View.GONE);
         if ((mini != miniVisible || force) && currentView != null) {
