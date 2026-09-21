@@ -30,3 +30,7 @@
 # Coil3 (images)
 -keep class coil3.** { *; }
 -keep class okhttp3.** { *; }
+
+# coil3 PlatformContext is a typealias — silence R8
+-dontwarn coil3.**
+-dontwarn coil3.PlatformContext
