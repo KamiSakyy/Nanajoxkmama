@@ -96,7 +96,8 @@ class AnimeThemesApi @Inject constructor(
             season = if (a.isNull("season")) null else a.optString("season").ifEmpty { null },
             mediaFormat = a.optString("media_format").ifEmpty { null },
             cover = pickImage(images, "Large Cover"),
-            coverSmall = pickImage(images, "Small Cover"),
+            coverSmall = pickImage(images, "Small Cover")?.takeUnless { it.endsWith(".avif", true) }
+                ?: pickImage(images, "Large Cover"),
             banner = null,
             color = null,
             malId = externalId(a, SITE_MAL),
@@ -135,7 +136,7 @@ class AnimeThemesApi @Inject constructor(
         val out = ArrayList<Track>()
         val song = songOverride ?: theme.optJSONObject("song")
         val cover = pickImage(anime.optJSONArray("images"), "Large Cover")
-        val coverSmall = pickImage(anime.optJSONArray("images"), "Small Cover")
+        val coverSmall = pickImage(anime.optJSONArray("images"), "Small Cover")?.takeUnless { it.endsWith(".avif", true) } ?: cover
         val ref = animeRef(anime)
         val entries = theme.optJSONArray("animethemeentries") ?: return out
         for (i in 0 until entries.length()) {

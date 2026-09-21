@@ -131,6 +131,26 @@ fun AppShell(np: NowPlayingViewModel) {
             NavHost(
                 navController = nav,
                 startDestination = "home",
+                enterTransition = {
+                    androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)) +
+                        androidx.compose.animation.slideInHorizontally(
+                            androidx.compose.animation.core.spring(
+                                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
+                                stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+                            )
+                        ) { it / 6 }
+                },
+                exitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(140)) },
+                popEnterTransition = {
+                    androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)) +
+                        androidx.compose.animation.slideInHorizontally(
+                            androidx.compose.animation.core.spring(
+                                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
+                                stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+                            )
+                        ) { -it / 6 }
+                },
+                popExitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(140)) },
                 modifier = Modifier
                     .weight(1f)
                     .windowInsetsPadding(WindowInsets.statusBars),

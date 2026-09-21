@@ -48,15 +48,16 @@ class ContentRepository @Inject constructor(
                 animethemes.getSeasonTracks(y, s).shuffled().take(28)
             } }
             val mixCovers = async { safeRun {
+                val firsts = Curated.MIXES.mapNotNull { m -> m.slugs.firstOrNull() }
+                val bySlug = animethemes.getAnimeBySlugs(firsts).associateBy { it.slug }
                 Curated.MIXES.associate { m ->
-                    val a = animethemes.getAnimeBySlugs(m.slugs.take(1)).firstOrNull()
+                    val a = m.slugs.firstOrNull()?.let { bySlug[it] }
                     m.id to (a?.cover ?: a?.coverSmall)
                 }
             } }
             val decadeCovers = async { safeRun {
                 Curated.DECADES.associateWith { y ->
-                    animethemes.getSeasonTracks(y, null).firstOrNull()?.cover
-                        ?: animethemes.getSeasonAnime(y, null, 1).items.firstOrNull()?.cover
+                    animethemes.getSeasonAnime(y, null, 1).items.firstOrNull()?.cover
                 }
             } }
             val fr = fresh.await(); val lr = latest.await(); val rr = random.await()

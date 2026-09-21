@@ -76,10 +76,6 @@ class HttpEngine @Inject constructor(
 
     private val mem = ConcurrentHashMap<String, Entry>()
     private val diskDir: File = File(context.cacheDir, "http-cache-v3").apply { mkdirs() }
-    private val swrScope = kotlinx.coroutines.CoroutineScope(
-        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
-    )
-
     private fun key(url: String, policy: HttpCachePolicy.Policy): String =
         policy.cacheKey ?: if (policy.body != null) "$url#${policy.body}" else url
 
@@ -168,13 +164,13 @@ class HttpEngine @Inject constructor(
                     if (age < policy.maxAge) {
                         mem[k] = disk
                         if (age >= policy.fresh) {
-                            swrScope.launch {
-                                runCatching {
+                            Thread {
+                                try {
                                     val fresh = fetch(url, policy)
                                     mem[k] = Entry(System.currentTimeMillis(), fresh)
                                     writeDisk(k, fresh)
-                                }
-                            }
+                                } catch (_: Throwable) { }
+                            }.start()
                         }
                         return disk.raw
                     }
