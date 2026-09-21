@@ -80,6 +80,12 @@ public final class Player {
             restored = true;
             restore();
         }
+        // Сам проигрыватель поднимается только при первом воспроизведении:
+        // запуск приложения не должен зависеть от музыки и службы.
+    }
+
+    /** Готовит проигрыватель к работе: служба в фоне, при неудаче — прямо в приложении. */
+    private static void ensureEngine() {
         if (engine != null || startingService || appContext == null || !autoConnect) return;
         startingService = true;
         if (!startService()) {
@@ -87,7 +93,6 @@ public final class Player {
             ensureLocalEngine();
             return;
         }
-        // Служба не поднялась (например, система не разрешила фон) — играем в приложении.
         MAIN.postDelayed(() -> {
             if (engine == null && PlayerHolder.engine() == null) {
                 startingService = false;
@@ -178,6 +183,7 @@ public final class Player {
 
     /** Служба подключилась — продолжаем с текущей очередью. */
     public static void onEngineReady(Context context) {
+        if (engine == null) engine = PlayerHolder.engine();
         if (engine == null) return;
         if (!QUEUE.isEmpty()) openCurrent(pendingPlay);
         if (pendingIndex >= 0) {
@@ -375,7 +381,7 @@ public final class Player {
             if (QUEUE.isEmpty()) return;
             pendingIndex = index;
             pendingPlay = true;
-            init(appContext);
+            ensureEngine();
             return;
         }
         if (engine.isPlaying()) engine.pause();
@@ -393,7 +399,7 @@ public final class Player {
             if (QUEUE.isEmpty()) return;
             pendingIndex = index;
             pendingPlay = true;
-            init(appContext);
+            ensureEngine();
             return;
         }
         engine.play();
@@ -601,7 +607,7 @@ public final class Player {
         if (engine == null) {
             pendingIndex = index;
             pendingPlay = play;
-            init(appContext);
+            ensureEngine();
             return;
         }
         String url = sourceOf(t);

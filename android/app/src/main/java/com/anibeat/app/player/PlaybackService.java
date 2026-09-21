@@ -1,7 +1,6 @@
 package com.anibeat.app.player;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -31,6 +30,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_NEXT = "com.anibeat.app.NEXT";
     public static final String ACTION_PREV = "com.anibeat.app.PREV";
     public static final String ACTION_STOP = "com.anibeat.app.STOP";
+    public static final String ACTION_REFRESH = "com.anibeat.app.REFRESH";
 
     private static final String CHANNEL_ID = "anibeat_playback";
     private static final int NOTIFICATION_ID = 42;
@@ -42,6 +42,15 @@ public class PlaybackService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        try {
+            onCreateSafe();
+        } catch (Throwable t) {
+            Ui.report(t);
+            stopSelf();
+        }
+    }
+
+    private void onCreateSafe() {
         createChannel();
         engine = Engine.create(this);
         PlayerHolder.attach(engine, true);
@@ -84,12 +93,17 @@ public class PlaybackService extends Service {
         Player.onEngineReady(this);
     }
 
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
         if (ACTION_TOGGLE.equals(action)) Player.toggle();
         else if (ACTION_NEXT.equals(action)) Player.next(false);
         else if (ACTION_PREV.equals(action)) Player.prev();
+        else if (ACTION_REFRESH.equals(action)) {
+            updateNotification();
+            return START_STICKY;
+        }
         else if (ACTION_STOP.equals(action)) {
             Player.pause();
             stopSelf();
@@ -128,13 +142,7 @@ public class PlaybackService extends Service {
     /* ------------------------------------------------------------------ */
 
     private void createChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager == null) return;
-        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Воспроизведение",
-                NotificationManager.IMPORTANCE_LOW);
-        channel.setShowBadge(false);
-        manager.createNotificationChannel(channel);
+        PlaybackChannels.create(this, CHANNEL_ID);
     }
 
     private PendingIntent action(String value) {
@@ -145,6 +153,7 @@ public class PlaybackService extends Service {
 
     private Notification buildNotification() {
         boolean playing = Player.isPlaying();
+        Notification.Builder builder = PlaybackChannels.builder(this, CHANNEL_ID);
         Models.Track track = Player.current();
         Intent open = new Intent(this, MainActivity.class);
         open.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -154,9 +163,6 @@ public class PlaybackService extends Service {
         String title = track == null ? "AniBeat" : track.title;
         String text = track == null ? "Готов к воспроизведению" : track.artistNames();
 
-        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                ? new Notification.Builder(this, CHANNEL_ID)
-                : new Notification.Builder(this);
         builder.setSmallIcon(R.drawable.ic_play_arrow)
                 .setContentTitle(title)
                 .setContentText(text)
@@ -224,14 +230,12 @@ public class PlaybackService extends Service {
         }
     }
 
-    /** Обновляет уведомление по запросу приложения. */
+    /** Обновляет уведомление. Службу не поднимает — только сообщает уже запущенной. */
     public static void notifyState(Context context, boolean playing) {
-        if (context == null) return;
+        if (context == null || !PlayerHolder.fromService()) return;
         try {
-            Intent intent = new Intent(context, PlaybackService.class);
-            intent.putExtra("playing", playing);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent);
-            else context.startService(intent);
+            Intent intent = new Intent(context, PlaybackService.class).setAction(ACTION_REFRESH);
+            context.startService(intent);
         } catch (Throwable ignored) {
         }
     }

@@ -12,12 +12,12 @@ public final class PlayerHolder {
     private PlayerHolder() {
     }
 
-    static void attach(Engine value, boolean service) {
+    public static void attach(Engine value, boolean service) {
         engine = value;
         fromService = service;
     }
 
-    static void detach(Engine value) {
+    public static void detach(Engine value) {
         if (engine == value) {
             engine = null;
             fromService = false;

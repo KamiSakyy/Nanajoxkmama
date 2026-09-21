@@ -2,7 +2,6 @@ package com.anibeat.app.player;
 
 import android.content.Context;
 import android.media.AudioAttributes;
-import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Build;
@@ -30,7 +29,6 @@ public final class Engine {
     private final Context context;
     private final MediaPlayer player = new MediaPlayer();
     private AudioManager audioManager;
-    private AudioFocusRequest focusRequest;
     private Listener listener;
     private Surface surface;
     private boolean preparing;
@@ -162,27 +160,14 @@ public final class Engine {
         }
     }
 
-    /** Просит фокус аудио, чтобы звонок или другой плеер корректно ставили нас на паузу. */
+    /** Просит фокус аудио (классический API — работает на всех версиях Android). */
     private void requestFocus() {
         try {
             if (audioManager == null) {
                 audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             }
             if (audioManager == null) return;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (focusRequest == null) {
-                    focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                            .setAudioAttributes(new AudioAttributes.Builder()
-                                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                                    .build())
-                            .setOnAudioFocusChangeListener(focusListener)
-                            .build();
-                }
-                audioManager.requestAudioFocus(focusRequest);
-            } else {
-                audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
-            }
+            audioManager.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
         } catch (Throwable t) {
             Ui.report(t);
         }
@@ -191,11 +176,7 @@ public final class Engine {
     private void abandonFocus() {
         try {
             if (audioManager == null) return;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (focusRequest != null) audioManager.abandonAudioFocusRequest(focusRequest);
-            } else {
-                audioManager.abandonAudioFocus(focusListener);
-            }
+            audioManager.abandonAudioFocus(focusListener);
         } catch (Throwable t) {
             Ui.report(t);
         }

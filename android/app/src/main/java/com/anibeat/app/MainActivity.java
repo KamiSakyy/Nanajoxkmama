@@ -95,19 +95,10 @@ public class MainActivity extends Activity {
         Ui.safe(() -> {
             window.setStatusBarColor(Color.BLACK);
             window.setNavigationBarColor(Color.BLACK);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                window.setDecorFitsSystemWindows(false);
-                android.view.WindowInsetsController controller = window.getInsetsController();
-                if (controller != null) {
-                    controller.setSystemBarsAppearance(0,
-                            android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                                    | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
-                }
-            } else {
-                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-            }
+            // Классический способ разметки под системные полосы: работает на всех версиях.
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         });
 
         root = new FrameLayout(this);
@@ -133,25 +124,69 @@ public class MainActivity extends Activity {
 
         // Отступы под строку состояния и навигацию — системный слушатель вставок.
         root.setOnApplyWindowInsetsListener((v, insets) -> {
-            int top;
-            int bottom;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-                top = bars.top;
-                bottom = bars.bottom;
-            } else {
-                top = insets.getSystemWindowInsetTop();
-                bottom = insets.getSystemWindowInsetBottom();
-            }
-            v.setPadding(0, top, 0, bottom);
+            // Метод есть во всех версиях Android (на новых — устаревший, но рабочий).
+            v.setPadding(0, insets.getSystemWindowInsetTop(), 0, insets.getSystemWindowInsetBottom());
             return insets;
         });
 
-        setContentView(root);
+        try {
+            setContentView(root);
+            Player.addListener(playerListener);
+            showTab(0, false);
+            requestNotificationPermissionIfNeeded();
+        } catch (Throwable t) {
+            // Приложение обязано открыться: вместо закрытия показываем причину и кнопку возврата.
+            Ui.report(t);
+            showFallback(t);
+        }
+    }
 
-        Player.addListener(playerListener);
-        showTab(0, false);
-        requestNotificationPermissionIfNeeded();
+    /** Экран аварийного запуска: приложение открыто, видно, что произошло. */
+    private void showFallback(Throwable error) {
+        try {
+            LinearLayout column = new LinearLayout(this);
+            column.setOrientation(LinearLayout.VERTICAL);
+            column.setBackgroundColor(Color.BLACK);
+            column.setPadding(Theme.dp(this, 24), Theme.dp(this, 80), Theme.dp(this, 24), Theme.dp(this, 24));
+
+            TextView title = new TextView(this);
+            title.setText("Не удалось открыть экран");
+            title.setTextColor(Color.WHITE);
+            title.setTextSize(19f);
+
+            TextView message = new TextView(this);
+            String text = error.getClass().getSimpleName()
+                    + (error.getMessage() == null ? "" : ": " + error.getMessage());
+            StackTraceElement[] stack = error.getStackTrace();
+            StringBuilder sb = new StringBuilder(text);
+            for (int i = 0; i < stack.length && i < 6; i++) {
+                if (stack[i].getClassName().startsWith("com.anibeat")) sb.append("\n  ").append(stack[i]);
+            }
+            message.setText(sb.toString());
+            message.setTextColor(0xFF9A9AA2);
+            message.setTextSize(12.5f);
+            LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            mp.topMargin = Theme.dp(this, 12);
+
+            TextView retry = new TextView(this);
+            retry.setText("Открыть заново");
+            retry.setTextColor(Color.BLACK);
+            retry.setTextSize(15f);
+            retry.setGravity(android.view.Gravity.CENTER);
+            retry.setBackground(com.anibeat.app.core.Ui.rounded(Color.WHITE, Theme.dpF(this, 12f)));
+            retry.setPadding(Theme.dp(this, 16), Theme.dp(this, 12), Theme.dp(this, 16), Theme.dp(this, 12));
+            retry.setOnClickListener(v -> recreate());
+            LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            rp.topMargin = Theme.dp(this, 18);
+
+            column.addView(title);
+            column.addView(message, mp);
+            column.addView(retry, rp);
+            setContentView(column);
+        } catch (Throwable ignored) {
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -373,13 +408,17 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         // Закрываем окно: снимаем слушателей и таймеры, чтобы ничего не осталось висеть.
-        Player.removeListener(playerListener);
-        for (Screen screen : tabs) if (screen != null && screen instanceof ScreenBase) ((ScreenBase) screen).release();
-        for (Screen screen : stack) if (screen instanceof ScreenBase) ((ScreenBase) screen).release();
-        sheets.release();
-        nowPlaying.release();
-        miniPlayer.release();
-        toaster.release();
+        try {
+            Player.removeListener(playerListener);
+            for (Screen screen : tabs) if (screen instanceof ScreenBase) ((ScreenBase) screen).release();
+            for (Screen screen : stack) if (screen instanceof ScreenBase) ((ScreenBase) screen).release();
+            if (sheets != null) sheets.release();
+            if (nowPlaying != null) nowPlaying.release();
+            if (miniPlayer != null) miniPlayer.release();
+            if (toaster != null) toaster.release();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
         super.onDestroy();
     }
 
