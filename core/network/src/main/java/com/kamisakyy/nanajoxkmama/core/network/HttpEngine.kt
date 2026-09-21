@@ -150,6 +150,34 @@ class HttpEngine @Inject constructor(
         }
     }
 
+    /**
+     * Servers/middleboxes can deliver compressed bodies the HTTP layer does not
+     * transparently unwrap — the website decompresses gzip/deflate/zip manually
+     * in its http.ts; same here (magic-byte sniffing).
+     */
+    private fun decodeBody(bytes: ByteArray, encoding: String?): String {
+        var data = bytes
+        try {
+            val enc = encoding?.lowercase(java.util.Locale.US) ?: ""
+            val isGzip = data.size > 2 && data[0] == 0x1f.toByte() && data[1] == 0x8b.toByte()
+            val isZip = data.size > 3 && data[0] == 0x50.toByte() && data[1] == 0x4b.toByte() && data[2] == 0x03.toByte()
+            data = when {
+                enc.contains("gzip") || isGzip ->
+                    java.util.zip.GZIPInputStream(data.inputStream()).use { it.readBytes() }
+                enc.contains("deflate") ->
+                    java.util.zip.InflaterInputStream(data.inputStream()).use { it.readBytes() }
+                isZip ->
+                    java.util.zip.ZipInputStream(data.inputStream()).use { z ->
+                        z.nextEntry
+                        z.readBytes()
+                    }
+                else -> data
+            }
+        } catch (_: Exception) {
+        }
+        return String(data, Charsets.UTF_8)
+    }
+
     private fun fetch(url: String, policy: HttpCachePolicy.Policy): String {
         var attempt = 0
         val maxRetries = policy.retries.coerceAtMost(RETRY_DELAYS.size)
@@ -183,7 +211,7 @@ class HttpEngine @Inject constructor(
                             res.code
                         )
                     }
-                    return res.body?.string() ?: ""
+                    return decodeBody(res.body?.bytes() ?: ByteArray(0), res.header("Content-Encoding"))
                 }
                 // loop continues only after a retryable sleep above
                 continue

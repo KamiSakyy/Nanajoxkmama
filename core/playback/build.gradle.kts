@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.kamisakyy.nanajoxkmama.core.playback"
-    compileSdk = 37
+    compileSdk = 36
     defaultConfig { minSdk = 23 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
