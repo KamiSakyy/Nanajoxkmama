@@ -1,5 +1,5 @@
-run: 35641274456  job: build-apk  status: success
-version: 1.0.49
+run: 35644106821  job: build-apk  status: success
+version: 1.0.52
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -26,11 +26,11 @@ Daemon will be stopped at the end of the build
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
-> Task :app:processReleaseManifestForPackage
-> Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:mergeExtDexRelease
+> Task :app:processReleaseManifestForPackage
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
 > Task :app:compressReleaseAssets
@@ -61,9 +61,9 @@ To honour the JVM settings for this build a single-use Daemon process will be fo
 Daemon will be stopped at the end of the build 
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkDebugAarMetadata
 > Task :app:generateDebugResValues
 > Task :app:javaPreCompileDebug
-> Task :app:checkDebugAarMetadata
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
@@ -88,12 +88,12 @@ Daemon will be stopped at the end of the build
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
+> Task :app:packageDebugUnitTestForUnitTest
 > Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
-> Task :app:packageDebugUnitTestForUnitTest
-> Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:generateDebugUnitTestConfig
+> Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:testDebugUnitTest
 
-BUILD SUCCESSFUL in 1m 11s
+BUILD SUCCESSFUL in 1m 9s
 24 actionable tasks: 23 executed, 1 from cache
