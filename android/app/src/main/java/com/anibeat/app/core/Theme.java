@@ -8,7 +8,6 @@ import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.Interpolator;
 
-import androidx.core.content.ContextCompat;
 
 /** Design tokens — точная копия палитры и кривых из сайта (index.css / @theme). */
 public final class Theme {
@@ -106,6 +105,7 @@ public final class Theme {
     }
 
     public static int color(Context c, int res) {
-        return ContextCompat.getColor(c, res);
+        // Системный API вместо androidx.core (в библиотеке появился Kotlin).
+        return c.getResources().getColor(res, c.getTheme());
     }
 }

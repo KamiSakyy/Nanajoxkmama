@@ -9,13 +9,10 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.anibeat.app.core.Image;
 import com.anibeat.app.core.Net;
@@ -99,11 +96,18 @@ public class MainActivity extends Activity {
         Ui.safe(() -> {
             window.setStatusBarColor(Color.BLACK);
             window.setNavigationBarColor(Color.BLACK);
-            WindowCompat.setDecorFitsSystemWindows(window, false);
-            WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
-            if (controller != null) {
-                controller.setAppearanceLightStatusBars(false);
-                controller.setAppearanceLightNavigationBars(false);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                window.setDecorFitsSystemWindows(false);
+                android.view.WindowInsetsController controller = window.getInsetsController();
+                if (controller != null) {
+                    controller.setSystemBarsAppearance(0,
+                            android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                                    | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+                }
+            } else {
+                window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
             }
         });
 
@@ -128,10 +132,18 @@ public class MainActivity extends Activity {
         root.addView(sheets, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         root.addView(toaster, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-            WindowInsetsCompat bars = insets;
-            int top = bars.getInsets(WindowInsetsCompat.Type.systemBars()).top;
-            int bottom = bars.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+        // Отступы под строку состояния и навигацию — системный слушатель вставок.
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
+            int top;
+            int bottom;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                top = bars.top;
+                bottom = bars.bottom;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
             v.setPadding(0, top, 0, bottom);
             return insets;
         });
