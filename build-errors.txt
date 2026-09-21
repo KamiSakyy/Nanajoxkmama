@@ -1,0 +1,76 @@
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+--
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:232:36 Unresolved reference 'launch'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:234:13 Suspend function 'suspend fun invoke(p1: CoroutineScope): Unit' can only be called from a coroutine or another suspend function.
+
+> Task :core:design:generateReleaseLintModel
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:network:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+----- tail -----
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/AndroidManifest.xml:14:5-77 Warning:
+	Element uses-permission#android.permission.POST_NOTIFICATIONS at AndroidManifest.xml:14:5-77 duplicated with element declared at AndroidManifest.xml:9:5-77
+
+> Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
+> Task :core:database:kspReleaseKotlin
+> Task :core:common:generateReleaseLintModel
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:processReleaseResources
+> Task :core:design:createFullJarRelease
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
+> Task :app:extractReleaseVersionControlInfo
+> Task :core:common:extractReleaseAnnotations
+> Task :core:common:mergeReleaseConsumerProguardFiles
+> Task :core:common:mergeReleaseJavaResource
+> Task :core:common:syncReleaseLibJars
+> Task :core:common:bundleReleaseLocalLintAar
+> Task :core:model:mergeReleaseConsumerProguardFiles
+> Task :core:model:mergeReleaseJavaResource
+> Task :core:model:syncReleaseLibJars
+> Task :core:model:bundleReleaseLocalLintAar
+
+> Task :core:network:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:232:36 Unresolved reference 'launch'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:234:13 Suspend function 'suspend fun invoke(p1: CoroutineScope): Unit' can only be called from a coroutine or another suspend function.
+
+> Task :core:design:generateReleaseLintModel
+> Task :core:database:compileReleaseKotlin
+> Task :core:common:lintVitalAnalyzeRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789988102375.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:network:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m
+332 actionable tasks: 261 executed, 71 from cache
+[skip ci]
