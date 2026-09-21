@@ -191,7 +191,7 @@ public final class LibraryScreen implements Screen {
         head.setPadding(Ui.dp(18), Ui.dp(8), Ui.dp(12), Ui.dp(2));
         head.addView(Ui.text(a, "Плейлисты", 15, Ui.ON, true), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         TextView add = Ui.text(a, "+ Новый", 14, Ui.ACCENT, true);
-        add.setOnClickListener(v -> Sheets.promptName(host, "Новый плейлист", name -> {
+        add.setOnClickListener(v -> Sheets.promptName(a, "Новый плейлист", name -> {
             Store.createPlaylist(name, null);
             host.toast("Плейлист создан");
             render();
@@ -202,7 +202,7 @@ public final class LibraryScreen implements Screen {
         if (pls.isEmpty()) {
             content.addView(Ui.emptyState(a, "queue_music", "Нет плейлистов",
                     "Создайте плейлист и соберите в нём любимые темы.", "Создать", v ->
-                            Sheets.promptName(host, "Новый плейлист", name -> {
+                            Sheets.promptName(a, "Новый плейлист", name -> {
                                 Store.createPlaylist(name, null);
                                 host.toast("Плейлист создан");
                                 render();
@@ -222,7 +222,7 @@ public final class LibraryScreen implements Screen {
             row.setGravity(Gravity.CENTER_VERTICAL);
             row.setPadding(Ui.dp(12), Ui.dp(8), Ui.dp(6), Ui.dp(8));
             row.setBackground(Ui.ripple(Ui.rounded(Color.TRANSPARENT, 10)));
-            row.addView(Sheets.mosaic(host, pl), new LinearLayout.LayoutParams(Ui.dp(48), Ui.dp(48)));
+            row.addView(Sheets.mosaic(a, pl), new LinearLayout.LayoutParams(Ui.dp(48), Ui.dp(48)));
             LinearLayout mid = new LinearLayout(a);
             mid.setOrientation(LinearLayout.VERTICAL);
             LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
@@ -237,9 +237,9 @@ public final class LibraryScreen implements Screen {
     }
 
     private void playlistMenu(Playlist p) {
-        Sheets.promptChoice(host, p.name, new String[]{"Переименовать", "Удалить плейлист"}, which -> {
+        Sheets.promptChoice(a, p.name, new String[]{"Переименовать", "Удалить плейлист"}, which -> {
             if (which == 0) {
-                Sheets.promptName(host, p.name, name -> {
+                Sheets.promptName(a, p.name, name -> {
                     Store.renamePlaylist(p.id, name);
                     render();
                 });
@@ -340,7 +340,7 @@ public final class LibraryScreen implements Screen {
             head.setOrientation(LinearLayout.HORIZONTAL);
             head.setGravity(Gravity.CENTER_VERTICAL);
             head.setPadding(Ui.dp(16), Ui.dp(14), Ui.dp(8), Ui.dp(6));
-            FrameLayout mosaic = Sheets.mosaic(host, pl);
+            FrameLayout mosaic = Sheets.mosaic(a, pl);
             head.addView(mosaic, new LinearLayout.LayoutParams(Ui.dp(64), Ui.dp(64)));
             LinearLayout mid = new LinearLayout(a);
             mid.setOrientation(LinearLayout.VERTICAL);
@@ -350,10 +350,10 @@ public final class LibraryScreen implements Screen {
             mid.addView(name);
             mid.addView(Ui.text(a, Util.pluralRu(pl.tracks.size(), "трек", "трека", "треков"), 13, Ui.VAR, false));
             head.addView(mid, mp);
-            head.addView(Ui.iconBtn(a, "more_horiz", 18, Ui.DIM, v -> Sheets.promptChoice(host, pl.name,
+            head.addView(Ui.iconBtn(a, "more_horiz", 18, Ui.DIM, v -> Sheets.promptChoice(a, pl.name,
                     new String[]{"Переименовать", "Удалить плейлист"}, which -> {
                         if (which == 0) {
-                            Sheets.promptName(host, pl.name, n -> {
+                            Sheets.promptName(a, pl.name, n -> {
                                 Store.renamePlaylist(pl.id, n);
                                 render();
                             });

@@ -60,9 +60,21 @@ jobs:
           set -euo pipefail
           VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
           VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
+          set +e
           gradle --no-daemon assembleRelease \
             -PversionCode="$VERSION_CODE" \
-            -PversionName="$VERSION_NAME"
+            -PversionName="$VERSION_NAME" > build.log 2>&1
+          STATUS=$?
+          set -e
+          tail -n 200 build.log
+          if [ $STATUS -ne 0 ]; then
+            echo "## Gradle build failed" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -E "error:|\.java:|FAILURE|Execution failed|What went wrong" build.log | head -60 >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::gradle assembleRelease failed — see job summary"
+            exit $STATUS
+          fi
 
       - name: Prepare release handoff
         run: |

@@ -28,7 +28,7 @@ public final class Sheets {
 
     /* ---------------- sheet shell ---------------- */
 
-    private static Dialog sheet(MainActivity host, String title) {
+    private static Dialog sheet(Activity host, String title) {
         Dialog d = new Dialog(host, R.style.SheetDialog);
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout root = new LinearLayout(host);
@@ -158,7 +158,7 @@ public final class Sheets {
         }));
     }
 
-    private static View divider(MainActivity host) {
+    private static View divider(Activity host) {
         View v = new View(host);
         v.setBackgroundColor(Ui.SEPARATOR);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(1));
@@ -336,7 +336,7 @@ public final class Sheets {
         render[0].run();
     }
 
-    static FrameLayout mosaic(MainActivity host, Playlist pl) {
+    static FrameLayout mosaic(Activity host, Playlist pl) {
         FrameLayout f = new FrameLayout(host);
         f.setBackground(Ui.rounded(Ui.S3, 9));
         f.setClipToOutline(true);
@@ -365,7 +365,7 @@ public final class Sheets {
     public interface ChoiceCallback { void accept(int which); }
 
     /** Simple menu chooser (playlist rename/delete). */
-    public static void promptChoice(MainActivity host, String title, String[] options, ChoiceCallback cb) {
+    public static void promptChoice(Activity host, String title, String[] options, ChoiceCallback cb) {
         Dialog d = sheet(host, title == null ? "" : title);
         LinearLayout b = body(d);
         String[] icons = {"edit", "delete"};
@@ -378,7 +378,7 @@ public final class Sheets {
         }
     }
 
-    static void promptName(MainActivity host, String initial, NameCallback cb) {
+    static void promptName(Activity host, String initial, NameCallback cb) {
         Dialog d = new Dialog(host, R.style.SheetDialog);
         LinearLayout root = new LinearLayout(host);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -485,7 +485,7 @@ public final class Sheets {
         b.addView(groupFooter(host, "AniBeat · версия 2.0"));
     }
 
-    private static View sectionLabel(MainActivity host, String s) {
+    private static View sectionLabel(Activity host, String s) {
         TextView t = Ui.text(host, s.toUpperCase(), 11.5f, Ui.VAR, true);
         t.setLetterSpacing(0.05f);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -494,14 +494,14 @@ public final class Sheets {
         return t;
     }
 
-    private static View sectionLabel2(MainActivity host, String s) {
+    private static View sectionLabel2(Activity host, String s) {
         View v = sectionLabel(host, s);
         LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) v.getLayoutParams();
         lp.topMargin = Ui.dp(14);
         return v;
     }
 
-    private static View groupHeader(MainActivity host, String s) {
+    private static View groupHeader(Activity host, String s) {
         TextView t = Ui.text(host, s, 13, Ui.VAR, true);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMargins(Ui.dp(20), Ui.dp(16), 0, Ui.dp(6));
@@ -509,7 +509,7 @@ public final class Sheets {
         return t;
     }
 
-    private static View groupFooter(MainActivity host, String s) {
+    private static View groupFooter(Activity host, String s) {
         TextView t = Ui.text(host, s, 12, Ui.DIM, false);
         t.setSingleLine(false);
         t.setEllipsize(null);
@@ -522,7 +522,7 @@ public final class Sheets {
 
     public interface BoolCallback { void accept(boolean value); }
 
-    static View switchRow(MainActivity host, String icon, String label, String sub, boolean value, BoolCallback cb) {
+    static View switchRow(Activity host, String icon, String label, String sub, boolean value, BoolCallback cb) {
         LinearLayout row = new LinearLayout(host);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
