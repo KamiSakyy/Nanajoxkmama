@@ -1,0 +1,77 @@
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+--
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/design/src/main/java/com/kamisakyy/nanajoxkmama/core/design/Controls.kt:52:56 Unresolved reference 'spring'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/design/src/main/java/com/kamisakyy/nanajoxkmama/core/design/Controls.kt:54:61 Unresolved reference 'StiffnessMediumLow'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/design/src/main/java/com/kamisakyy/nanajoxkmama/core/design/SwipeRow.kt:70:68 Unresolved reference 'background'.
+
+> Task :core:design:compileReleaseKotlin FAILED
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:design:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+----- tail -----
+> Task :core:common:compileReleaseLibraryResources
+> Task :core:common:verifyReleaseResources
+> Task :core:model:compileReleaseKotlin
+> Task :core:model:compileReleaseJavaWithJavac NO-SOURCE
+> Task :core:model:bundleLibCompileToJarRelease
+> Task :core:common:compileReleaseKotlin
+> Task :core:common:compileReleaseJavaWithJavac NO-SOURCE
+> Task :core:common:bundleLibCompileToJarRelease
+> Task :core:common:bundleLibRuntimeToJarRelease
+> Task :core:model:bundleLibRuntimeToJarRelease
+> Task :core:database:mapReleaseSourceSetPaths
+> Task :core:database:kspReleaseKotlin
+> Task :app:mergeReleaseNativeLibs
+> Task :core:network:kspReleaseKotlin
+> Task :core:design:mapReleaseSourceSetPaths
+
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:mergeReleaseArtProfile
+
+> Task :core:network:compileReleaseKotlin
+w: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/AnimeThemesApi.kt:428:73 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'JSONObject?'.
+w: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/network/src/main/java/com/kamisakyy/nanajoxkmama/core/network/MetaApi.kt:89:17 Check for instance is always 'true'.
+
+> Task :core:database:compileReleaseKotlin
+> Task :app:expandReleaseL8ArtProfileWildcards
+> Task :core:common:mergeReleaseGeneratedProguardFiles
+> Task :core:common:exportReleaseConsumerProguardFiles
+> Task :core:model:mergeReleaseGeneratedProguardFiles
+> Task :core:model:exportReleaseConsumerProguardFiles
+
+> Task :core:design:compileReleaseKotlin
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/design/src/main/java/com/kamisakyy/nanajoxkmama/core/design/Controls.kt:52:56 Unresolved reference 'spring'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/design/src/main/java/com/kamisakyy/nanajoxkmama/core/design/Controls.kt:54:61 Unresolved reference 'StiffnessMediumLow'.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/core/design/src/main/java/com/kamisakyy/nanajoxkmama/core/design/SwipeRow.kt:70:68 Unresolved reference 'background'.
+
+> Task :core:design:compileReleaseKotlin FAILED
+> Task :app:checkReleaseDuplicateClasses
+> Task :core:network:compileReleaseJavaWithJavac
+> Task :core:database:compileReleaseJavaWithJavac
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789991004683.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:design:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m 51s
+278 actionable tasks: 217 executed, 61 from cache
+[skip ci]
