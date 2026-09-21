@@ -43,6 +43,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.asImageBitmap
 
 /* ============ shared building blocks ============ */
 
@@ -174,6 +178,40 @@ fun Artwork(url: String?, modifier: Modifier = Modifier, shape: androidx.compose
         modifier = modifier.clip(shape).background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
     )
+}
+
+/** Video preview frame (site hover-preview parity) — lazy frame grab + crossfade. */
+@Composable
+fun VideoThumb(
+    url: String?,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(12.dp),
+) {
+    val bmp by produceState<android.graphics.Bitmap?>(initialValue = null, url) {
+        if (url != null) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val r = android.media.MediaMetadataRetriever()
+                    r.setDataSource(url, java.util.HashMap<String, String>())
+                    val b = r.getFrameAtTime(800_000, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                    r.release()
+                    b
+                }.getOrNull()
+            }
+        }
+    }
+    Crossfade(targetState = bmp, label = "vthumb") { b ->
+        if (b != null) {
+            Image(
+                bitmap = b.asImageBitmap(),
+                contentDescription = null,
+                modifier = modifier.clip(shape),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            )
+        } else {
+            ShimmerBox(modifier, shape)
+        }
+    }
 }
 
 @Composable

@@ -29,6 +29,7 @@ dependencies {
     api(libs.compose.animation)
     api(libs.lifecycle.runtime.compose)
     api(libs.coil.compose)
+    api(libs.coil.network.okhttp)
     api(libs.lottie.compose)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

@@ -260,11 +260,13 @@ class AnimeThemesApi @Inject constructor(
         if (missing.isEmpty()) return tracks
         val map = resolveIds(missing)
         val out = tracks.map { t ->
-            if (t.anime.malId != null) t
+            val withId = if (t.anime.malId != null) t
             else {
                 val v = map[t.anime.slug]
                 t.copy(anime = t.anime.copy(malId = v?.first, anilistId = v?.second))
             }
+            if (withId.anime.ruName != null) withId
+            else withId.copy(anime = withId.anime.copy(ruName = meta.ruNameOf(withId.anime.malId)))
         }
         meta.warm(out.mapNotNull { it.anime.malId })
         return out

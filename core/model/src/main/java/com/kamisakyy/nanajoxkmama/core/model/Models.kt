@@ -26,7 +26,7 @@ data class Track(
 ) {
     val displayArtist: String get() = artists.joinToString(", ").ifEmpty { "Неизвестный исполнитель" }
 
-    val animeName: String get() = anime.name
+    val animeName: String get() = anime.ruName ?: anime.name
 
     val themeTag: String
         get() = when (type) {
@@ -56,6 +56,7 @@ data class AnimeRef(
     val season: String?,
     val malId: Int?,
     val anilistId: Int?,
+    val ruName: String? = null,
 )
 
 data class AnimeSummary(

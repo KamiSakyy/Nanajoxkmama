@@ -11,6 +11,8 @@ import org.json.JSONObject
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
 import java.io.File
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -64,8 +66,41 @@ class HttpEngine @Inject constructor(
         try {
             val base = context.cacheDir ?: return
             base.listFiles()?.forEach { f ->
-                if (f.isDirectory && f.name.startsWith("http-cache")) f.deleteRecursively()
+                if (f.isDirectory && (f.name == "http-cache" || f.name == "http-cache-v2")) f.deleteRecursively()
             }
+        } catch (_: Throwable) { }
+    }
+
+    private data class Entry(val ts: Long, val raw: String)
+
+    private val mem = ConcurrentHashMap<String, Entry>()
+    private val diskDir: File = File(context.cacheDir, "http-cache-v3").apply { mkdirs() }
+    private val swrScope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
+    )
+
+    private fun key(url: String, policy: HttpCachePolicy.Policy): String =
+        policy.cacheKey ?: if (policy.body != null) "$url#${policy.body}" else url
+
+    private fun diskFile(key: String): File =
+        File(diskDir, MessageDigest.getInstance("SHA-1").digest(key.toByteArray()).joinToString("") { "%02x".format(it) })
+
+    private fun readDisk(key: String): Entry? = try {
+        val f = diskFile(key)
+        if (!f.exists()) null
+        else {
+            val head = f.readLines()
+            if (head.size >= 2) {
+                val body = head.drop(1).joinToString("\n").trim()
+                if (body.startsWith("{") || body.startsWith("[")) Entry(head[0].toLongOrNull() ?: 0, body)
+                else { f.delete(); null }
+            } else null
+        }
+    } catch (_: Throwable) { null }
+
+    private fun writeDisk(key: String, raw: String) {
+        try {
+            diskFile(key).writeText(System.currentTimeMillis().toString() + "\n" + raw)
         } catch (_: Throwable) { }
     }
 
@@ -93,9 +128,9 @@ class HttpEngine @Inject constructor(
         } catch (e: Exception) {
             if (e is java.util.concurrent.CancellationException) throw e
             if (e is ApiException) throw e
-            // one clean refetch before giving up
+            // one clean refetch before giving up (bypass cache)
             try {
-                return JSONObject(getString(url, policy))
+                return JSONObject(getString(url, policy.copy(refresh = true)))
             } catch (e2: Exception) {
                 if (e2 is java.util.concurrent.CancellationException) throw e2
                 if (e2 is ApiException) throw e2
@@ -111,7 +146,7 @@ class HttpEngine @Inject constructor(
             if (e is java.util.concurrent.CancellationException) throw e
             if (e is ApiException) throw e
             try {
-                return JSONArray(getString(url, policy))
+                return JSONArray(getString(url, policy.copy(refresh = true)))
             } catch (e2: Exception) {
                 if (e2 is java.util.concurrent.CancellationException) throw e2
                 if (e2 is ApiException) throw e2
@@ -120,8 +155,37 @@ class HttpEngine @Inject constructor(
         }
     }
 
-    suspend fun getString(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): String =
-        withContext(kotlinx.coroutines.Dispatchers.IO) { fetch(url, policy) }
+    suspend fun getString(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): String {
+        val k = key(url, policy)
+        val now = System.currentTimeMillis()
+        if (!policy.refresh) {
+            mem[k]?.let { if (now - it.ts < policy.ttl) return it.raw }
+            if (!policy.noStore) {
+                val disk = readDisk(k)
+                if (disk != null) {
+                    val age = now - disk.ts
+                    if (age < policy.maxAge) {
+                        mem[k] = disk
+                        if (age >= policy.fresh) {
+                            swrScope.launch {
+                                runCatching {
+                                    val fresh = fetch(url, policy)
+                                    mem[k] = Entry(System.currentTimeMillis(), fresh)
+                                    writeDisk(k, fresh)
+                                }
+                            }
+                        }
+                        return disk.raw
+                    }
+                }
+            }
+        }
+        val result = withContext(kotlinx.coroutines.Dispatchers.IO) { fetch(url, policy) }
+        val e = Entry(System.currentTimeMillis(), result)
+        mem[k] = e
+        if (!policy.noStore) writeDisk(k, result)
+        return result
+    }
 
     /* ---------------- site http.ts parity: manual decompression ---------------- */
 
@@ -251,11 +315,14 @@ class HttpEngine @Inject constructor(
         }
     }
 
-    fun clear() = purgeOldCaches()
+    fun clear() {
+        mem.clear()
+        try { diskDir.listFiles()?.forEach { it.delete() } } catch (_: Throwable) { }
+    }
 
     suspend fun clearAsync() { clear() }
 
-    fun diskBytes(): Long = 0L
+    fun diskBytes(): Long = try { diskDir.listFiles()?.sumOf { it.length() } ?: 0L } catch (_: Throwable) { 0L }
 
     private val RETRY_DELAYS = longArrayOf(700, 1800, 3800, 6000)
 }

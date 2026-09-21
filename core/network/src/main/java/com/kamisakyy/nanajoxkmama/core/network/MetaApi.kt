@@ -159,6 +159,8 @@ class MetaApi @Inject constructor(
         return out
     }
 
+    fun ruNameOf(malId: Int?): String? = malId?.let { detailsCache[it]?.ru }
+
     suspend fun fetchShikiDetails(malId: Int): ShikiDetails {
         detailsCache[malId]?.let { return it }
         val arr = shikiRequest("/api/animes/$malId", 7 * DAY_MS, 60 * DAY_MS)

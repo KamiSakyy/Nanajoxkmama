@@ -149,13 +149,28 @@ fun NowPlayingScreen(
         } else {
             var big by remember { mutableStateOf(false) }
             val scale by animateFloatAsState(if (big) 1.04f else 1f, tween(400), label = "art")
-            Artwork(
-                track.cover ?: track.coverSmall,
-                Modifier
-                    .fillMaxWidth(0.86f)
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(26.dp)),
-            )
+            androidx.compose.foundation.layout.Box(
+                Modifier.fillMaxWidth(),
+                contentAlignment = androidx.compose.foundation.layout.Alignment.Center,
+            ) {
+                Artwork(
+                    track.cover ?: track.coverSmall,
+                    Modifier
+                        .fillMaxWidth(0.86f)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(26.dp)),
+                )
+                if (track.hasVideo) {
+                    com.kamisakyy.nanajoxkmama.core.design.VideoThumb(
+                        track.videoUrl,
+                        Modifier
+                            .align(androidx.compose.foundation.layout.Alignment.BottomEnd)
+                            .padding(28.dp)
+                            .size(92.dp),
+                        RoundedCornerShape(16.dp),
+                    )
+                }
+            }
         }
 
         Spacer(Modifier.height(22.dp))

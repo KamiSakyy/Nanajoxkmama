@@ -90,7 +90,13 @@ class PlayerController @Inject constructor(
     private val listener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             update { it.copy(isPlaying = it.queue.isNotEmpty() && isPlaying) }
-            if (isPlaying) persistQueue()
+            if (isPlaying) {
+                persistQueue()
+                startTicker()
+            } else {
+                stopTicker()
+                syncPosition()
+            }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -150,6 +156,24 @@ class PlayerController @Inject constructor(
                 durationMs = c.duration.takeIf { d -> d > 0 } ?: 0,
             )
         }
+    }
+
+    private var tickJob: kotlinx.coroutines.Job? = null
+
+    /** 350ms heartbeat — the seek bar tracks real playback (was frozen before). */
+    private fun startTicker() {
+        if (tickJob?.isActive == true) return
+        tickJob = scope.launch {
+            while (true) {
+                syncPosition()
+                kotlinx.coroutines.delay(350)
+            }
+        }
+    }
+
+    private fun stopTicker() {
+        tickJob?.cancel()
+        tickJob = null
     }
 
     /* ---------------- source logic (site applySource) ---------------- */
