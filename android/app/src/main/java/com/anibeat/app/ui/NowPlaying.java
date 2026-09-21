@@ -67,6 +67,7 @@ public class NowPlaying extends FrameLayout {
     private boolean open;
     private boolean fullscreen;
     private float touchStartY;
+    private float moved;
     private boolean dragging;
     private boolean scrubbing;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -368,25 +369,29 @@ public class NowPlaying extends FrameLayout {
         hp.topMargin = Theme.dp(c, 12);
         info.addView(hint, hp);
 
-        // Свайп вниз
+        // Свайп вниз; короткий тап по сцене показывает/прячет управление — как на сайте.
         View.OnTouchListener swipe = (v, e) -> {
             switch (e.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
                     touchStartY = e.getRawY();
                     dragging = !fullscreen;
+                    moved = 0f;
                     return true;
-                case MotionEvent.ACTION_MOVE:
-                    if (dragging) {
-                        float dy = e.getRawY() - touchStartY;
-                        if (dy > 0) setTranslationY(dy);
-                    }
+                case MotionEvent.ACTION_MOVE: {
+                    float dy = e.getRawY() - touchStartY;
+                    moved = Math.max(moved, Math.abs(dy));
+                    if (dragging && dy > 0) setTranslationY(dy);
                     return true;
+                }
                 case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_CANCEL: {
+                    boolean tap = moved < Theme.dp(getContext(), 8);
                     if (dragging && getTranslationY() > Theme.dp(getContext(), 110)) close();
                     else animate().translationY(0f).setDuration(Theme.DUR_FAST).start();
                     dragging = false;
+                    if (tap && v == stage) poke();
                     return true;
+                }
                 default:
                     return false;
             }
