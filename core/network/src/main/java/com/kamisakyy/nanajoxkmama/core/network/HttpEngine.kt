@@ -8,6 +8,7 @@ import com.kamisakyy.nanajoxkmama.core.common.MINUTE_MS
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.util.Locale
@@ -119,7 +120,7 @@ class HttpEngine @Inject constructor(
     }
 
     suspend fun getString(url: String, policy: HttpCachePolicy.Policy = HttpCachePolicy.default()): String =
-        fetch(url, policy)
+        withContext(kotlinx.coroutines.Dispatchers.IO) { fetch(url, policy) }
 
     /* ---------------- site http.ts parity: manual decompression ---------------- */
 
