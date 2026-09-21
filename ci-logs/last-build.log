@@ -1,9 +1,9 @@
-run: 35571834070  job: build-apk  status: success
-version: 1.0.21
+run: 35573812919  job: build-apk  status: success
+version: 1.0.24
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
-> Task :app:clean UP-TO-DATE
+> Task :app:clean
 > Task :app:preBuild UP-TO-DATE
 > Task :app:preReleaseBuild UP-TO-DATE
 > Task :app:mergeReleaseJniLibFolders
@@ -11,51 +11,103 @@ Daemon will be stopped at the end of the build
 > Task :app:stripReleaseDebugSymbols NO-SOURCE
 > Task :app:extractReleaseNativeSymbolTables NO-SOURCE
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
-> Task :app:javaPreCompileRelease
+> Task :app:javaPreCompileRelease FROM-CACHE
 > Task :app:checkReleaseDuplicateClasses
-> Task :app:generateReleaseResValues
+> Task :app:generateReleaseResValues FROM-CACHE
 > Task :app:checkReleaseAarMetadata
 > Task :app:mapReleaseSourceSetPaths
 > Task :app:generateReleaseResources
 > Task :app:packageReleaseResources
-> Task :app:mergeReleaseResources
+> Task :app:parseReleaseLocalResources FROM-CACHE
 > Task :app:createReleaseCompatibleScreenManifests
-> Task :app:extractDeepLinksRelease
-> Task :app:parseReleaseLocalResources
+> Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
+> Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseResources
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
 > Task :app:compressReleaseAssets
-> Task :app:processReleaseManifestForPackage
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseJavaRes NO-SOURCE
-> Task :app:collectReleaseDependencies
 > Task :app:processReleaseResources
-> Task :app:sdkReleaseDependencyData
+> Task :app:compileReleaseJavaWithJavac FROM-CACHE
 > Task :app:mergeReleaseJavaResource
-> Task :app:mergeExtDexRelease
-
-> Task :app:compileReleaseJavaWithJavac
-Note: Some input files use or override a deprecated API.
-Note: Recompile with -Xlint:deprecation for details.
-
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
 > Task :app:optimizeReleaseResources
+> Task :app:mergeExtDexRelease
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 1m 16s
-39 actionable tasks: 38 executed, 1 up-to-date
+BUILD SUCCESSFUL in 47s
+39 actionable tasks: 34 executed, 5 from cache
+
+--- тесты ---
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:javaPreCompileDebug
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+
+> Task :app:compileDebugJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:generateDebugUnitTestConfig
+> Task :app:bundleDebugClassesToRuntimeJar
+
+> Task :app:compileDebugUnitTestJavaWithJavac FAILED
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/src/test/java/com/anibeat/app/SmokeTest.java:35: error: local variables referenced from a lambda expression must be final or effectively final
+            clickSafely("showTab(" + tab + ")", () -> activity.showTab(tab, false));
+                                                                       ^
+1 error
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugUnitTestJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+
+BUILD FAILED in 53s
+23 actionable tasks: 22 executed, 1 from cache
