@@ -39,6 +39,21 @@ public class PlaybackService extends MediaSessionService {
         session = new MediaSession.Builder(this, player)
                 .setSessionActivity(contentIntent)
                 .build();
+        // Ошибка отдельного потока не должна останавливать музыку и закрывать приложение.
+        player.addListener(new androidx.media3.common.Player.Listener() {
+            @Override
+            public void onPlayerError(androidx.media3.common.PlaybackException error) {
+                try {
+                    int next = player.getCurrentMediaItemIndex() + 1;
+                    if (next < player.getMediaItemCount()) {
+                        player.seekTo(next, 0);
+                        player.prepare();
+                        player.play();
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        });
         PlayerHolder.attach(session);
     }
 

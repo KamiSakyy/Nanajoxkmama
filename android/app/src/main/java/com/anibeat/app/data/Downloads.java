@@ -88,7 +88,13 @@ public final class Downloads {
     }
 
     private static void emit() {
-        for (Listener l : new ArrayList<>(LISTENERS)) l.onJobsChanged();
+        for (Listener l : new ArrayList<>(LISTENERS)) {
+            try {
+                l.onJobsChanged();
+            } catch (Throwable t) {
+                com.anibeat.app.core.Ui.report(t);
+            }
+        }
     }
 
     private static File offlineDir() {

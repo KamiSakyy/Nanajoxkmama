@@ -141,7 +141,14 @@ public final class Player {
     }
 
     private static void emit() {
-        for (Listener l : new ArrayList<>(LISTENERS)) l.onPlayerChanged();
+        for (Listener l : new ArrayList<>(LISTENERS)) {
+            // Сбой одного экрана не должен ронять всё приложение.
+            try {
+                l.onPlayerChanged();
+            } catch (Throwable t) {
+                com.anibeat.app.core.Ui.report(t);
+            }
+        }
     }
 
     /* ------------------------------------------------------------------ */

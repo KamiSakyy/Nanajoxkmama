@@ -136,7 +136,11 @@ public final class Net {
         if (!refresh) {
             Entry hot = MEM.get(key);
             if (hot != null) {
-                cb.onResult(parse(hot.body), null);
+                try {
+                    cb.onResult(parse(hot.body), null);
+                } catch (Throwable t) {
+                    Ui.report(t);
+                }
                 if (now - hot.ts > (fresh > 0 ? fresh : Net.MIN)) {
                     // Stale-while-revalidate: данные уже отданы, тихо обновляем.
                     backgroundFetch(key, url, postBody, cb, true);
@@ -147,7 +151,11 @@ public final class Net {
             if (disk != null) {
                 Entry diskEntry = new Entry(now, disk);
                 MEM.put(key, diskEntry);
-                cb.onResult(parse(disk), null);
+                try {
+                    cb.onResult(parse(disk), null);
+                } catch (Throwable t) {
+                    Ui.report(t);
+                }
                 backgroundFetch(key, url, postBody, cb, true);
                 return;
             }
@@ -353,7 +361,12 @@ public final class Net {
         void finish(String body, String error) {
             JSONObject json = body != null ? parse(body) : null;
             for (Callback<JSONObject> cb : new ArrayList<>(callbacks)) {
-                cb.onResult(json, error);
+                // Ошибка в обработчике одного экрана не должна ронять приложение.
+                try {
+                    cb.onResult(json, error);
+                } catch (Throwable t) {
+                    Ui.report(t);
+                }
             }
         }
     }

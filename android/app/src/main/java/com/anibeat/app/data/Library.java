@@ -51,7 +51,13 @@ public final class Library {
     }
 
     private static void emit() {
-        for (Listener l : new ArrayList<>(LISTENERS)) l.onChanged();
+        for (Listener l : new ArrayList<>(LISTENERS)) {
+            try {
+                l.onChanged();
+            } catch (Throwable t) {
+                com.anibeat.app.core.Ui.report(t);
+            }
+        }
     }
 
     private static void persistFavorites() {

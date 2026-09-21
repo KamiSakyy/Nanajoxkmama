@@ -55,7 +55,13 @@ public final class Meta {
     }
 
     private static void emit() {
-        for (Listener l : new ArrayList<>(LISTENERS)) l.onMetaChanged();
+        for (Listener l : new ArrayList<>(LISTENERS)) {
+            try {
+                l.onMetaChanged();
+            } catch (Throwable t) {
+                com.anibeat.app.core.Ui.report(t);
+            }
+        }
     }
 
     /** Метаданные из памяти; null — ещё не загружены. */

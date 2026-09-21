@@ -46,7 +46,13 @@ public final class Settings {
     }
 
     private static void emit() {
-        for (Listener l : new ArrayList<>(LISTENERS)) l.onChanged();
+        for (Listener l : new ArrayList<>(LISTENERS)) {
+            try {
+                l.onChanged();
+            } catch (Throwable t) {
+                com.anibeat.app.core.Ui.report(t);
+            }
+        }
     }
 
     public static void setDataSaver(boolean value) {
