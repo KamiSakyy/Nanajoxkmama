@@ -7,11 +7,6 @@ sealed interface ApiResult<out T> {
         val retryable: Boolean get() = status == 0 || status == 429 || status >= 500
     }
 
-    inline fun <R> map(f: (T) -> R): ApiResult<R> = when (this) {
-        is Ok -> Ok(f(data))
-        is Err -> this
-    }
-
     fun getOrNull(): T? = (this as? Ok)?.data
     val error: Err? get() = this as? Err
 }
@@ -27,3 +22,8 @@ inline fun <T> runApi(block: () -> T): ApiResult<T> = try {
 }
 
 class ApiException(message: String, val status: Int = 0) : Exception(message)
+
+inline fun <T, R> ApiResult<T>.map(f: (T) -> R): ApiResult<R> = when (this) {
+    is ApiResult.Ok -> ApiResult.Ok(f(data))
+    is ApiResult.Err -> this
+}
