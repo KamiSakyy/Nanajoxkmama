@@ -41,6 +41,9 @@ interface LibraryDao {
     @Query("DELETE FROM history")
     suspend fun clearHistory()
 
+    @Query("DELETE FROM history WHERE trackId = :trackId")
+    suspend fun removeHistory(trackId: String)
+
     /* downloads */
     @Query("SELECT * FROM downloads ORDER BY createdAt DESC")
     fun downloads(): Flow<List<DownloadEntity>>

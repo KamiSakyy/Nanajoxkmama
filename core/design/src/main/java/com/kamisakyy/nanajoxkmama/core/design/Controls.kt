@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 
 /** iOS-style segmented control with animated thumb (site SegmentedControl). */
 @Composable
@@ -45,10 +46,18 @@ fun SegmentedControl(
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(3.dp)
     ) {
-        // animated thumb — placed by fractional layout offset
+        // animated thumb — spring interpolation between slots
+        val thumbIndex by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = selectedIndex.toFloat(),
+            animationSpec = androidx.compose.animation.spring(
+                dampingRatio = 0.85f,
+                stiffness = androidx.compose.animation.core.StiffnessMediumLow,
+            ),
+            label = "segThumb",
+        )
         Box(
             Modifier
-                .matchThumb(options.size, selectedIndex)
+                .matchThumbFloat(options.size, thumbIndex)
                 .height(34.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest)
@@ -74,12 +83,12 @@ fun SegmentedControl(
     }
 }
 
-/** Positions a thumb at 1/n width, x-offset = index * (1/n of parent width). */
-private fun Modifier.matchThumb(count: Int, index: Int): Modifier = layout { measurable, constraints ->
+/** Positions a thumb at 1/n width with a FLOAT index (animated). */
+private fun Modifier.matchThumbFloat(count: Int, index: Float): Modifier = layout { measurable, constraints ->
     val w = constraints.maxWidth / count
     val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
     layout(constraints.maxWidth, placeable.height) {
-        placeable.placeRelative(w * index, 0)
+        placeable.placeRelative((w * index).roundToInt(), 0)
     }
 }
 

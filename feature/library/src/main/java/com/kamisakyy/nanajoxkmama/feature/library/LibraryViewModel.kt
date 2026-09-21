@@ -32,6 +32,8 @@ class LibraryViewModel @Inject constructor(
 
     fun clearHistory() = viewModelScope.launch { library.clearHistory() }
 
+    fun deleteHistory(trackId: String) = viewModelScope.launch { library.removeHistory(trackId) }
+
     fun createPlaylist(name: String) = viewModelScope.launch { library.createPlaylist(name) }
 
     fun renamePlaylist(id: String, name: String) = viewModelScope.launch { library.renamePlaylist(id, name) }

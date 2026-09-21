@@ -5,7 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -22,6 +24,10 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Checklist
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
@@ -29,6 +35,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -206,7 +213,11 @@ fun AppShell(np: NowPlayingViewModel) {
             }
 
             // mini player sits above tabs — window controls live inside; never closes on pause
-            AnimatedVisibility(visible = state.hasQueue && !playerOpen, enter = slideInVertically { it }, exit = slideOutVertically { it }) {
+            AnimatedVisibility(
+                visible = state.hasQueue && !playerOpen,
+                enter = slideInVertically(animationSpec = spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)) { it },
+                exit = slideOutVertically(animationSpec = spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMedium)) { it },
+            ) {
                 MiniPlayer(
                     state = state,
                     onTogglePlay = np.player::togglePlay,
@@ -240,8 +251,8 @@ fun AppShell(np: NowPlayingViewModel) {
         // full player window — overlay with slide-up motion
         AnimatedVisibility(
             visible = playerOpen,
-            enter = slideInVertically(animationSpec = tween(300)) { it },
-            exit = slideOutVertically(animationSpec = tween(300)) { it },
+            enter = slideInVertically(animationSpec = spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow)) { it },
+            exit = slideOutVertically(animationSpec = spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMedium)) { it },
         ) {
             NowPlayingScreen(
                 viewModel = np,
@@ -270,6 +281,9 @@ private fun DetailsDetailHost(
     id: String,
     onOpenAnime: (String) -> Unit,
 ) {
+    var sheetTrack by remember { mutableStateOf<com.kamisakyy.nanajoxkmama.core.model.Track?>(null) }
+    var sheetPlaylistId by remember { mutableStateOf("") }
+    var sheetOpen by remember { mutableStateOf(false) }
     val vm: DetailsViewModel = hiltViewModel(key = "details:$kind:$id")
     LaunchedEffect(kind, id) {
         when (kind) {
@@ -285,22 +299,72 @@ private fun DetailsDetailHost(
         val playlists by libVm.playlists.collectAsStateWithLifecycle()
         val p = playlists.firstOrNull { it.id == id }
         val state by np.state.collectAsStateWithLifecycle()
-        com.kamisakyy.nanajoxkmama.feature.player.TrackColumnList(
-            tracks = p?.tracks ?: emptyList(),
-            currentId = state.current?.id,
-            playlists = playlists,
-            downloadProgress = dlCollect(np),
-            onPlay = { tracks, i -> np.player.playAll(tracks, i) },
-            onPlayNext = np.player::enqueueNext,
-            onEnqueue = np.player::enqueue,
-            onAddToPlaylist = np::addTrackToPlaylist,
-            onCreatePlaylist = np::createPlaylist,
-            onDownload = np::download,
-            onOpenAnime = { onOpenAnime(it.anime.slug) },
-            header = {
-                Text(p?.name ?: "Плейлист", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(16.dp))
-            },
-        )
+        var selection by remember { mutableStateOf<Set<String>?>(null) }
+        val sel = selection
+        androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Text(p?.name ?: "Плейлист", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                if (sel != null) {
+                    Text("Выбрано: ${sel.size}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                    IconButton(onClick = {
+                        val tracks = p?.tracks ?: emptyList()
+                        sel.forEach { tid -> np.addTrackToPlaylist(id, tracks.firstOrNull { it.id == tid } ?: return@forEach) }
+                    }) { Icon(Icons.Rounded.PlaylistAdd, contentDescription = "Добавить в очередь") }
+                    IconButton(onClick = { sel.forEach { tid -> libVm.removeFromPlaylist(id, tid) }; selection = null }) {
+                        Icon(Icons.Rounded.Delete, contentDescription = "Удалить выбранные")
+                    }
+                    IconButton(onClick = { selection = null }) { Icon(Icons.Rounded.Close, contentDescription = "Снять выделение") }
+                } else {
+                    IconButton(onClick = { selection = emptySet() }) {
+                        Icon(Icons.Rounded.Checklist, contentDescription = "Выбрать несколько")
+                    }
+                }
+            }
+            com.kamisakyy.nanajoxkmama.feature.player.ReorderTrackList(
+                tracks = p?.tracks ?: emptyList(),
+                currentId = state.current?.id,
+                selection = sel,
+                onSelectionToggle = { tid ->
+                    val cur = selection ?: emptySet()
+                    selection = if (cur.contains(tid)) cur - tid else cur + tid
+                },
+                onMove = { from, to ->
+                    val cur = (p?.tracks ?: emptyList()).toMutableList()
+                    if (from in cur.indices && to in cur.indices) {
+                        val item = cur.removeAt(from)
+                        cur.add(to, item)
+                        libVm.reorder(id, cur)
+                    }
+                },
+                onPlay = { tracks, i -> np.player.playAll(tracks, i) },
+                onLongPress = { t ->
+                    sheetTrack = t
+                    sheetPlaylistId = id
+                    sheetOpen = true
+                },
+            )
+        }
+        if (sheetOpen) {
+            sheetTrack?.let { t ->
+                com.kamisakyy.nanajoxkmama.feature.player.TrackActionSheet(
+                    track = t,
+                    playlists = playlists,
+                    downloadProgress = dlCollect(np)[t.id + ":a"] ?: dlCollect(np)[t.id + ":v"],
+                    onPlay = { np.player.playAll(p?.tracks ?: listOf(t), (p?.tracks ?: listOf(t)).indexOfFirst { it.id == t.id }) },
+                    onPlayNext = { np.player.enqueueNext(t) },
+                    onEnqueue = { np.player.enqueue(t) },
+                    onAddToPlaylist = { pid -> np.addTrackToPlaylist(pid, t) },
+                    onCreatePlaylist = { name -> np.createPlaylist(name, t) },
+                    onDownloadAudio = { np.download(t, false) },
+                    onDownloadVideo = { np.download(t, true) },
+                    onOpenAnime = { onOpenAnime(t.anime.slug) },
+                    onDismiss = { sheetOpen = false },
+                )
+            }
+        }
         return
     }
     val state by np.state.collectAsStateWithLifecycle()

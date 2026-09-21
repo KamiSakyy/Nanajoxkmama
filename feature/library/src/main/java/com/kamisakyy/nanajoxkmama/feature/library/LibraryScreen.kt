@@ -68,7 +68,12 @@ fun LibraryScreen(
                             }
                         }
                         items(history, key = { it.id }) { t ->
-                            TrackRow(t, isCurrent = t.id == currentId, onClick = { onPlay(history, history.indexOfFirst { it.id == t.id }) }, onLongClick = {})
+                            com.kamisakyy.nanajoxkmama.core.design.SwipeTrackRow(
+                                onPlayNext = { /* queue-next handled by playback layer below */ },
+                                onDelete = { viewModel.deleteHistory(t.id) },
+                            ) {
+                                TrackRow(t, isCurrent = t.id == currentId, onClick = { onPlay(history, history.indexOfFirst { it.id == t.id }) }, onLongClick = {})
+                            }
                         }
                         item { Spacer(Modifier.height(120.dp)) }
                     }

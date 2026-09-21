@@ -134,6 +134,8 @@ class LibraryRepository @Inject constructor(
 
     suspend fun clearHistory() = dao.clearHistory()
 
+    suspend fun removeHistory(trackId: String) = dao.removeHistory(trackId)
+
     fun downloads(): Flow<List<Pair<DownloadEntity, Track?>>> =
         dao.downloads().map { l -> l.map { it to TrackJson.decode(it.trackJson) } }
 
