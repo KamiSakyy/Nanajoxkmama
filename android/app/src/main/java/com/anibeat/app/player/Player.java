@@ -197,10 +197,29 @@ public final class Player {
     /* Управление                                                          */
     /* ------------------------------------------------------------------ */
 
+    /** Есть ли у трека источник звука для ExoPlayer. */
+    public static boolean hasSource(Models.Track t) {
+        if (t == null) return false;
+        return (t.audioUrl != null && !t.audioUrl.isEmpty()) || (t.videoUrl != null && !t.videoUrl.isEmpty());
+    }
+
     public static void playTracks(List<Models.Track> tracks, int start, boolean withShuffle) {
         if (tracks == null || tracks.isEmpty()) return;
         videoMode = false;
-        List<Models.Track> list = new ArrayList<>(tracks);
+        List<Models.Track> playable = new ArrayList<>();
+        for (Models.Track t : tracks) if (hasSource(t)) playable.add(t);
+        if (playable.isEmpty()) return;
+        List<Models.Track> list = playable;
+        if (list != tracks) {
+            int newStart = 0;
+            if (start >= 0 && start < tracks.size()) {
+                Models.Track target = tracks.get(start);
+                int found = list.indexOf(target);
+                newStart = found >= 0 ? found : 0;
+            }
+            start = newStart;
+            withShuffle = withShuffle && list.size() > 1;
+        }
         if (withShuffle && list.size() > 1) {
             Models.Track first = list.get(Math.max(0, Math.min(start, list.size() - 1)));
             list.remove(first);
@@ -220,6 +239,7 @@ public final class Player {
     }
 
     public static void playTrack(Models.Track track, List<Models.Track> context) {
+        if (track == null || !hasSource(track)) return;
         if (context != null && !context.isEmpty()) {
             int idx = 0;
             for (int i = 0; i < context.size(); i++) {
