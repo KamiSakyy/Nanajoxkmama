@@ -12,7 +12,6 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.widget.FrameLayout;
 
-import androidx.annotation.Nullable;
 
 import com.anibeat.app.core.Image;
 import com.anibeat.app.core.Net;
@@ -79,7 +78,7 @@ public class MainActivity extends Activity {
     private boolean miniVisible;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Ui.attach(this, this);

@@ -8,7 +8,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.Surface;
 
-import androidx.annotation.Nullable;
 
 import com.anibeat.app.core.Prefs;
 import com.anibeat.app.core.Ui;
@@ -211,7 +210,7 @@ public final class Player {
         return index;
     }
 
-    @Nullable
+   
     public static Models.Track current() {
         if (QUEUE.isEmpty() || index < 0 || index >= QUEUE.size()) return null;
         return QUEUE.get(index);
@@ -321,7 +320,7 @@ public final class Player {
         save();
     }
 
-    public static void playTrack(Models.Track track, @Nullable List<Models.Track> context) {
+    public static void playTrack(Models.Track track, List<Models.Track> context) {
         if (track == null || !hasSource(track)) return;
         if (context != null && !context.isEmpty()) {
             int idx = 0;

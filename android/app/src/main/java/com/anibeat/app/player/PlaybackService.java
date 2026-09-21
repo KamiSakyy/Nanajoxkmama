@@ -14,7 +14,6 @@ import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.IBinder;
 
-import androidx.annotation.Nullable;
 
 import com.anibeat.app.MainActivity;
 import com.anibeat.app.R;
@@ -86,7 +85,7 @@ public class PlaybackService extends Service {
     }
 
     @Override
-    public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+    public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
         if (ACTION_TOGGLE.equals(action)) Player.toggle();
         else if (ACTION_NEXT.equals(action)) Player.next(false);
@@ -102,7 +101,7 @@ public class PlaybackService extends Service {
         return START_STICKY;
     }
 
-    @Nullable
+   
     @Override
     public IBinder onBind(Intent intent) {
         return null;
