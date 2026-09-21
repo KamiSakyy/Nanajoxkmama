@@ -49,9 +49,9 @@ fun SegmentedControl(
         // animated thumb — spring interpolation between slots
         val thumbIndex by androidx.compose.animation.core.animateFloatAsState(
             targetValue = selectedIndex.toFloat(),
-            animationSpec = androidx.compose.animation.spring(
+            animationSpec = androidx.compose.animation.core.spring(
                 dampingRatio = 0.85f,
-                stiffness = androidx.compose.animation.core.StiffnessMediumLow,
+                stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
             ),
             label = "segThumb",
         )
