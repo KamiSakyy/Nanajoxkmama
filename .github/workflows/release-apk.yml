@@ -76,6 +76,15 @@ jobs:
             exit $STATUS
           fi
 
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Prepare release handoff
         run: |
           set -euo pipefail
