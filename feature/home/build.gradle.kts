@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "com.kamisakyy.nanajoxkmama.feature.home"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig { minSdk = 23 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
