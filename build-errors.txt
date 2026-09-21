@@ -1,0 +1,9 @@
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/HomeScreen.java:248: error: variable offlineRow might not have been initialized
+    }
+    ^
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
