@@ -30,9 +30,7 @@ public final class HomeScreen implements Screen {
     private final LinearLayout heroSlot;
     private final LinearLayout quickRow;
     private final LinearLayout randomRow;
-    private final LinearLayout seasonRow;
     private final LinearLayout legendRow;
-    private final LinearLayout historyRow;
     private final LinearLayout artistRow;
     private final LinearLayout latestList;
     private final TextView liveTitle;
