@@ -31,6 +31,28 @@ public class LibraryScreen extends ScreenBase {
     private LinearLayout tabsHolder;
     private LinearLayout bodyHolder;
 
+    /** Живой прогресс загрузок (как на сайте: полоса растёт без перерисовки экрана). */
+    private final java.util.List<FrameLayout> liveBars = new java.util.ArrayList<>();
+    private final java.util.List<TextView> liveLabels = new java.util.ArrayList<>();
+    private final java.util.List<Downloads.Job> liveJobs = new java.util.ArrayList<>();
+    private final android.os.Handler progressHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable progressTick = new Runnable() {
+        @Override
+        public void run() {
+            boolean alive = false;
+            for (int i = 0; i < liveBars.size() && i < liveJobs.size(); i++) {
+                Downloads.Job job = liveJobs.get(i);
+                FrameLayout bar = liveBars.get(i);
+                TextView label = i < liveLabels.size() ? liveLabels.get(i) : null;
+                float percent = job.total > 0 ? job.received * 100f / job.total : 0f;
+                Ui.setProgress(bar, percent);
+                if (label != null) label.setText(jobStatus(job));
+                if (job.status == Downloads.Status.QUEUED || job.status == Downloads.Status.DOWNLOADING) alive = true;
+            }
+            if (alive) progressHandler.postDelayed(this, 400);
+        }
+    };
+
     public LibraryScreen(MainActivity activity) {
         super(activity);
     }
@@ -44,6 +66,12 @@ public class LibraryScreen extends ScreenBase {
         tab = index;
         fillBody();
         updateTopActions();
+    }
+
+    @Override
+    public void onHide() {
+        super.onHide();
+        progressHandler.removeCallbacks(progressTick);
     }
 
     @Override
@@ -167,6 +195,10 @@ public class LibraryScreen extends ScreenBase {
 
             LinearLayout group = Ui.listGroup(c, null, null);
             LinearLayout body = Ui.groupBody(group);
+            liveBars.clear();
+            liveLabels.clear();
+            liveJobs.clear();
+            progressHandler.removeCallbacks(progressTick);
             for (Downloads.Job job : jobs) {
                 LinearLayout row = Ui.row(c);
                 row.setPadding(dp(12), dp(10), dp(12), dp(10));
@@ -200,7 +232,12 @@ public class LibraryScreen extends ScreenBase {
                     bp.rightMargin = dp(12);
                     bp.bottomMargin = dp(10);
                     body.addView(bar, bp);
-                    Ui.setProgress(bar, job.total > 0 ? job.received * 100f / job.total : 0f);
+                    bar.post(() -> Ui.setProgress(bar, job.total > 0 ? job.received * 100f / job.total : 0f));
+                    liveBars.add(bar);
+                    liveLabels.add(sub);
+                    liveJobs.add(job);
+                    progressHandler.removeCallbacks(progressTick);
+                    progressHandler.postDelayed(progressTick, 400);
                 }
             }
             LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);

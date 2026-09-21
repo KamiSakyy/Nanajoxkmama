@@ -48,6 +48,25 @@ public class Sheets extends FrameLayout {
     private boolean swallowing;
     private Runnable onDismiss;
 
+    /** Живой прогресс в шторке загрузок. */
+    private final java.util.List<FrameLayout> sheetBars = new java.util.ArrayList<>();
+    private final java.util.List<TextView> sheetLabels = new java.util.ArrayList<>();
+    private final java.util.List<Downloads.Job> sheetJobs = new java.util.ArrayList<>();
+    private final android.os.Handler sheetHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable sheetTick = new Runnable() {
+        @Override
+        public void run() {
+            boolean alive = false;
+            for (int i = 0; i < sheetBars.size() && i < sheetJobs.size(); i++) {
+                Downloads.Job job = sheetJobs.get(i);
+                Ui.setProgress(sheetBars.get(i), job.total > 0 ? job.received * 100f / job.total : 0f);
+                if (i < sheetLabels.size()) sheetLabels.get(i).setText(jobStatus(job));
+                if (job.status == Downloads.Status.QUEUED || job.status == Downloads.Status.DOWNLOADING) alive = true;
+            }
+            if (alive && open) sheetHandler.postDelayed(this, 400);
+        }
+    };
+
     private Models.Track menuTrack;
     private Models.Track pickerTrack;
     private Models.Playlist menuPlaylist;
@@ -187,6 +206,7 @@ public class Sheets extends FrameLayout {
     public void close() {
         if (!open) return;
         open = false;
+        sheetHandler.removeCallbacks(sheetTick);
         Runnable dismiss = onDismiss;
         onDismiss = null;
         scrim.animate().alpha(0f).setDuration(Theme.DUR_FAST).start();
@@ -380,6 +400,10 @@ public class Sheets extends FrameLayout {
         LinearLayout box = Ui.column(c);
         box.setPadding(0, 0, 0, Theme.dp(c, 16));
         List<Downloads.Job> jobs = Downloads.jobs();
+        sheetBars.clear();
+        sheetLabels.clear();
+        sheetJobs.clear();
+        sheetHandler.removeCallbacks(sheetTick);
         if (jobs.isEmpty()) {
             box.addView(Ui.emptyState(c, "cloud_download", "Нет загрузок", "В меню трека выберите «Сохранить офлайн».", null, null));
         }
@@ -412,8 +436,12 @@ public class Sheets extends FrameLayout {
                 bp.rightMargin = Theme.dp(c, 16);
                 bp.bottomMargin = Theme.dp(c, 10);
                 box.addView(bar, bp);
-                float percent = job.total > 0 ? job.received * 100f / job.total : 0f;
-                Ui.setProgress(bar, percent);
+                bar.post(() -> Ui.setProgress(bar, job.total > 0 ? job.received * 100f / job.total : 0f));
+                sheetBars.add(bar);
+                sheetLabels.add(status);
+                sheetJobs.add(job);
+                sheetHandler.removeCallbacks(sheetTick);
+                sheetHandler.postDelayed(sheetTick, 400);
             }
         }
         show("Загрузки", box, null);
