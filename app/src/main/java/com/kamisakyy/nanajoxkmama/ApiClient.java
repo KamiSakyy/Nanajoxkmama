@@ -133,9 +133,11 @@ public final class ApiClient {
             JSONObject audio = v.optJSONObject("audio");
             boolean usable = !hasAudio || (audio != null && !audio.optString("link", "").isEmpty());
             if (!usable) continue;
-            if (best == null
-                    || (v.optBoolean("nc", false) ? 1 : 0) > (best.optBoolean("nc", false) ? 1 : 0)
-                    || v.optInt("resolution", 0) > best.optInt("resolution", 0)) best = v;
+            if (best == null) { best = v; continue; }
+            int vNc = v.optBoolean("nc", false) ? 1 : 0;
+            int bNc = best.optBoolean("nc", false) ? 1 : 0;
+            if (vNc > bNc
+                    || (vNc == bNc && v.optInt("resolution", 0) > best.optInt("resolution", 0))) best = v;
         }
         return best;
     }

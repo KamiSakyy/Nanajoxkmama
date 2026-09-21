@@ -134,9 +134,17 @@ public final class Ui {
         return t;
     }
 
+    /** Resolve ic_<name> regardless of whether the caller passed the prefix. */
+    public static int drawableId(android.content.Context c, String name) {
+        if (name == null || name.isEmpty()) return 0;
+        String n = name.startsWith("ic_") ? name : "ic_" + name;
+        int id = c.getResources().getIdentifier(n, "drawable", c.getPackageName());
+        return id;
+    }
+
     public static ImageView icon(Activity a, String name, float sizeDp, int color) {
         ImageView v = new ImageView(a);
-        int id = a.getResources().getIdentifier("ic_" + name, "drawable", a.getPackageName());
+        int id = drawableId(a, name);
         if (id != 0) v.setImageResource(id);
         int size = dp(sizeDp);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
@@ -191,7 +199,7 @@ public final class Ui {
             img = new ImageView(a);
             img.setScaleType(ImageView.ScaleType.CENTER_CROP);
             ph = new ImageView(a);
-            int placeholder = a.getResources().getIdentifier("ic_music_placeholder", "drawable", a.getPackageName());
+            int placeholder = drawableId(a, "music_placeholder");
             if (placeholder != 0) ph.setImageResource(placeholder);
             ph.setColorFilter(DIM);
             ph.setScaleType(ImageView.ScaleType.CENTER);
@@ -744,9 +752,11 @@ public final class Ui {
 
     public static void refreshPlayingRows() {
         for (WeakReference<TrackRow> ref : ROWS) {
-            TrackRow row = ref.get();
-            if (row == null) ROWS.remove(ref);
-            else row.refreshPlaying();
+            try {
+                TrackRow row = ref.get();
+                if (row == null) ROWS.remove(ref);
+                else row.refreshPlaying();
+            } catch (Throwable ignored) { }
         }
     }
 

@@ -102,6 +102,7 @@ public final class PlaybackService extends Service {
         ensureForeground();
         String action = intent == null ? null : intent.getAction();
         if (action == null) action = ACTION_PLAY;
+        try {
         switch (action) {
             case ACTION_PLAY: {
                 queue = Store.getQueue();
@@ -144,6 +145,9 @@ public final class PlaybackService extends Service {
             case ACTION_STOP: stopPlayback(); break;
             case ACTION_SHUFFLE: toggleShuffle(); break;
             case ACTION_REPEAT: cycleRepeat(); break;
+        }
+        } catch (Throwable t) {
+            android.util.Log.e("AniBeat", "command failed: " + action, t);
         }
         return START_STICKY;
     }
@@ -451,6 +455,8 @@ public final class PlaybackService extends Service {
         }
         builder.setSmallIcon(R.drawable.ic_notification)
                 .setContentIntent(contentIntent())
+                .setCategory(Notification.CATEGORY_TRANSPORT)
+                .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOngoing(playing)
                 .setShowWhen(false);
         if (Build.VERSION.SDK_INT >= 24) {

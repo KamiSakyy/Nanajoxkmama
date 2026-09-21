@@ -5,6 +5,8 @@ import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.SurfaceTexture;
+import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -15,7 +17,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.VideoView;
+import android.view.Surface;
+import android.view.TextureView;
 
 import java.util.List;
 import java.util.Locale;
@@ -30,10 +33,14 @@ public final class NowPlayingView extends FrameLayout {
     private final LinearLayout root;
     private final Ui.CoverView cover;
     private final FrameLayout stage;
-    private final VideoView video;
+    private final TextureView video;
+    private MediaPlayer videoPlayer;
+    private Surface videoSurface;
+    private boolean videoWanted;
     private final TextView title;
     private final TextView subtitle;
     private final TextView tagView;
+    private final View artistLink;
     private final TextView posLabel;
     private final TextView negLabel;
     private final Ui.SliderView slider;
@@ -96,10 +103,43 @@ public final class NowPlayingView extends FrameLayout {
         cover = new Ui.CoverView(host);
         cover.radius(14);
         stage.addView(cover, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        video = new VideoView(host);
-        video.setBackgroundColor(Color.BLACK);
+        video = new TextureView(host);
+        video.setOpaque(false);
         video.setVisibility(GONE);
         stage.addView(video, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+        video.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) {
+                if (videoSurface != null) videoSurface.release();
+                videoSurface = new Surface(st);
+                if (videoPlayer != null && videoWanted) {
+                    try {
+                        videoPlayer.setSurface(videoSurface);
+                        videoPlayer.prepareAsync();
+                    } catch (Exception ignored) { }
+                }
+            }
+            @Override public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) { }
+            @Override public boolean onSurfaceTextureDestroyed(SurfaceTexture st) {
+                if (videoSurface != null) { videoSurface.release(); videoSurface = null; }
+                return true;
+            }
+            @Override public void onSurfaceTextureUpdated(SurfaceTexture st) { }
+        });
+        // tap artwork / video area = play-pause, like the site's player stage
+        stage.setOnClickListener(v -> {
+            if (videoMode) {
+                if (videoPlayer != null) {
+                    try {
+                        if (videoPlayer.isPlaying()) videoPlayer.pause();
+                        else videoPlayer.start();
+                    } catch (Exception ignored) { }
+                }
+                refresh();
+            } else {
+                PlaybackService.command(host, PlaybackService.ACTION_TOGGLE);
+            }
+        });
+        Ui.tapScale(stage);
         body.addView(stage);
         body.addView(spacer(18));
 
@@ -113,13 +153,7 @@ public final class NowPlayingView extends FrameLayout {
         LinearLayout.LayoutParams sbp = wide();
         sbp.topMargin = Ui.dp(3);
         body.addView(subtitle, sbp);
-        subtitle.setOnClickListener(v -> {
-            Track t = Store.getCurrentTrack();
-            if (t != null && t.artistSlug != null && !t.artistSlug.isEmpty()) {
-                close();
-                host.openArtist(t.artistSlug);
-            }
-        });
+        subtitle.setOnClickListener(null); // tap on track info must NEVER close the player
 
         LinearLayout tagRow = new LinearLayout(host);
         tagRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -129,6 +163,21 @@ public final class NowPlayingView extends FrameLayout {
         LinearLayout.LayoutParams trp = wide();
         trp.topMargin = Ui.dp(10);
         body.addView(tagRow, trp);
+
+        artistLink = Ui.chip(host, "Открыть артиста", false, v -> {
+            Track t = Store.getCurrentTrack();
+            if (t != null && t.artistSlug != null && !t.artistSlug.isEmpty()) {
+                close();
+                host.openArtist(t.artistSlug);
+            }
+        });
+        LinearLayout.LayoutParams alp = wide();
+        alp.topMargin = Ui.dp(10);
+        LinearLayout artistWrap = new LinearLayout(host);
+        artistWrap.setOrientation(LinearLayout.HORIZONTAL);
+        artistWrap.setGravity(Gravity.CENTER_HORIZONTAL);
+        artistWrap.addView(artistLink);
+        body.addView(artistWrap, alp);
 
         body.addView(spacer(22));
 
@@ -149,7 +198,7 @@ public final class NowPlayingView extends FrameLayout {
                 long dur = Store.getDuration();
                 if (t == null || dur <= 0) return;
                 long ms = (long) (fraction * dur);
-                if (videoMode && video.isPlaying()) video.seekTo((int) ms);
+                if (videoMode && isVideoPlaying()) { try { videoPlayer.seekTo((int) ms); } catch (Exception ignored) { } }
                 else PlaybackService.seek(host, ms);
             }
         });
@@ -185,8 +234,12 @@ public final class NowPlayingView extends FrameLayout {
         playCircle.addView(playBtn, new LayoutParams(Ui.dp(28), Ui.dp(28), Gravity.CENTER));
         playCircle.setOnClickListener(v -> {
             if (videoMode) {
-                if (video.isPlaying()) video.pause();
-                else video.start();
+                if (videoPlayer != null) {
+                    try {
+                        if (videoPlayer.isPlaying()) videoPlayer.pause();
+                        else videoPlayer.start();
+                    } catch (Exception ignored) { }
+                }
                 refresh();
             } else PlaybackService.command(host, PlaybackService.ACTION_TOGGLE);
         });
@@ -308,41 +361,91 @@ public final class NowPlayingView extends FrameLayout {
         if (t == null) return;
         if (videoMode) {
             stopVideo(true);
-        } else {
-            videoMode = true;
-            videoBtnIcon.setColorFilter(Ui.ACCENT);
-            cover.setVisibility(GONE);
-            video.setVisibility(VISIBLE);
-            ViewGroup.LayoutParams lp = stage.getLayoutParams();
-            lp.height = Ui.dp(200);
-            stage.setLayoutParams(lp);
-            if (Store.isPlaying()) PlaybackService.command(host, PlaybackService.ACTION_TOGGLE); // pause audio
-            long pos = Store.getPosition();
-            video.setVideoPath(t.videoUrl);
-            video.setOnPreparedListener(mp -> {
-                mp.setLooping(false);
-                video.seekTo((int) Math.max(0, pos - 400));
-                video.start();
-                mp.setOnCompletionListener(m -> PlaybackService.command(host, PlaybackService.ACTION_NEXT));
-            });
-            host.toast("Видео включено");
+            refresh();
+            return;
         }
+        String url = t.videoUrl == null ? "" : t.videoUrl;
+        boolean hasVideo = !url.isEmpty() && !url.equals(t.audioUrl);
+        if (!hasVideo) {
+            host.toast("Для этого трека нет видео");
+            return;
+        }
+        // Video is NEVER preloaded — we start fetching it only on this button press.
+        videoMode = true;
+        videoWanted = true;
+        videoBtnIcon.setImageResource(Ui.drawableId(host, "videocam"));
+        videoBtnIcon.setColorFilter(Ui.ACCENT);
+        cover.setVisibility(GONE);
+        video.setVisibility(VISIBLE);
+        ViewGroup.LayoutParams lp = stage.getLayoutParams();
+        lp.height = Ui.dp(200);
+        stage.setLayoutParams(lp);
+        long pos = Store.getPosition();
+        if (Store.isPlaying()) PlaybackService.command(host, PlaybackService.ACTION_TOGGLE); // pause audio
+        releaseVideoPlayer();
+        try {
+            videoPlayer = new MediaPlayer();
+            videoPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build());
+            videoPlayer.setOnPreparedListener(mp -> {
+                mp.setLooping(false);
+                try { mp.seekTo((int) Math.max(0, pos - 400)); } catch (Exception ignored) { }
+                mp.start();
+                mp.setOnCompletionListener(m -> PlaybackService.command(host, PlaybackService.ACTION_NEXT));
+                refresh();
+            });
+            videoPlayer.setOnErrorListener((mp, what, extra) -> {
+                host.toast("Не удалось загрузить видео");
+                stopVideo(true);
+                return true;
+            });
+            videoPlayer.setDataSource(url);
+            if (videoSurface == null && video.getSurfaceTexture() != null) {
+                videoSurface = new Surface(video.getSurfaceTexture());
+            }
+            if (videoSurface != null) {
+                videoPlayer.setSurface(videoSurface);
+                videoPlayer.prepareAsync();
+            } else {
+                // surface arrives via onSurfaceTextureAvailable -> prepareAsync there
+                videoWanted = true;
+            }
+        } catch (Exception e) {
+            host.toast("Не удалось загрузить видео");
+            stopVideo(true);
+            return;
+        }
+        host.toast("Видео включено");
         refresh();
     }
 
+    private void releaseVideoPlayer() {
+        videoWanted = false;
+        if (videoPlayer != null) {
+            try { videoPlayer.stop(); } catch (Exception ignored) { }
+            try { videoPlayer.release(); } catch (Exception ignored) { }
+            videoPlayer = null;
+        }
+    }
+
     private void stopVideo(boolean resumeAudio) {
-        if (!videoMode) return;
+        if (!videoMode && videoPlayer == null) return;
         int pos = 0;
-        try { pos = video.getCurrentPosition(); } catch (Exception ignored) { }
-        video.stopPlayback();
+        if (videoPlayer != null) {
+            try { pos = videoPlayer.getCurrentPosition(); } catch (Exception ignored) { }
+        }
+        videoWanted = false;
+        releaseVideoPlayer();
         video.setVisibility(GONE);
         cover.setVisibility(VISIBLE);
         ViewGroup.LayoutParams lp = stage.getLayoutParams();
         lp.height = Ui.dp(300);
         stage.setLayoutParams(lp);
         videoMode = false;
+        videoBtnIcon.setImageResource(Ui.drawableId(host, "videocam_off"));
         videoBtnIcon.setColorFilter(Color.argb(170, 255, 255, 255));
-        if (resumeAudio) {
+        if (resumeAudio && pos > 0) {
             PlaybackService.seek(host, pos);
             PlaybackService.command(host, PlaybackService.ACTION_TOGGLE);
         }
@@ -377,25 +480,21 @@ public final class NowPlayingView extends FrameLayout {
             } catch (Exception ignored) { }
         }, 650);
 
-        boolean playing = Store.isPlaying();
-        playBtn.setImageResource(host.getResources().getIdentifier(
-                (videoMode ? video.isPlaying() : playing) ? "ic_pause" : "ic_play_arrow",
-                "drawable", host.getPackageName()));
+        boolean playing = videoMode ? isVideoPlaying() : Store.isPlaying();
+        playBtn.setImageResource(Ui.drawableId(host, playing ? "pause" : "play_arrow"));
         playBtn.setColorFilter(Color.BLACK);
 
         boolean fav = Store.isFavorite(t.id);
-        favIcon.setImageResource(host.getResources().getIdentifier(
-                fav ? "ic_favorite" : "ic_favorite_border", "drawable", host.getPackageName()));
+        favIcon.setImageResource(Ui.drawableId(host, fav ? "favorite" : "favorite_border"));
         favIcon.setColorFilter(fav ? Color.rgb(255, 105, 180) : Color.argb(170, 255, 255, 255));
 
         shuffleBtn.setAlpha(Store.isShuffle() ? 1f : 0.45f);
         String repeat = Store.getRepeat();
-        repeatIcon.setImageResource(host.getResources().getIdentifier(
-                "one".equals(repeat) ? "ic_repeat_one" : "ic_repeat", "drawable", host.getPackageName()));
+        repeatIcon.setImageResource(Ui.drawableId(host, "one".equals(repeat) ? "repeat_one" : "repeat"));
         repeatIcon.setColorFilter(!"off".equals(repeat) ? Ui.ACCENT : Color.argb(170, 255, 255, 255));
 
-        long dur = videoMode ? video.getDuration() : Store.getDuration();
-        long pos = videoMode ? video.getCurrentPosition() : Store.getPosition();
+        long dur = videoMode ? videoDuration() : Store.getDuration();
+        long pos = videoMode ? videoPosition() : Store.getPosition();
         if (dur > 0) {
             slider.setProgress(pos / (float) dur);
             posLabel.setText(Util.formatTime(pos));
@@ -405,6 +504,18 @@ public final class NowPlayingView extends FrameLayout {
             posLabel.setText("0:00");
             negLabel.setText("-0:00");
         }
+    }
+
+    private boolean isVideoPlaying() {
+        try { return videoPlayer != null && videoPlayer.isPlaying(); } catch (Exception e) { return false; }
+    }
+
+    private long videoDuration() {
+        try { return videoPlayer == null ? 0 : videoPlayer.getDuration(); } catch (Exception e) { return 0; }
+    }
+
+    private long videoPosition() {
+        try { return videoPlayer == null ? 0 : videoPlayer.getCurrentPosition(); } catch (Exception e) { return 0; }
     }
 
     /* ---------------- swipe down ---------------- */

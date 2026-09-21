@@ -252,7 +252,10 @@ public final class SearchScreen implements Screen {
         });
     }
 
+    private List<AnimeInfo> ruAnimeRef = new ArrayList<>();
+
     private void bindResults(ApiClient.SearchResult res, String err, List<Track> extras, List<AnimeInfo> ruAnime, String q) {
+        ruAnimeRef = ruAnime;
         results.removeAllViews();
         ArrayList<AnimeInfo> anime = new ArrayList<>();
         ArrayList<Track> tracks = new ArrayList<>();
@@ -299,18 +302,27 @@ public final class SearchScreen implements Screen {
             for (AnimeInfo info : anime) row.addView(Ui.animeCard(a, host, info));
             results.addView(hs);
         }
-        if (("all".equals(tab) || "tracks".equals(tab)) && !tracks.isEmpty()) {
+        if ("tracks".equals(tab) && !allTracks.isEmpty()) {
+            results.addView(section("Треки", "Слушать", v -> host.playAll(allTracks, 0, false)));
+            for (int i = 0; i < allTracks.size(); i++) {
+                results.addView(new Ui.TrackRow(a, host, allTracks.get(i), allTracks, true, false, null));
+            }
+        } else if ("all".equals(tab) && !tracks.isEmpty()) {
             results.addView(section("Треки", "Слушать", v -> {
                 if (!allTracks.isEmpty()) host.playAll(allTracks, 0, false);
             }));
-            int show = "all".equals(tab) ? Math.min(8, tracks.size()) : tracks.size();
+            int show = Math.min(10, tracks.size());
             for (int i = 0; i < show; i++) {
                 results.addView(new Ui.TrackRow(a, host, tracks.get(i), allTracks, true, false, null));
             }
         }
-        if (("all".equals(tab) || "tracks".equals(tab)) && !extraFiltered.isEmpty()) {
-            results.addView(section("Ещё треки", null, null));
-            int show = "all".equals(tab) ? Math.min(6, extraFiltered.size()) : extraFiltered.size();
+        if ("all".equals(tab) && !extraFiltered.isEmpty()) {
+            results.addView(section("Ещё треки", "Все", v -> {
+                tab = "tracks";
+                results.removeAllViews();
+                bindResults(res, err, extras, ruAnimeRef, q);
+            }));
+            int show = Math.min(6, extraFiltered.size());
             for (int i = 0; i < show; i++) {
                 results.addView(new Ui.TrackRow(a, host, extraFiltered.get(i), allTracks, true, false, null));
             }

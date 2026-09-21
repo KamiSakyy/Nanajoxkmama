@@ -59,12 +59,14 @@ public final class MainActivity extends Activity implements Ui.Host {
 
     private final BroadcastReceiver playbackReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
-            if (intent != null && intent.getBooleanExtra("error", false)) {
-                toast("Не удалось воспроизвести трек");
-            }
-            Ui.refreshPlayingRows();
-            refreshMiniPlayer();
-            if (nowPlaying != null && nowPlaying.isOpen()) nowPlaying.refresh();
+            try {
+                if (intent != null && intent.getBooleanExtra("error", false)) {
+                    toast("Не удалось воспроизвести трек");
+                }
+                Ui.refreshPlayingRows();
+                refreshMiniPlayer();
+                if (nowPlaying != null && nowPlaying.isOpen()) nowPlaying.refresh();
+            } catch (Throwable ignored) { }
         }
     };
 
@@ -174,7 +176,9 @@ public final class MainActivity extends Activity implements Ui.Host {
         FrameLayout toggleBtn = new FrameLayout(this);
         toggleBtn.setBackground(Ui.ripple(Ui.oval(Color.TRANSPARENT)));
         toggleBtn.addView(miniToggle, new FrameLayout.LayoutParams(Ui.dp(24), Ui.dp(24), Gravity.CENTER));
-        toggleBtn.setOnClickListener(v -> PlaybackService.command(this, PlaybackService.ACTION_TOGGLE));
+        toggleBtn.setOnClickListener(v -> {
+            try { PlaybackService.command(this, PlaybackService.ACTION_TOGGLE); } catch (Throwable ignored) { }
+        });
         LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(Ui.dp(42), Ui.dp(42));
         card.addView(toggleBtn, tp);
         View nextBtn = Ui.iconBtn(this, "skip_next", 22, Ui.ON,
@@ -250,8 +254,7 @@ public final class MainActivity extends Activity implements Ui.Host {
             ImageView iconView = (ImageView) tag[2];
             TextView label = (TextView) tag[3];
             boolean active = i == tab && stack.isEmpty();
-            iconView.setImageResource(getResources().getIdentifier(
-                    active ? iconActive : icon, "drawable", getPackageName()));
+            iconView.setImageResource(Ui.drawableId(this, active ? iconActive : icon));
             iconView.setColorFilter(active ? Ui.ON : Ui.DIM);
             label.setTextColor(active ? Ui.ON : Ui.DIM);
         }
@@ -399,8 +402,7 @@ public final class MainActivity extends Activity implements Ui.Host {
         miniTitle.setText(t.title);
         miniSubtitle.setText(t.displayArtist());
         boolean playing = Store.isPlaying();
-        miniToggle.setImageResource(getResources().getIdentifier(
-                playing ? "ic_pause" : "ic_play_arrow", "drawable", getPackageName()));
+        miniToggle.setImageResource(Ui.drawableId(this, playing ? "pause" : "play_arrow"));
         miniToggle.setColorFilter(Ui.ON);
         long dur = Store.getDuration();
         long pos = Store.getPosition();

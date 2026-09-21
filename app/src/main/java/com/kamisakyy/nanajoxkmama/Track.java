@@ -152,7 +152,8 @@ public final class Track {
         t.cover = text(o, "cover", "");
         t.coverSmall = text(o, "coverSmall", "");
         t.audioUrl = text(o, "audioUrl", "");
-        t.videoUrl = text(o, "videoUrl", t.audioUrl);
+        t.videoUrl = text(o, "videoUrl", "");
+        if (t.videoUrl.isEmpty()) t.videoUrl = t.audioUrl;
         t.resolution = number(o, "resolution", -1);
         t.tags = text(o, "tags", "");
         t.version = number(o, "version", -1);
