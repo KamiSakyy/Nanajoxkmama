@@ -70,15 +70,34 @@ public final class Track {
         return artist == null || artist.trim().isEmpty() ? "Неизвестный исполнитель" : artist;
     }
 
+    /** Compact theme marker: OP1 / ED2 / IN. */
+    public String themeTag() {
+        return themeSlug == null || themeSlug.isEmpty() ? type : themeSlug;
+    }
+
     public String displayTheme() {
-        String label = themeSlug == null || themeSlug.isEmpty() ? type : themeSlug;
+        String label = themeTag();
         if ("OP".equals(type)) return "Опенинг · " + label;
         if ("ED".equals(type)) return "Эндинг · " + label;
         return "Вставка · " + label;
     }
 
+    public static String typeRu(String type) {
+        if ("OP".equals(type)) return "Опенинг";
+        if ("ED".equals(type)) return "Эндинг";
+        return "Вставка";
+    }
+
+    public boolean isExtra() {
+        return "extra".equals(source);
+    }
+
     public String playableUrl() {
         return offlinePath != null && !offlinePath.isEmpty() ? offlinePath : audioUrl;
+    }
+
+    public String versionLabel() {
+        return version > 0 ? "v" + version : "";
     }
 
     public JSONObject toJson() {
@@ -110,7 +129,6 @@ public final class Track {
             o.put("source", source);
             o.put("offlinePath", offlinePath);
         } catch (JSONException ignored) {
-            // JSONObject.put only fails for unsupported values; all fields above are primitives.
         }
         return o;
     }
