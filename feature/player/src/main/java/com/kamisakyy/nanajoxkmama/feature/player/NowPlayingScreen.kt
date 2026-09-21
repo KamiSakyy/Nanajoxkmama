@@ -278,7 +278,7 @@ fun NowPlayingScreen(
         ModalBottomSheet(onDismissRequest = { showQueue = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Text("Очередь", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
             androidx.compose.foundation.lazy.LazyColumn(Modifier.height(420.dp)) {
-                androidx.compose.foundation.lazy.items(state.queue.size) { i ->
+                items(count = state.queue.size) { i ->
                     val t = state.queue[i]
                     Row(
                         Modifier
