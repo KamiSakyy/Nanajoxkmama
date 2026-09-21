@@ -61,19 +61,25 @@ class ContentRepository @Inject constructor(
                 }
             } }
             val fr = fresh.await(); val lr = latest.await()
-            val rr = kotlinx.coroutines.withTimeoutOrNull(5000) { random.await() } ?: emptyList()
-            val sr = kotlinx.coroutines.withTimeoutOrNull(5000) { season.await() } ?: emptyList()
-            val mc = kotlinx.coroutines.withTimeoutOrNull(4000) { mixCovers.await() } ?: emptyMap()
-            val dc = kotlinx.coroutines.withTimeoutOrNull(4000) { decadeCovers.await() } ?: emptyMap()
-            val errs = listOf(fr, lr, rr, sr, mc, dc).mapNotNull { it.exceptionOrNull() }
+            val rr = kotlinx.coroutines.withTimeoutOrNull(5000) { random.await() }
+            val sr = kotlinx.coroutines.withTimeoutOrNull(5000) { season.await() }
+            val mc = kotlinx.coroutines.withTimeoutOrNull(4000) { mixCovers.await() }
+            val dc = kotlinx.coroutines.withTimeoutOrNull(4000) { decadeCovers.await() }
+            val errs = ArrayList<Throwable>()
+            fr.exceptionOrNull()?.let { errs.add(it) }
+            lr.exceptionOrNull()?.let { errs.add(it) }
+            rr?.exceptionOrNull()?.let { errs.add(it) }
+            sr?.exceptionOrNull()?.let { errs.add(it) }
+            mc?.exceptionOrNull()?.let { errs.add(it) }
+            dc?.exceptionOrNull()?.let { errs.add(it) }
             val feed = HomeFeed(
                 fresh = fr.getOrNull() ?: emptyList(),
-                random = rr.getOrNull() ?: emptyList(),
+                random = rr?.getOrNull() ?: emptyList(),
                 latest = lr.getOrNull() ?: emptyList(),
-                season = sr.getOrNull() ?: emptyList(),
+                season = sr?.getOrNull() ?: emptyList(),
                 mixes = Curated.MIXES,
-                mixCovers = mc.getOrNull() ?: emptyMap(),
-                decadeCovers = dc.getOrNull() ?: emptyMap(),
+                mixCovers = mc?.getOrNull() ?: emptyMap(),
+                decadeCovers = dc?.getOrNull() ?: emptyMap(),
             )
             if (feed.fresh.isEmpty() && feed.random.isEmpty() && feed.latest.isEmpty() &&
                 feed.season.isEmpty() && feed.mixCovers.isEmpty() && feed.decadeCovers.isEmpty() && errs.isNotEmpty()
