@@ -251,7 +251,7 @@ public class SearchScreen extends ListScreen {
 
     private static List<String> genreNames() {
         List<String> names = new ArrayList<>();
-        for (Models.GenreDef def : Api.GENRES) names.add(def.name);
+        for (Models.GenreDef def : Api.GENRES) names.add(def.label);
         return names;
     }
 

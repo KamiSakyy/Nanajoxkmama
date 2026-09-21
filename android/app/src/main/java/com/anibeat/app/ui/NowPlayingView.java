@@ -25,23 +25,23 @@ import com.google.android.material.slider.Slider;
 /** Полноэкранный плеер: обложка или видео, время, управление и очередь. */
 public class NowPlayingView extends FrameLayout {
 
-    private final Host host;
-    private final ImageView art;
-    private final PlayerView video;
-    private final FrameLayout videoBox;
-    private final TextView title;
-    private final TextView artist;
-    private final TextView anime;
-    private final TextView position;
-    private final TextView duration;
-    private final TextView status;
-    private final Slider slider;
-    private final ImageView play;
-    private final ImageView shuffle;
-    private final ImageView repeat;
-    private final ImageView like;
-    private final ImageView sleep;
-    private final ImageView videoToggle;
+    private Host host;
+    private ImageView art;
+    private PlayerView video;
+    private FrameLayout videoBox;
+    private TextView title;
+    private TextView artist;
+    private TextView anime;
+    private TextView position;
+    private TextView duration;
+    private TextView status;
+    private Slider slider;
+    private ImageView play;
+    private ImageView shuffle;
+    private ImageView repeat;
+    private ImageView like;
+    private ImageView sleep;
+    private ImageView videoToggle;
     private boolean open;
     private boolean seeking;
     private String shownCover = "";
@@ -49,6 +49,7 @@ public class NowPlayingView extends FrameLayout {
 
     public NowPlayingView(final Host host) {
         super(host.activity());
+        this.host = host;
         Context context = host.activity();
         setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setBackground(Ui.gradient(Theme.mix(0xFF0A0A0C, Theme.ACCENT, 0.34f), Theme.BG));

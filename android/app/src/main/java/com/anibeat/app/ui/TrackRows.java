@@ -128,9 +128,9 @@ public final class TrackRows {
             if (sb.length() > 0) sb.append(" · ");
             sb.append(animeTitle);
         }
-        if (track.year != null) {
+        if (track.anime != null && track.anime.year != null) {
             if (sb.length() > 0) sb.append(" · ");
-            sb.append(track.year);
+            sb.append(track.anime.year);
         }
         return sb.toString();
     }

@@ -146,7 +146,8 @@ public final class Sheets {
         toggle.setChecked(checked);
         toggle.setThumbTintList(ColorStateList.valueOf(checked ? Theme.ACCENT : Theme.ON_DIM));
         toggle.setOnCheckedChangeListener((button, value) -> {
-            button.setThumbTintList(ColorStateList.valueOf(value ? Theme.ACCENT : Theme.ON_DIM));
+            MaterialSwitch view = (MaterialSwitch) button;
+            view.setThumbTintList(ColorStateList.valueOf(value ? Theme.ACCENT : Theme.ON_DIM));
             Ui.safe(() -> sink.onValue(value));
         });
         row.addView(toggle);
@@ -409,7 +410,7 @@ public final class Sheets {
                 card.setPadding(Theme.dp(context, 20), Theme.dp(context, 10), Theme.dp(context, 20), Theme.dp(context, 10));
                 card.addView(header(context, job.track));
                 LinearProgressIndicator progress = new LinearProgressIndicator(context);
-                progress.setTrackTintList(ColorStateList.valueOf(Theme.SURFACE_4));
+                progress.setTrackColor(ColorStateList.valueOf(Theme.SURFACE_4));
                 progress.setIndicatorColor(job.status == Downloads.Status.ERROR ? Theme.ERROR : Theme.ACCENT);
                 int percent = job.total > 0 ? (int) (job.received * 100 / job.total) : 0;
                 progress.setProgressCompat(Math.max(percent, job.status == Downloads.Status.QUEUED ? 2 : 0), true);

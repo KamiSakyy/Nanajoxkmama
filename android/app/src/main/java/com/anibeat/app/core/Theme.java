@@ -35,6 +35,8 @@ public final class Theme {
     public static final int ON_PRIMARY = 0xFF000000;
     public static final int PRIMARY_CONTAINER = 0xFF2B2B2F;
     public static final int ACCENT = 0xFF8AB4F8;
+    public static final int ACCENT_CONTAINER = 0xFF1B2736;
+    public static final int ON_ACCENT = 0xFF06121F;
     public static final int SECONDARY = 0xFF8E8E96;
     public static final int TERTIARY = 0xFF7EE0C0;
     public static final int ERROR = 0xFFFF6B62;
