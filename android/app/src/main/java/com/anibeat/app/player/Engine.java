@@ -31,18 +31,6 @@ public final class Engine {
     private final MediaPlayer player = new MediaPlayer();
     private AudioManager audioManager;
     private AudioFocusRequest focusRequest;
-    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
-        if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-            try {
-                playAfterPrepare = false;
-                if (prepared && player.isPlaying()) player.pause();
-                if (listener != null) listener.onBuffering(false);
-                com.anibeat.app.player.Player.onFocusLost();
-            } catch (Throwable t) {
-                Ui.report(t);
-            }
-        }
-    };
     private Listener listener;
     private Surface surface;
     private boolean preparing;
@@ -50,6 +38,23 @@ public final class Engine {
     private boolean buffering;
     private int seekAfterPrepare = -1;
     private boolean playAfterPrepare;
+
+    private final AudioManager.OnAudioFocusChangeListener focusListener = change -> {
+        if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            onFocusChange();
+        }
+    };
+
+    private void onFocusChange() {
+        try {
+            playAfterPrepare = false;
+            if (prepared && player.isPlaying()) player.pause();
+            if (listener != null) listener.onBuffering(false);
+            Player.onFocusLost();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
 
     private Engine(Context context) {
         this.context = context;
