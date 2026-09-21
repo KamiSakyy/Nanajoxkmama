@@ -218,6 +218,12 @@ public final class Store {
 
     public static boolean isMatureEnabled() { return p().getBoolean(MATURE, false); }
     public static void setMatureEnabled(boolean value) { p().edit().putBoolean(MATURE, value).apply(); }
+
+    public static boolean isShuffle() { return p().getBoolean("shuffle", false); }
+    public static void setShuffle(boolean value) { p().edit().putBoolean("shuffle", value).apply(); }
+
+    public static int getRepeatMode() { return p().getInt("repeat_mode", 0); }
+    public static void setRepeatMode(int mode) { p().edit().putInt("repeat_mode", mode).apply(); }
     public static boolean isExtraSourcesEnabled() { return p().getBoolean(EXTRA_SOURCES, true); }
     public static void setExtraSourcesEnabled(boolean value) { p().edit().putBoolean(EXTRA_SOURCES, value).apply(); }
     public static boolean isDataSaverEnabled() { return p().getBoolean(DATA_SAVER, false); }

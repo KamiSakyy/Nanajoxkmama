@@ -7,15 +7,26 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Icon;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-/** Foreground Android media service: audio continues while the app is backgrounded. */
+/**
+ * Foreground Android media service with Material MediaStyle notification and background playback.
+ */
 public final class PlaybackService extends Service {
     public static final String ACTION_PLAY = "com.kamisakyy.nanajoxkmama.PLAY";
     public static final String ACTION_TOGGLE = "com.kamisakyy.nanajoxkmama.TOGGLE";
@@ -29,11 +40,15 @@ public final class PlaybackService extends Service {
     private static final String CHANNEL_ID = "anibeat_playback";
     private static final int NOTIFICATION_ID = 412;
 
+    private final ExecutorService artExecutor = Executors.newSingleThreadExecutor();
+    private final Random random = new Random();
     private MediaPlayer player;
     private ArrayList<Track> queue = new ArrayList<>();
     private int index;
     private Track current;
     private boolean prepared;
+    private Bitmap currentArt;
+    private String currentArtUrl = "";
 
     public static void play(Context context, ArrayList<Track> tracks, int startIndex) {
         Store.saveQueue(tracks, Math.max(0, Math.min(startIndex, Math.max(0, tracks.size() - 1))));
@@ -94,9 +109,13 @@ public final class PlaybackService extends Service {
         current = queue.get(index);
         prepared = false;
         releasePlayer();
+        loadArtAsync(current);
         try {
             player = new MediaPlayer();
-            player.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build());
+            player.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build());
             player.setWakeMode(this, android.os.PowerManager.PARTIAL_WAKE_LOCK);
             player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override public void onPrepared(MediaPlayer mp) {
@@ -107,7 +126,20 @@ public final class PlaybackService extends Service {
                 }
             });
             player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                @Override public void onCompletion(MediaPlayer mp) { next(); }
+                @Override public void onCompletion(MediaPlayer mp) {
+                    int repeat = Store.getRepeatMode();
+                    if (repeat == 2) {
+                        // Repeat One
+                        if (prepared && player != null) {
+                            player.seekTo(0);
+                            player.start();
+                            publishState();
+                            updateNotification();
+                        }
+                    } else {
+                        next();
+                    }
+                }
             });
             player.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -142,8 +174,19 @@ public final class PlaybackService extends Service {
     private void next() {
         queue = Store.getQueue();
         if (queue.isEmpty()) return;
+        if (Store.isShuffle() && queue.size() > 1) {
+            int nextIdx = random.nextInt(queue.size());
+            if (nextIdx == index) nextIdx = (nextIdx + 1) % queue.size();
+            load(nextIdx);
+            return;
+        }
         if (index + 1 >= queue.size()) {
-            stopPlayback();
+            if (Store.getRepeatMode() == 1) {
+                // Repeat All: wrap around
+                load(0);
+            } else {
+                stopPlayback();
+            }
             return;
         }
         load(index + 1);
@@ -159,7 +202,10 @@ public final class PlaybackService extends Service {
                 }
             } catch (IllegalStateException ignored) { }
         }
+        queue = Store.getQueue();
+        if (queue.isEmpty()) return;
         if (index > 0) load(index - 1);
+        else if (Store.getRepeatMode() == 1) load(queue.size() - 1);
         else if (current != null) load(index);
     }
 
@@ -194,7 +240,11 @@ public final class PlaybackService extends Service {
         long duration = 0L;
         boolean playing = false;
         if (player != null && prepared) {
-            try { position = player.getCurrentPosition(); duration = player.getDuration(); playing = player.isPlaying(); } catch (IllegalStateException ignored) { }
+            try {
+                position = player.getCurrentPosition();
+                duration = player.getDuration();
+                playing = player.isPlaying();
+            } catch (IllegalStateException ignored) { }
         }
         Store.setPlayback(current, playing, position, duration);
         sendState();
@@ -230,26 +280,87 @@ public final class PlaybackService extends Service {
         updateNotification();
     }
 
+    private void loadArtAsync(final Track track) {
+        if (track == null) {
+            currentArt = null;
+            currentArtUrl = "";
+            return;
+        }
+        final String artUrl = !track.coverSmall.isEmpty() ? track.coverSmall : track.cover;
+        if (artUrl.isEmpty() || artUrl.equals(currentArtUrl)) return;
+        currentArtUrl = artUrl;
+        artExecutor.execute(new Runnable() {
+            @Override public void run() {
+                Bitmap bmp = fetchBitmap(artUrl, 320);
+                if (bmp != null && artUrl.equals(currentArtUrl)) {
+                    currentArt = bmp;
+                    updateNotification();
+                }
+            }
+        });
+    }
+
+    private static Bitmap fetchBitmap(String url, int maxDim) {
+        HttpURLConnection conn = null;
+        InputStream in = null;
+        try {
+            conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(12000);
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("User-Agent", "AniBeat/1.0");
+            in = conn.getInputStream();
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inPreferredConfig = Bitmap.Config.RGB_565;
+            return BitmapFactory.decodeStream(in, null, opts);
+        } catch (Exception ignored) {
+            return null;
+        } finally {
+            try { if (in != null) in.close(); } catch (Exception ignored) { }
+            if (conn != null) conn.disconnect();
+        }
+    }
+
     private void updateNotification() {
         String title = current == null ? "AniBeat" : current.title;
         String subtitle = current == null ? "Аниме музыка" : current.displayArtist() + " · " + current.animeName;
         Intent open = new Intent(this, MainActivity.class);
+        open.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent content = PendingIntent.getActivity(this, 1, open, pendingFlags());
+
         PendingIntent previous = PendingIntent.getService(this, 2, new Intent(this, PlaybackService.class).setAction(ACTION_PREVIOUS), pendingFlags());
         PendingIntent toggle = PendingIntent.getService(this, 3, new Intent(this, PlaybackService.class).setAction(ACTION_TOGGLE), pendingFlags());
         PendingIntent next = PendingIntent.getService(this, 4, new Intent(this, PlaybackService.class).setAction(ACTION_NEXT), pendingFlags());
+
         boolean playing = Store.isPlaying();
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, CHANNEL_ID) : new Notification.Builder(this);
         builder.setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(subtitle)
                 .setContentIntent(content)
-                .setOngoing(current != null)
+                .setOngoing(playing)
                 .setOnlyAlertOnce(true)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .addAction(new Notification.Action.Builder(null, "Назад", previous).build())
-                .addAction(new Notification.Action.Builder(null, playing ? "Пауза" : "Играть", toggle).build())
-                .addAction(new Notification.Action.Builder(null, "Далее", next).build());
+                .setShowWhen(false)
+                .setVisibility(Notification.VISIBILITY_PUBLIC);
+
+        if (currentArt != null) {
+            builder.setLargeIcon(currentArt);
+        }
+
+        // Material action icons
+        builder.addAction(new Notification.Action.Builder(
+                Icon.createWithResource(this, R.drawable.ic_skip_previous), "Назад", previous).build());
+        builder.addAction(new Notification.Action.Builder(
+                Icon.createWithResource(this, playing ? R.drawable.ic_pause : R.drawable.ic_play_arrow),
+                playing ? "Пауза" : "Играть", toggle).build());
+        builder.addAction(new Notification.Action.Builder(
+                Icon.createWithResource(this, R.drawable.ic_skip_next), "Далее", next).build());
+
+        // Standard Android MediaStyle
+        Notification.MediaStyle mediaStyle = new Notification.MediaStyle();
+        mediaStyle.setShowActionsInCompactView(0, 1, 2);
+        builder.setStyle(mediaStyle);
+
         startForeground(NOTIFICATION_ID, builder.build());
     }
 
@@ -259,6 +370,7 @@ public final class PlaybackService extends Service {
 
     @Override public void onDestroy() {
         releasePlayer();
+        artExecutor.shutdownNow();
         super.onDestroy();
     }
 

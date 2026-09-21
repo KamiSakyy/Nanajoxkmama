@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#0D0B12</color>
-    <color name="surface">#18151F</color>
-    <color name="surface_alt">#211D2A</color>
-    <color name="accent">#FF5C8A</color>
-    <color name="text_primary">#F7F2FA</color>
-    <color name="text_secondary">#B9B1C2</color>
+    <color name="bg">#000000</color>
+    <color name="surface">#0B0B0C</color>
+    <color name="surface_2">#141416</color>
+    <color name="surface_3">#1E1E21</color>
+    <color name="surface_4">#28282C</color>
+    <color name="outline">#26262A</color>
+    <color name="accent">#8AB4F8</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9A9AA2</color>
+    <color name="text_dim">#63636B</color>
+    <color name="error">#FF6B62</color>
 </resources>
