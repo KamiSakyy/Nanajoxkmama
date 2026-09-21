@@ -37,10 +37,27 @@ public class MiniPlayer extends FrameLayout {
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
+            // Полоса прогресса считается только когда карточка действительно на экране.
+            if (getVisibility() != VISIBLE) return;
             refresh();
             handler.postDelayed(this, 500);
         }
     };
+
+    /** Запускает обновление прогресса, если оно ещё не идёт. */
+    public void resumeTick() {
+        handler.removeCallbacks(tick);
+        handler.post(tick);
+    }
+
+    public void pauseTick() {
+        handler.removeCallbacks(tick);
+    }
+
+    /** Останавливает таймер обновления при закрытии окна. */
+    public void release() {
+        handler.removeCallbacksAndMessages(null);
+    }
 
     public MiniPlayer(MainActivity activity) {
         super(activity);
@@ -147,7 +164,7 @@ public class MiniPlayer extends FrameLayout {
 
     public void refresh() {
         Models.Track track = Player.current();
-        if (track == null) return;
+        if (track == null || getVisibility() != VISIBLE) return;
         Display d = Display.track(track);
         title.setText(track.title);
         subtitle.setText(track.artistNames());

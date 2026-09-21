@@ -75,6 +75,12 @@ public class LibraryScreen extends ScreenBase {
     }
 
     @Override
+    protected void onRelease() {
+        super.onRelease();
+        progressHandler.removeCallbacks(progressTick);
+    }
+
+    @Override
     protected View build() {
         Context c = ctx();
         LinearLayout root = Ui.column(c);

@@ -54,7 +54,15 @@ public class Toaster extends FrameLayout {
         dp.rightMargin = Theme.dp(c, 16);
         addView(downloadBar, dp);
 
-        Downloads.addListener(this::refreshDownloads);
+        Downloads.addListener(downloadsListener);
+    }
+
+    /** Слушатель загрузок и таймеры снимаются при закрытии окна. */
+    private final Downloads.Listener downloadsListener = this::refreshDownloads;
+
+    public void release() {
+        Downloads.removeListener(downloadsListener);
+        handler.removeCallbacksAndMessages(null);
     }
 
     public void show(String message) {

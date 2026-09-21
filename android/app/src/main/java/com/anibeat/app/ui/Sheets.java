@@ -203,6 +203,11 @@ public class Sheets extends FrameLayout {
         bringToFront();
     }
 
+    /** Останавливает живой прогресс загрузок при закрытии окна. */
+    public void release() {
+        sheetHandler.removeCallbacksAndMessages(null);
+    }
+
     public void close() {
         if (!open) return;
         open = false;

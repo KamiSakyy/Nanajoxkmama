@@ -119,6 +119,23 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
         visible = false;
     }
 
+    /** Экран больше не нужен: отписываемся от данных, чтобы старое окно не тянуло память. */
+    public void release() {
+        visible = false;
+        scheduled = false;
+        removeCallbacks(refreshTask);
+        Meta.removeListener(metaListener);
+        Settings.removeListener(settingsListener);
+        Library.removeListener(libraryListener);
+        Player.removeListener(playerListener);
+        Downloads.removeListener(downloadsListener);
+        onRelease();
+    }
+
+    /** Дополнительная уборка в наследниках (таймеры и т.п.). */
+    protected void onRelease() {
+    }
+
     protected int dp(float value) {
         return Theme.dp(getContext(), value);
     }

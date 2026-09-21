@@ -22,6 +22,7 @@ import com.anibeat.app.core.Net;
 import com.anibeat.app.core.Prefs;
 import com.anibeat.app.core.Theme;
 import com.anibeat.app.core.Ui;
+import com.anibeat.app.ui.ScreenBase;
 import com.anibeat.app.data.Downloads;
 import com.anibeat.app.data.Library;
 import com.anibeat.app.data.Settings;
@@ -269,7 +270,12 @@ public class MainActivity extends Activity {
             int bottom = Nav.BAR_HEIGHT_DP + 8 + (mini ? MiniPlayer.HEIGHT_DP + 8 : 0);
             currentView.setPadding(0, 0, 0, Theme.dp(this, bottom));
         }
-        miniPlayer.refresh();
+        if (mini) {
+            miniPlayer.resumeTick();
+            miniPlayer.refresh();
+        } else {
+            miniPlayer.pauseTick();
+        }
         toaster.bringToFront();
         sheets.bringToFront();
     }
@@ -319,6 +325,19 @@ public class MainActivity extends Activity {
             return;
         }
         super.onBackPressed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Закрываем окно: снимаем слушателей и таймеры, чтобы ничего не осталось висеть.
+        Player.removeListener(playerListener);
+        for (Screen screen : tabs) if (screen != null && screen instanceof ScreenBase) ((ScreenBase) screen).release();
+        for (Screen screen : stack) if (screen instanceof ScreenBase) ((ScreenBase) screen).release();
+        sheets.release();
+        nowPlaying.release();
+        miniPlayer.release();
+        toaster.release();
+        super.onDestroy();
     }
 
     @Override

@@ -419,6 +419,11 @@ public class NowPlaying extends FrameLayout {
 
     /* ------------------------------------------------------------------ */
 
+    /** Останавливает таймеры (прогресс, скрытие управления) при закрытии окна. */
+    public void release() {
+        handler.removeCallbacksAndMessages(null);
+    }
+
     public void open() {
         if (Player.current() == null) return;
         open = true;
