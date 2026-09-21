@@ -86,15 +86,12 @@ jobs:
           echo "/opt/gradle/gradle-8.9/bin" >> $GITHUB_PATH
           /opt/gradle/gradle-8.9/bin/gradle -v
 
-      - name: Проверка сборки и прогон приложения (тесты)
+      - name: Прогон приложения в тестах (Robolectric)
+        continue-on-error: true
         run: |
-          set -o pipefail
-          gradle -p android testDebugUnitTest --no-daemon 2>&1 | tee test.log || true
-          if grep -qE "FAILED|Exception|Error" test.log; then
-            REPORT=$(find android/app/build/reports/tests -name "*.html" 2>/dev/null | head -1)
-            echo "--- отчёт: $REPORT"
-            grep -E "com.anibeat|FAILED|Exception|at " test.log | head -80
-          fi
+          set +o pipefail
+          gradle -p android testDebugUnitTest --no-daemon 2>&1 | tee test.log
+          exit 0
 
       - name: Build signed release APK
         id: build
@@ -169,6 +166,11 @@ jobs:
             echo "--- тесты ---"
             tail -c 200000 test.log 2>/dev/null || echo "no test.log"
           } > ci-logs/last-build.log
+          tail -c 120000 test.log 2>/dev/null > ci-logs/tests.log || true
+          if [ -s ci-logs/tests.log ]; then
+            TESTFAIL=$(grep -E "FAILED|AssertionError|Exception|нажатий|→" ci-logs/tests.log | head -20 | tr '\r' ' ' | sed 's/%/%25/g' | cut -c1-1200 | tr '\n' '~')
+            [ -n "$TESTFAIL" ] && echo "::warning title=Тесты::${TESTFAIL}"
+          fi
           # Публикуем ошибку сборки как аннотацию — её видно через API даже там, где нет логов.
           if [ "${{ job.status }}" != "success" ]; then
             ERR=$(grep -E "error:|^e: |FAILURE:|What went wrong|Caused by|Execution failed|> " build.log 2>/dev/null | head -80 | tr '\r' ' ' | tr '\n' '~' | sed 's/%/%25/g' | cut -c1-3000)
@@ -181,7 +183,7 @@ jobs:
             grep -E "error:|Execution failed" build.log 2>/dev/null | head -140 > ci-logs/errors.txt || true
             grep -E "com\\.anibeat|FAILED|Exception|AssertionError" test.log 2>/dev/null | head -140 >> ci-logs/errors.txt || true
           fi
-          git add -f ci-logs/last-build.log ci-logs/errors.txt 2>/dev/null || git add -f ci-logs/last-build.log
+          git add -f ci-logs/last-build.log ci-logs/errors.txt ci-logs/tests.log 2>/dev/null || git add -f ci-logs/last-build.log
           git commit -m "chore(ci): build log [skip ci]" || echo "nothing"
           for i in 1 2 3 4 5; do
             git pull --rebase --autostash -q || true
