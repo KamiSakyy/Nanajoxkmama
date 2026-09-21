@@ -1,0 +1,9 @@
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/app/src/main/java/com/kamisakyy/nanajoxkmama/Downloader.java:167: error: local variables referenced from a lambda expression must be final or effectively final
+                POOL.execute(() -> run(next));
+                                       ^
+--
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
