@@ -1,0 +1,86 @@
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, libdatastore_shared_counter.so. Run with --info option to learn more.
+
+> Task :app:mergeReleaseArtProfile
+--
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/settings/src/main/java/com/kamisakyy/nanajoxkmama/feature/settings/SettingsScreen.kt:61:85 Unresolved reference 'setPreloadNext'.
+
+> Task :feature:details:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/details/src/main/java/com/kamisakyy/nanajoxkmama/feature/details/DetailsScreen.kt:74:30 Argument type mismatch: actual type is 'Function2<List<Track>, Int, Unit>', but 'Function2<Track, Int, Unit>' was expected.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/details/src/main/java/com/kamisakyy/nanajoxkmama/feature/details/DetailsScreen.kt:148:30 Argument type mismatch: actual type is 'Function2<List<Track>, Int, Unit>', but 'Function2<Track, Int, Unit>' was expected.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/details/src/main/java/com/kamisakyy/nanajoxkmama/feature/details/DetailsScreen.kt:197:18 Argument type mismatch: actual type is 'Function2<List<Track>, Int, Unit>', but 'Function2<Track, Int, Unit>' was expected.
+
+> Task :feature:home:lintVitalAnalyzeRelease
+--
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+--
+* What went wrong:
+Execution failed for task ':feature:settings:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+--
+* What went wrong:
+Execution failed for task ':feature:details:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+----- tail -----
+> Task :feature:browse:generateReleaseLintVitalModel
+> Task :feature:player:syncReleaseLibJars
+> Task :feature:player:bundleReleaseLocalLintAar
+> Task :feature:home:generateReleaseLintVitalModel
+> Task :feature:settings:kspReleaseKotlin
+> Task :feature:details:kspReleaseKotlin
+> Task :feature:browse:lintVitalAnalyzeRelease
+
+> Task :feature:settings:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/settings/src/main/java/com/kamisakyy/nanajoxkmama/feature/settings/SettingsScreen.kt:61:85 Unresolved reference 'setPreloadNext'.
+
+> Task :feature:details:compileReleaseKotlin FAILED
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/details/src/main/java/com/kamisakyy/nanajoxkmama/feature/details/DetailsScreen.kt:74:30 Argument type mismatch: actual type is 'Function2<List<Track>, Int, Unit>', but 'Function2<Track, Int, Unit>' was expected.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/details/src/main/java/com/kamisakyy/nanajoxkmama/feature/details/DetailsScreen.kt:148:30 Argument type mismatch: actual type is 'Function2<List<Track>, Int, Unit>', but 'Function2<Track, Int, Unit>' was expected.
+e: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/feature/details/src/main/java/com/kamisakyy/nanajoxkmama/feature/details/DetailsScreen.kt:197:18 Argument type mismatch: actual type is 'Function2<List<Track>, Int, Unit>', but 'Function2<Track, Int, Unit>' was expected.
+
+> Task :feature:home:lintVitalAnalyzeRelease
+> Task :feature:library:lintVitalAnalyzeRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/build-1789989571742.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':feature:settings:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':feature:details:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m 50s
+521 actionable tasks: 445 executed, 76 from cache
+[skip ci]
