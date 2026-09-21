@@ -72,9 +72,83 @@ public class SmokeTest {
         clickSafely("sheets.close()", () -> activity.sheets().close());
         layout(activity);
 
-        clickSafely("toaster", () -> activity.toaster().show("проверка"));
+        // Внутренние экраны: аниме, исполнитель, год, плейлист — открываются и сразу закрываются.
+        openScreen("аниме", new com.anibeat.app.ui.screens.AnimeScreen(activity, "naruto"), activity);
+        openScreen("исполнитель", new com.anibeat.app.ui.screens.ArtistScreen(activity, "yorushika"), activity);
+        openScreen("год", new com.anibeat.app.ui.screens.YearScreen(activity, 2024), activity);
+        openScreen("плейлист", new com.anibeat.app.ui.screens.PlaylistScreen(activity, "test"), activity);
+
+        // Все разделы медиатеки.
+        for (int tab = 0; tab < 4; tab++) {
+            final int index = tab;
+            clickSafely("library.openTab(" + tab + ")", () -> {
+                activity.showTab(3, false);
+                com.anibeat.app.ui.screens.LibraryScreen lib =
+                        (com.anibeat.app.ui.screens.LibraryScreen) activity.screenAt(3);
+                if (lib != null) lib.openTab(index);
+            });
+            layout(activity);
+            walk("library" + tab, activity.getWindow().getDecorView(), 0);
+        }
+
+        // Меню трека: длинный тап, плейлисты, скачивание, очередь.
+        com.anibeat.app.data.Models.Track probe = probeTrack();
+        clickSafely("меню трека", () -> activity.sheets().openTrackMenu(probe));
+        layout(activity);
+        walk("меню трека", activity.getWindow().getDecorView(), 0);
+        clickSafely("закрыть меню", () -> activity.sheets().close());
+
+        clickSafely("выбор плейлиста", () -> activity.sheets().openPlaylistPicker(probe));
+        layout(activity);
+        walk("выбор плейлиста", activity.getWindow().getDecorView(), 0);
+        clickSafely("закрыть выбор", () -> activity.sheets().close());
+
+        clickSafely("создание плейлиста", () -> activity.sheets().openCreatePlaylist(() -> { }));
+        layout(activity);
+        walk("создание плейлиста", activity.getWindow().getDecorView(), 0);
+        clickSafely("закрыть создание", () -> activity.sheets().close());
+
+        clickSafely("очередь + скачанные", () -> activity.sheets().openQueueDownloads());
+        layout(activity);
+        walk("очередь + скачанные", activity.getWindow().getDecorView(), 0);
+        clickSafely("закрыть", () -> activity.sheets().close());
+
+        // Плеер: открыть, нажать управление, закрыть.
+        clickSafely("плеер: открыть", () -> activity.nowPlaying().open());
+        layout(activity);
+        clickSafely("плеер: play/pause", () -> com.anibeat.app.player.Player.toggle());
+        clickSafely("плеер: следующий", () -> com.anibeat.app.player.Player.next(false));
+        clickSafely("плеер: предыдущий", () -> com.anibeat.app.player.Player.prev());
+        clickSafely("плеер: перемотка", () -> com.anibeat.app.player.Player.seekTo(1000));
+        walk("плеер: управление", activity.getWindow().getDecorView(), 0);
+        clickSafely("плеер: закрыть", () -> activity.nowPlaying().close());
+
+        clickSafely("уведомление", () -> activity.toaster().show("проверка"));
 
         assertTrue("нажатий: " + clicks + ", падений: " + failures.size() + "\n" + String.join("\n", failures), failures.isEmpty());
+    }
+
+    private void openScreen(String where, MainActivity.Screen screen, MainActivity activity) {
+        clickSafely("открыть " + where, () -> activity.push(screen, false));
+        layout(activity);
+        walk(where, activity.getWindow().getDecorView(), 0);
+        clickSafely("закрыть " + where, activity::pop);
+        layout(activity);
+    }
+
+    /** Трек, собранный вручную — проверяем экраны и меню без сети. */
+    private static com.anibeat.app.data.Models.Track probeTrack() {
+        com.anibeat.app.data.Models.Track t = new com.anibeat.app.data.Models.Track();
+        t.id = "probe";
+        t.themeSlug = "op1";
+        t.title = "Проверка";
+        t.audioUrl = "https://example.com/a.mp3";
+        t.cover = "https://example.com/c.jpg";
+        t.coverSmall = t.cover;
+        t.anime = new com.anibeat.app.data.Models.AnimeRef();
+        t.anime.slug = "naruto";
+        t.anime.name = "Naruto";
+        return t;
     }
 
     private void clickSafely(String where, Runnable action) {

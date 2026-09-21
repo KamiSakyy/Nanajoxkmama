@@ -183,6 +183,11 @@ public class MainActivity extends Activity {
         setContent(screen, animate);
     }
 
+    /** Экран вкладки (нужно для проверки интерфейса). */
+    public Screen screenAt(int index) {
+        return index >= 0 && index < tabs.length ? tabs[index] : null;
+    }
+
     private Screen currentScreen() {
         if (!stack.isEmpty()) return stack.get(stack.size() - 1);
         return tabs[tabIndex];
