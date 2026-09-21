@@ -31,7 +31,79 @@ public final class Ui {
         void onChange(boolean value);
     }
 
+    /** Ссылка на активность — нужна для показа ошибки вместо падения. */
+    private static java.lang.ref.WeakReference<android.app.Activity> host;
+    private static final java.util.List<String> PROBLEMS = new java.util.ArrayList<>();
+    private static java.io.File problemFile;
+    private static long lastProblemShown;
+
     private Ui() {
+    }
+
+    public static void attach(android.app.Activity activity, Context context) {
+        host = new java.lang.ref.WeakReference<>(activity);
+        try {
+            problemFile = new java.io.File(context.getApplicationContext().getFilesDir(), "problems.log");
+        } catch (Exception ignored) {
+        }
+    }
+
+    /** Любое действие интерфейса выполняется безопасно: ошибка не закрывает приложение. */
+    public static void safe(Runnable action) {
+        if (action == null) return;
+        try {
+            action.run();
+        } catch (Throwable t) {
+            report(t);
+        }
+    }
+
+    public static void guard(View view, final Runnable action) {
+        if (view == null) return;
+        view.setClickable(true);
+        view.setOnClickListener(v -> safe(action));
+    }
+
+    public static void guardLong(View view, final Runnable action) {
+        if (view == null) return;
+        view.setOnLongClickListener(v -> {
+            safe(action);
+            return true;
+        });
+    }
+
+    /** Записывает ошибку в файл и показывает короткое уведомление вместо вылета. */
+    public static void report(Throwable t) {
+        String text = android.util.Log.getStackTraceString(t);
+        PROBLEMS.add(text);
+        try {
+            if (problemFile != null) {
+                java.io.FileWriter w = new java.io.FileWriter(problemFile, true);
+                w.write("=== " + new java.util.Date() + "\n" + text + "\n");
+                w.close();
+            }
+        } catch (Exception ignored) {
+        }
+        android.util.Log.e("AniBeat", "Ошибка интерфейса", t);
+        long now = System.currentTimeMillis();
+        android.app.Activity activity = host == null ? null : host.get();
+        if (activity != null && now - lastProblemShown > 1500) {
+            lastProblemShown = now;
+            String message = t.getClass().getSimpleName();
+            if (t.getMessage() != null) message += ": " + t.getMessage();
+            showProblemToast(activity, message);
+        }
+    }
+
+    private static void showProblemToast(android.app.Activity activity, String message) {
+        try {
+            android.widget.Toast.makeText(activity, "Ошибка: " + message, android.widget.Toast.LENGTH_SHORT).show();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public static java.util.List<String> problems() {
+        return PROBLEMS;
     }
 
     /* ------------------------------------------------------------------ */
@@ -133,11 +205,11 @@ public final class Ui {
         view.setOnTouchListener((v, e) -> {
             switch (e.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    v.animate().alpha(0.6f).setDuration(120).start();
+                    v.animate().alpha(0.7f).setDuration(90).start();
                     break;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
-                    v.animate().alpha(1f).setDuration(160).start();
+                    v.animate().alpha(1f).setDuration(140).start();
                     break;
             }
             return false;
@@ -149,11 +221,11 @@ public final class Ui {
         view.setOnTouchListener((v, e) -> {
             switch (e.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    v.animate().scaleX(0.97f).scaleY(0.97f).setDuration(160).start();
+                    v.animate().scaleX(0.96f).scaleY(0.96f).setDuration(110).start();
                     break;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
-                    v.animate().scaleX(1f).scaleY(1f).setDuration(180).start();
+                    v.animate().scaleX(1f).scaleY(1f).setDuration(140).start();
                     break;
             }
             return false;

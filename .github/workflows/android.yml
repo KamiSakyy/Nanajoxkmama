@@ -86,6 +86,16 @@ jobs:
           echo "/opt/gradle/gradle-8.9/bin" >> $GITHUB_PATH
           /opt/gradle/gradle-8.9/bin/gradle -v
 
+      - name: Проверка сборки и прогон приложения (тесты)
+        run: |
+          set -o pipefail
+          gradle -p android testDebugUnitTest --no-daemon 2>&1 | tee test.log || true
+          if grep -qE "FAILED|Exception|Error" test.log; then
+            REPORT=$(find android/app/build/reports/tests -name "*.html" 2>/dev/null | head -1)
+            echo "--- отчёт: $REPORT"
+            grep -E "com.anibeat|FAILED|Exception|at " test.log | head -80
+          fi
+
       - name: Build signed release APK
         id: build
         run: |
@@ -155,6 +165,9 @@ jobs:
             echo "version: ${{ steps.v.outputs.name }}"
             echo
             tail -c 200000 build.log 2>/dev/null || echo "no build.log"
+            echo
+            echo "--- тесты ---"
+            tail -c 200000 test.log 2>/dev/null || echo "no test.log"
           } > ci-logs/last-build.log
           # Публикуем ошибку сборки как аннотацию — её видно через API даже там, где нет логов.
           if [ "${{ job.status }}" != "success" ]; then
@@ -166,6 +179,7 @@ jobs:
               echo "::error title=javac::${short}"
             done
             grep -E "error:|Execution failed" build.log 2>/dev/null | head -140 > ci-logs/errors.txt || true
+            grep -E "com\\.anibeat|FAILED|Exception|AssertionError" test.log 2>/dev/null | head -140 >> ci-logs/errors.txt || true
           fi
           git add -f ci-logs/last-build.log ci-logs/errors.txt 2>/dev/null || git add -f ci-logs/last-build.log
           git commit -m "chore(ci): build log [skip ci]" || echo "nothing"

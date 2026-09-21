@@ -29,6 +29,40 @@ import java.util.List;
 /** Карточки треков/аниме/исполнителей/миксов — перенос components/cards.tsx. */
 public final class Cards {
 
+    /** Живые ссылки на уже построенные строки — обновляем их без перерисовки экрана. */
+    private static final class RowRef {
+        final Models.Track track;
+        final View overlay;
+        final TextView title;
+        final BarsView bars;
+
+        RowRef(Models.Track track, View overlay, TextView title, BarsView bars) {
+            this.track = track;
+            this.overlay = overlay;
+            this.title = title;
+            this.bars = bars;
+        }
+    }
+
+    private static final java.util.List<RowRef> ROWS = new java.util.ArrayList<>();
+
+    /** Подсветка активного трека без пересборки экрана (быстро и без рывков). */
+    public static void refreshPlaybackIndicators() {
+        Models.Track current = Player.current();
+        boolean playing = Player.isPlaying();
+        for (int i = ROWS.size() - 1; i >= 0; i--) {
+            RowRef ref = ROWS.get(i);
+            if (ref.overlay == null || !ref.overlay.isAttachedToWindow()) {
+                ROWS.remove(i);
+                continue;
+            }
+            boolean active = current != null && current.id.equals(ref.track.id);
+            ref.overlay.setVisibility(active ? View.VISIBLE : View.GONE);
+            if (ref.bars != null) ref.bars.setPaused(!playing);
+            if (ref.title != null) ref.title.setTypeface(null, active ? Typeface.BOLD : Typeface.NORMAL);
+        }
+    }
+
     public interface TrackAction {
         void on(Models.Track track);
     }
@@ -76,6 +110,7 @@ public final class Cards {
         overlay.setVisibility(active ? View.VISIBLE : View.GONE);
         coverBox.addView(overlay, new FrameLayout.LayoutParams(coverSize, coverSize));
         row.addView(coverBox, Ui.lp(coverSize, coverSize));
+        ROWS.add(new RowRef(track, overlay, title, bars));
 
         LinearLayout info = Ui.row(c);
         LinearLayout.LayoutParams ip = Ui.lpw(1f);

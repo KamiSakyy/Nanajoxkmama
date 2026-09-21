@@ -32,7 +32,11 @@ public abstract class ScreenBase extends LinearLayout implements MainActivity.Sc
     private final Meta.Listener metaListener = this::scheduleRefresh;
     private final Settings.Listener settingsListener = this::scheduleRefresh;
     private final Library.Listener libraryListener = this::scheduleRefresh;
-    private final Player.Listener playerListener = this::scheduleRefresh;
+    /** Плеер меняется часто (старт/пауза/переход) — обновляем только подсветку, без пересборки. */
+    private final Player.Listener playerListener = () -> {
+        if (!visible) return;
+        Cards.refreshPlaybackIndicators();
+    };
     private final Downloads.Listener downloadsListener = this::scheduleRefresh;
 
     protected ScreenBase(MainActivity activity) {

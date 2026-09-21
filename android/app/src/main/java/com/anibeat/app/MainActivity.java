@@ -21,6 +21,7 @@ import com.anibeat.app.core.Image;
 import com.anibeat.app.core.Net;
 import com.anibeat.app.core.Prefs;
 import com.anibeat.app.core.Theme;
+import com.anibeat.app.core.Ui;
 import com.anibeat.app.data.Downloads;
 import com.anibeat.app.data.Library;
 import com.anibeat.app.data.Settings;
@@ -77,12 +78,14 @@ public class MainActivity extends Activity {
     private final Screen[] tabs = new Screen[4];
     private int tabIndex;
     private View currentView;
+    private boolean miniVisible;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Prefs.init(this);
+        Ui.attach(this, this);
         Net.init(this);
         Image.init(this);
         Settings.init();
@@ -246,7 +249,8 @@ public class MainActivity extends Activity {
     public void updateBars() {
         boolean mini = Player.current() != null && !nowPlaying.isOpen();
         miniPlayer.getView().setVisibility(mini ? View.VISIBLE : View.GONE);
-        if (currentView != null) {
+        if (mini != miniVisible && currentView != null) {
+            miniVisible = mini;
             int bottom = Nav.BAR_HEIGHT_DP + 8 + (mini ? MiniPlayer.HEIGHT_DP + 8 : 0);
             currentView.setPadding(0, 0, 0, Theme.dp(this, bottom));
         }
@@ -306,6 +310,27 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         updateBars();
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+        try {
+            return super.dispatchTouchEvent(event);
+        } catch (Throwable t) {
+            // Ошибка внутри обработчика касания не должна закрывать приложение.
+            Ui.report(t);
+            return true;
+        }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(android.view.KeyEvent event) {
+        try {
+            return super.dispatchKeyEvent(event);
+        } catch (Throwable t) {
+            Ui.report(t);
+            return true;
+        }
     }
 
     private void requestNotificationPermissionIfNeeded() {
