@@ -110,7 +110,6 @@ public final class Cards {
         overlay.setVisibility(active ? View.VISIBLE : View.GONE);
         coverBox.addView(overlay, new FrameLayout.LayoutParams(coverSize, coverSize));
         row.addView(coverBox, Ui.lp(coverSize, coverSize));
-        ROWS.add(new RowRef(track, overlay, title, bars));
 
         LinearLayout info = Ui.row(c);
         LinearLayout.LayoutParams ip = Ui.lpw(1f);
@@ -124,6 +123,8 @@ public final class Cards {
         TextView title = Ui.text(c, track.title, 15.5f, Theme.ON, active);
         title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        // регистрируем строку, чтобы позже обновлять подсветку без перерисовки экрана
+        ROWS.add(new RowRef(track, overlay, title, bars));
         titleRow.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         if (track.nsfw) {
             TextView tag = Ui.tag(c, "18+", "warn");
@@ -244,6 +245,8 @@ public final class Cards {
         TextView title = Ui.text(c, track.title, 14f, Theme.ON, true);
         title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        // регистрируем строку, чтобы позже обновлять подсветку без перерисовки экрана
+        ROWS.add(new RowRef(track, overlay, title, bars));
         LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         tp.topMargin = Theme.dp(c, 8);
         card.addView(title, tp);
