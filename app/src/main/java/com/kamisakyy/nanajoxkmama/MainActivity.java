@@ -1209,8 +1209,8 @@ public final class MainActivity extends Activity {
         return drawable;
     }
 
-    private ImageView.LayoutParams centeredParams(int width, int height) {
-        ImageView.LayoutParams params = new ImageView.LayoutParams(width, height);
+    private LinearLayout.LayoutParams centeredParams(int width, int height) {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, height);
         params.gravity = Gravity.CENTER_HORIZONTAL;
         return params;
     }
