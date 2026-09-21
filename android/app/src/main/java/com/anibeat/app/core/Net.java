@@ -230,7 +230,8 @@ public final class Net {
             c.setConnectTimeout(timeout);
             c.setReadTimeout(timeout);
             c.setRequestProperty("Accept", "application/json");
-            c.setRequestProperty("User-Agent", "AniBeat/1.0 (Android)");
+            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36");
+            c.setRequestProperty("Accept-Language", "ru-RU,ru;q=0.9,en;q=0.6");
             if (postBody != null) {
                 c.setRequestMethod("POST");
                 c.setDoOutput(true);

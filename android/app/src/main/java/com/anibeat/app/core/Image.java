@@ -48,6 +48,7 @@ public final class Image {
         };
         dir = new File(context.getApplicationContext().getCacheDir(), "images");
         if (!dir.exists()) dir.mkdirs();
+        trimDisk();
     }
 
     public static void setDataSaver(boolean value) {
@@ -133,7 +134,7 @@ public final class Image {
             c.setReadTimeout(15000);
             c.setInstanceFollowRedirects(true);
             c.setRequestProperty("Accept", "image/*");
-            c.setRequestProperty("User-Agent", "AniBeat/1.0 (Android)");
+            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36");
             if (c.getResponseCode() != 200) {
                 FAILED.add(url);
                 return null;
@@ -146,6 +147,7 @@ public final class Image {
             }
             Bitmap b = decode(f.getAbsolutePath(), px);
             if (b != null) mem.put(url, b);
+            trimDisk();
             return b;
         } catch (Exception e) {
             return null;
@@ -190,6 +192,23 @@ public final class Image {
         if (dir != null) {
             File[] files = dir.listFiles();
             if (files != null) for (File f : files) f.delete();
+        }
+    }
+
+    /** Держим дисковый кэш обложек в разумных рамках, при экономии — жёстче. */
+    public static void trimDisk() {
+        if (dir == null) return;
+        long limit = dataSaver ? 40L * 1024 * 1024 : 120L * 1024 * 1024;
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        long total = 0;
+        for (File f : files) total += f.length();
+        if (total <= limit) return;
+        java.util.Arrays.sort(files, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+        for (File f : files) {
+            if (total <= limit) break;
+            long size = f.length();
+            if (f.delete()) total -= size;
         }
     }
 

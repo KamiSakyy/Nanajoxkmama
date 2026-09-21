@@ -282,7 +282,7 @@ public final class Downloads {
             c = (HttpURLConnection) new URL(url).openConnection();
             c.setConnectTimeout(15000);
             c.setReadTimeout(30000);
-            c.setRequestProperty("User-Agent", "AniBeat/1.0 (Android)");
+            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36");
             if (c.getResponseCode() >= 400) throw new Exception("HTTP " + c.getResponseCode());
             long total = c.getContentLengthLong();
             File target = fileFor(job.key);
