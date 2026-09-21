@@ -9,6 +9,7 @@ import androidx.media3.common.MediaMetadata;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
 
+import com.anibeat.app.data.Downloads;
 import com.anibeat.app.data.Library;
 import com.anibeat.app.data.Models;
 import com.anibeat.app.core.Prefs;
@@ -517,6 +518,12 @@ public final class Player {
     private static MediaItem toMediaItem(Models.Track t) {
         String url = (videoMode && t.videoUrl != null && !t.videoUrl.isEmpty()) ? t.videoUrl : t.audioUrl;
         if (url == null || url.isEmpty()) url = t.videoUrl;
+        // Скачанный трек играет из файла — как getOfflineUrl() на сайте.
+        String kind = videoMode ? Downloads.KIND_VIDEO : Downloads.KIND_AUDIO;
+        if (Downloads.hasOffline(t.id, kind)) {
+            java.io.File file = Downloads.offlineFile(t.id, kind);
+            if (file != null && file.exists()) url = file.toURI().toString();
+        }
         MediaMetadata.Builder meta = new MediaMetadata.Builder()
                 .setTitle(t.title)
                 .setArtist(t.artistNames())
