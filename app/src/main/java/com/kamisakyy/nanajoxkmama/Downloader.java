@@ -164,7 +164,8 @@ public final class Downloader {
                 for (Job j : JOBS) if (j.status == QUEUED) { next = j; break; }
                 if (next == null) break;
                 running++;
-                POOL.execute(() -> run(next));
+                final Job task = next;
+                POOL.execute(() -> run(task));
             }
         }
     }
