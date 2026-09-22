@@ -83,7 +83,7 @@ public class HomeScreen extends ListScreen {
         final String seasonTitle = "Сезон " + Api.seasonLabel(seasonName, season[0]);
 
         watch();
-        Api.getFreshTracks(Settings.period, 24, (list, error) -> Ui.postSafe(() -> {
+        Api.getFreshTracks(Settings.period, 30, (list, error) -> Ui.postSafe(() -> {
             if (error == null && list != null && !list.isEmpty()) {
                 Block section = Block.section("Новинки", "Все");
                 section.id = "fresh";

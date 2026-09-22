@@ -29,6 +29,8 @@ public abstract class ListScreen extends FrameLayout implements Screen {
     private boolean loaded;
     private int padTop = -1;
     private int padBottom = -1;
+    private final android.os.Handler loader = new android.os.Handler(android.os.Looper.getMainLooper());
+    private Runnable loaderTask;
 
     public ListScreen(Context context, Host host) {
         super(context);
@@ -175,6 +177,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
     }
 
     protected void render(List<Block> blocks, List<Models.Track> tracks) {
+        hideLoading();
         Ui.safe(() -> {
             warmMeta(blocks, tracks);
             boolean wasEmpty = adapter.getItemCount() == 0;
@@ -188,6 +191,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
 
     /** Показать ошибку без падения приложения. */
     protected void fail(String message) {
+        hideLoading();
         Ui.postSafe(() -> {
             if (adapter.getItemCount() > 0 && adapter.hasContent()) {
                 // На экране уже что-то есть — не выкидываем содержимое из-за одной ошибки.
@@ -205,14 +209,31 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         });
     }
 
-    /** Пока данные едут, экран не должен оставаться пустым. */
+    /** Нужен ли экранам загрузочный экран. Локальные разделы (медиатека) — сразу, без «Загрузки». */
+    protected boolean wantsLoadingScreen() {
+        return true;
+    }
+
+    /** Пока данные едут, экран не остаётся пустым — но и не мигает «Загрузкой» на локальных данных. */
     protected void showLoading() {
         if (adapter.getItemCount() > 0) return;
-        Ui.postSafe(() -> {
+        if (!wantsLoadingScreen()) return;
+        hideLoading();
+        loaderTask = () -> Ui.safe(() -> {
+            loaderTask = null;
+            if (adapter.getItemCount() > 0) return;
             List<Block> blocks = new ArrayList<>();
             blocks.add(Block.empty("Загрузка…", ""));
             adapter.submit(blocks, new ArrayList<>());
         });
+        loader.postDelayed(loaderTask, 260);
+    }
+
+    private void hideLoading() {
+        if (loaderTask != null) {
+            loader.removeCallbacks(loaderTask);
+            loaderTask = null;
+        }
     }
 
     protected void setRefreshing(boolean value) {

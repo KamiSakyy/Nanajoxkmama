@@ -92,6 +92,8 @@ public final class Models {
         public String tags = "";
         public Integer version;
         public String episodes;
+        /** Дата появления темы в источнике (ISO), нужна для календаря новинок. */
+        public String createdAt;
         public boolean nsfw;
         public boolean spoiler;
         /** "primary" (AnimeThemes) или "extra" (AnisongDB). */
@@ -142,6 +144,7 @@ public final class Models {
             t.themeId = o.optLong("themeId");
             t.themeSlug = o.optString("themeSlug");
             t.type = o.optString("type", "OP");
+            t.createdAt = o.isNull("createdAt") ? null : o.optString("createdAt", null);
             t.sequence = o.has("sequence") ? o.optInt("sequence") : null;
             t.title = o.optString("title");
             JSONArray ar = o.optJSONArray("artists");

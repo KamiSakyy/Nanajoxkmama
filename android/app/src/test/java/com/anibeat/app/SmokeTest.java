@@ -119,6 +119,17 @@ public class SmokeTest {
         layout(activity);
         report.add("после аниме-ошибки: элементов " + items(activity));
 
+        // Медиатека должна открываться мгновенно: без «Загрузки» на экране
+        clickSafely("медиатека: скачанное мгновенно", () -> activity.openLibraryTab("downloads"));
+        layout(activity);
+        String first = firstText(activity.getWindow().getDecorView(), 0);
+        report.add("первый текст медиатеки: " + first);
+        if (first.contains("Загрузка")) failures.add("медиатека показывает экран загрузки");
+
+        // подборки: превью-мозаика (без сети просто не должна падать)
+        clickSafely("превью подборок", () -> com.anibeat.app.ui.MixCovers.ensure(activity,
+                com.anibeat.app.data.Api.MIXES, () -> report.add("превью подборок: готово")));
+
         // меню скачанного трека
         clickSafely("меню скачанного", () -> com.anibeat.app.ui.Sheets.offlineMenu(activity, new com.anibeat.app.data.Models.Track()));
         clickSafely("меню трека", () -> com.anibeat.app.ui.Sheets.trackMenu(activity, new com.anibeat.app.data.Models.Track(), null));
@@ -139,6 +150,22 @@ public class SmokeTest {
         for (String line : report) System.out.println(line);
         System.out.println("нажатий: " + clicks + ", падений: " + failures.size());
         assertTrue(buildReport(), failures.isEmpty());
+    }
+
+    private String firstText(View view, int depth) {
+        if (view == null || depth > 14) return "";
+        if (view instanceof android.widget.TextView && view.isShown()) {
+            CharSequence text = ((android.widget.TextView) view).getText();
+            if (text != null && text.length() > 0) return text.toString();
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                String found = firstText(group.getChildAt(i), depth + 1);
+                if (!found.isEmpty()) return found;
+            }
+        }
+        return "";
     }
 
     private int items(MainActivity activity) {

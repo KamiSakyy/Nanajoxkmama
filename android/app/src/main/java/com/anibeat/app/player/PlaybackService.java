@@ -5,6 +5,12 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.graphics.Shader;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -52,6 +58,9 @@ public class PlaybackService extends Service {
     private ExoPlayer engine;
     private MediaSessionCompat session;
     private boolean foreground;
+    private String coverKey;
+    private Bitmap coverBitmap;
+    private boolean coverLoading;
 
     @Override
     public void onCreate() {
@@ -295,6 +304,60 @@ public class PlaybackService extends Service {
         }
     }
 
+    /** Обложка песни для уведомления: грузится один раз и кэшируется в памяти. */
+    private void ensureCover(Models.Track track) {
+        final String url = track == null ? null
+                : (track.cover != null && !track.cover.isEmpty() ? track.cover : track.coverSmall);
+        if (url == null || url.isEmpty()) return;
+        if (url.equals(coverKey)) return;
+        coverKey = url;
+        coverBitmap = null;
+        if (coverLoading) return;
+        coverLoading = true;
+        try {
+            com.bumptech.glide.Glide.with(getApplicationContext())
+                    .asBitmap()
+                    .load(url)
+                    .into(new com.bumptech.glide.request.target.CustomTarget<Bitmap>(512, 512) {
+                        @Override
+                        public void onResourceReady(@androidx.annotation.NonNull Bitmap resource,
+                                                    com.bumptech.glide.request.transition.Transition<? super Bitmap> transition) {
+                            coverLoading = false;
+                            coverBitmap = round(resource);
+                            update(false);
+                        }
+
+                        @Override
+                        public void onLoadCleared(android.graphics.drawable.Drawable placeholder) {
+                            coverLoading = false;
+                        }
+                    });
+        } catch (Throwable t) {
+            coverLoading = false;
+            Ui.report(t);
+        }
+    }
+
+    private static Bitmap round(Bitmap source) {
+        try {
+            int size = Math.min(source.getWidth(), source.getHeight());
+            Bitmap square = source;
+            if (source.getWidth() != source.getHeight()) {
+                square = Bitmap.createBitmap(source, (source.getWidth() - size) / 2,
+                        (source.getHeight() - size) / 2, size, size);
+            }
+            Bitmap out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(out);
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paint.setShader(new BitmapShader(square, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+            float radius = size * 0.12f;
+            canvas.drawRoundRect(new RectF(0, 0, size, size), radius, radius, paint);
+            return out;
+        } catch (Throwable t) {
+            return source;
+        }
+    }
+
     private Notification buildNotification() {
         Models.Track track = Player.current();
         String title = track == null ? "AniBeat"
@@ -309,8 +372,10 @@ public class PlaybackService extends Service {
         }
         if (text.length() == 0) text.append("Готовим воспроизведение");
         boolean playing = Player.isPlaying();
+        ensureCover(track);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_anibeat)
+                .setColor(0xFF8AB4F8)
                 .setContentTitle(title)
                 .setContentText(text.toString())
                 .setContentIntent(activityIntent())
@@ -324,6 +389,9 @@ public class PlaybackService extends Service {
                 .addAction(playing ? R.drawable.ic_pause : R.drawable.ic_play,
                         playing ? "Пауза" : "Играть", serviceIntent(ACTION_TOGGLE))
                 .addAction(R.drawable.ic_skip_next, "Вперёд", serviceIntent(ACTION_NEXT));
+        if (coverBitmap != null) {
+            builder.setLargeIcon(coverBitmap);
+        }
         if (track != null) {
             androidx.media.app.NotificationCompat.MediaStyle style = new androidx.media.app.NotificationCompat.MediaStyle();
             style.setShowActionsInCompactView(0, 1, 2);

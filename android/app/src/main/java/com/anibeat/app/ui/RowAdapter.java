@@ -34,6 +34,7 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
     private final int kind;
     private final Host host;
     private final List<Object> items = new ArrayList<>();
+    private final java.util.Set<String> mixRequested = new java.util.HashSet<>();
     private String playingId = "";
 
     public RowAdapter(int kind, Host host) {
@@ -87,6 +88,9 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
         TextView title;
         TextView subtitle;
         View badge;
+        android.widget.GridLayout mosaic;
+        ImageView[] tiles;
+        ImageView play;
 
         VH(View view) {
             super(view);
@@ -175,10 +179,39 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
                 ImageView image = new ImageView(context);
                 image.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 card.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+                // Превью подборки: мозаика из обложек входящих аниме.
+                android.widget.GridLayout mosaic = new android.widget.GridLayout(context);
+                mosaic.setColumnCount(2);
+                mosaic.setRowCount(2);
+                mosaic.setVisibility(View.GONE);
+                ImageView[] tiles = new ImageView[4];
+                for (int i = 0; i < 4; i++) {
+                    ImageView tile = new ImageView(context);
+                    tile.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                    android.widget.GridLayout.LayoutParams tileParams = new android.widget.GridLayout.LayoutParams(
+                            android.widget.GridLayout.spec(i / 2, 1f), android.widget.GridLayout.spec(i % 2, 1f));
+                    mosaic.addView(tile, tileParams);
+                    tiles[i] = tile;
+                }
+                card.addView(mosaic, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
                 View scrim = new View(context);
-                scrim.setBackground(Ui.gradient(0x66000000, 0xE6000000));
+                scrim.setBackground(Ui.gradient(0x33000000, 0xE6000000));
                 card.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 frame.addView(card);
+
+                ImageView play = new ImageView(context);
+                play.setImageResource(com.anibeat.app.R.drawable.ic_play_arrow);
+                play.setColorFilter(0xFF101014);
+                play.setBackground(Ui.circle(0xFFFFFFFF));
+                play.setPadding(Theme.dp(context, 7), Theme.dp(context, 7), Theme.dp(context, 7), Theme.dp(context, 7));
+                FrameLayout.LayoutParams playParams = new FrameLayout.LayoutParams(
+                        Theme.dp(context, 34), Theme.dp(context, 34));
+                playParams.gravity = Gravity.RIGHT | Gravity.BOTTOM;
+                playParams.rightMargin = Theme.dp(context, 12);
+                playParams.bottomMargin = Theme.dp(context, 12);
+                frame.addView(play, playParams);
                 LinearLayout column = new LinearLayout(context);
                 column.setOrientation(LinearLayout.VERTICAL);
                 column.setGravity(Gravity.BOTTOM);
@@ -201,6 +234,9 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
                 holder.image = image;
                 holder.title = title;
                 holder.subtitle = subtitle;
+                holder.mosaic = mosaic;
+                holder.tiles = tiles;
+                holder.play = play;
                 break;
             }
             default: {
@@ -266,11 +302,11 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
             holder.title.setText(artist.name);
             holder.itemView.setOnClickListener(v -> host.openArtist(artist));
         } else if (kind == MIX && item instanceof Models.Mix) {
-            Models.Mix mix = (Models.Mix) item;
-            Img.load(holder.image, mixCover(mix), Img.size(context, 210));
+            final Models.Mix mix = (Models.Mix) item;
             holder.title.setText(mix.title);
             holder.subtitle.setText(mix.subtitle);
             holder.itemView.setOnClickListener(v -> host.openMix(mix));
+            bindMixPreview(holder, context, mix, index);
         } else if (kind == PLAYLIST && item instanceof Models.Playlist) {
             Models.Playlist playlist = (Models.Playlist) item;
             Models.Track first = playlist.tracks.isEmpty() ? null : playlist.tracks.get(0);
@@ -302,8 +338,55 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
         return list;
     }
 
-    private static String mixCover(Models.Mix mix) {
-        return null;
+    /** Превью подборки: мозаика обложек; если их ещё нет — просим пачкой и перерисовываем. */
+    private void bindMixPreview(VH holder, Context context, final Models.Mix mix, final int index) {
+        if (holder.mosaic == null || holder.tiles == null) {
+            Img.loadRounded(holder.image, null, Img.size(context, 210), 16f);
+            return;
+        }
+        List<String> covers = MixCovers.previewOf(mix);
+        if (covers.isEmpty()) {
+            holder.mosaic.setVisibility(View.GONE);
+            holder.image.setVisibility(View.VISIBLE);
+            holder.image.setScaleType(ImageView.ScaleType.CENTER);
+            holder.image.setPadding(Theme.dp(context, 74), Theme.dp(context, 34), Theme.dp(context, 74), Theme.dp(context, 34));
+            holder.image.setImageResource(com.anibeat.app.R.drawable.ic_auto_awesome);
+            holder.image.setColorFilter(0x66FFFFFF);
+            if (mix.id != null && !mixRequested.contains(mix.id)) {
+                mixRequested.add(mix.id);
+                List<Models.Mix> one = new ArrayList<>();
+                one.add(mix);
+                MixCovers.ensure(context, one, () -> notifyItemChanged(index));
+            }
+        } else {
+            holder.mosaic.setVisibility(View.VISIBLE);
+            holder.image.setVisibility(View.GONE);
+            int side = Img.size(context, 108);
+            for (int i = 0; i < 4; i++) {
+                String url = i < covers.size() ? covers.get(i) : covers.get(covers.size() - 1);
+                Img.load(holder.tiles[i], url, side);
+            }
+        }
+        if (holder.play != null) {
+            holder.play.setImageResource(com.anibeat.app.R.drawable.ic_play_arrow);
+            holder.play.setOnClickListener(v -> playMix(mix));
+        }
+    }
+
+    /** Кнопка на карточке подборки: играем подборку сразу, не открывая список. */
+    private void playMix(final Models.Mix mix) {
+        if (mix == null || mix.slugs == null || mix.slugs.length == 0) return;
+        com.anibeat.app.data.Api.getTracksForAnimeSlugs(java.util.Arrays.asList(mix.slugs), (tracks, error) -> Ui.postSafe(() -> {
+            if (error != null || tracks == null || tracks.isEmpty()) {
+                host.toast("Подборка недоступна");
+                host.openMix(mix);
+                return;
+            }
+            List<Models.Track> clean = com.anibeat.app.data.Settings.filterMature(tracks);
+            if (clean.isEmpty()) clean = tracks;
+            host.playTrack(clean.get(0), clean, 0);
+            host.openNowPlaying();
+        }));
     }
 
     @Override

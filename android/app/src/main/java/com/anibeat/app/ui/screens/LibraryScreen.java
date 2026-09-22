@@ -29,6 +29,7 @@ public class LibraryScreen extends ListScreen {
     private final Library.Listener libraryListener = () -> Ui.postSafe(this::rebuild);
     private final Downloads.Listener downloadsListener = () -> Ui.postSafe(this::rebuild);
     private boolean watching;
+    private boolean metaWatchedOnce;
 
     public LibraryScreen(Context context, Host host) {
         super(context, host);
@@ -36,8 +37,13 @@ public class LibraryScreen extends ListScreen {
 
     @Override
     protected void load(boolean refresh) {
-        if (refresh) setRefreshing(true);
         rebuild();
+    }
+
+    @Override
+    protected boolean wantsLoadingScreen() {
+        // Медиатека целиком на устройстве: никакой загрузки быть не должно.
+        return false;
     }
 
     @Override
@@ -165,12 +171,16 @@ public class LibraryScreen extends ListScreen {
 
     @Override
     public void onShow() {
-        super.onShow();
         if (!watching) {
             Library.addListener(libraryListener);
             Downloads.addListener(downloadsListener);
             watching = true;
         }
+        if (!metaWatchedOnce) {
+            metaWatchedOnce = true;
+            super.onShow();
+        }
+        // Данные локальные — показываем сразу, без единого кадра ожидания.
         rebuild();
     }
 

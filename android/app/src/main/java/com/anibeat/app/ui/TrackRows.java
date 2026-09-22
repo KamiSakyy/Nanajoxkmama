@@ -30,6 +30,7 @@ public final class TrackRows {
         public final View view;
         private final TextView marker;
         private final ImageView cover;
+        private final ImageView playOverlay;
         private final TextView title;
         private final TextView subtitle;
         private final TextView badge;
@@ -38,14 +39,16 @@ public final class TrackRows {
         private final ImageView menu;
         private Runnable action;
         private Runnable menuAction;
+        private Models.Track currentTrack;
         private String shownCover = "\u0000";
         private String shownProgress = "";
 
-        Holder(View view, TextView marker, ImageView cover, TextView title, TextView subtitle,
-               TextView badge, TextView progress, ImageView done, ImageView menu) {
+        Holder(View view, TextView marker, ImageView cover, ImageView playOverlay, TextView title,
+               TextView subtitle, TextView badge, TextView progress, ImageView done, ImageView menu) {
             this.view = view;
             this.marker = marker;
             this.cover = cover;
+            this.playOverlay = playOverlay;
             this.title = title;
             this.subtitle = subtitle;
             this.badge = badge;
@@ -71,9 +74,23 @@ public final class TrackRows {
             }
         }
 
+        /** Трек, который сейчас показан в этой строке. */
+        public Models.Track track() {
+            return currentTrack;
+        }
+
         private void bindSafe(Models.Track track, int number, boolean playing) {
-            marker.setText(playing ? "\u25b6" : (number > 0 ? String.valueOf(number) : "\u2022"));
-            marker.setTextColor(playing ? Theme.ACCENT : Theme.ON_DIM);
+            currentTrack = track;
+            boolean active = playing;
+            boolean isPlaying = active && com.anibeat.app.player.Player.isPlaying();
+            marker.setTextColor(active ? Theme.ACCENT : Theme.ON_DIM);
+            marker.setText(active ? (isPlaying ? "\u25b6" : "\u23f8") : (number > 0 ? String.valueOf(number) : "\u2022"));
+            if (playOverlay != null) {
+                playOverlay.setImageResource(isPlaying
+                        ? com.anibeat.app.R.drawable.ic_pause
+                        : com.anibeat.app.R.drawable.ic_play_arrow);
+                playOverlay.setVisibility(active ? View.VISIBLE : View.GONE);
+            }
 
             String name = track.title == null || track.title.isEmpty() ? track.themeSlug : track.title;
             if (!name.equals(title.getText().toString())) title.setText(name);
@@ -132,13 +149,31 @@ public final class TrackRows {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         row.addView(markerBox);
 
-        ImageView cover = new ImageView(context);
+        FrameLayout coverBox = new FrameLayout(context);
         LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(
                 Theme.dp(context, 46), Theme.dp(context, 46));
         coverParams.rightMargin = Theme.dp(context, 12);
-        cover.setLayoutParams(coverParams);
+        coverBox.setLayoutParams(coverParams);
+
+        ImageView cover = new ImageView(context);
         cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        row.addView(cover);
+        coverBox.addView(cover, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // Кнопка «играть/пауза» прямо на обложке — как в карточке песни на сайте.
+        FrameLayout overlay = new FrameLayout(context);
+        overlay.setBackgroundColor(0x8A000000);
+        overlay.setVisibility(View.GONE);
+        ImageView playOverlay = new ImageView(context);
+        playOverlay.setImageResource(com.anibeat.app.R.drawable.ic_play_arrow);
+        playOverlay.setColorFilter(0xFFFFFFFF);
+        int playPad = Theme.dp(context, 11);
+        playOverlay.setPadding(playPad, playPad, playPad, playPad);
+        overlay.addView(playOverlay, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        coverBox.addView(overlay, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        row.addView(coverBox);
 
         LinearLayout column = new LinearLayout(context);
         column.setOrientation(LinearLayout.VERTICAL);
@@ -202,7 +237,7 @@ public final class TrackRows {
         menuParams.leftMargin = Theme.dp(context, 4);
         row.addView(menu, menuParams);
 
-        final Holder holder = new Holder(row, marker, cover, title, subtitle, badge, progress, done, menu);
+        final Holder holder = new Holder(row, marker, cover, playOverlay, title, subtitle, badge, progress, done, menu);
         row.setOnClickListener(v -> {
             if (holder.action != null) holder.action.run();
         });
@@ -214,6 +249,14 @@ public final class TrackRows {
             return true;
         });
         Ui.press(row);
+        coverBox.setOnClickListener(v -> {
+            Models.Track track = holder.track();
+            if (track == null) return;
+            boolean active = track.id != null && com.anibeat.app.player.Player.current() != null
+                    && track.id.equals(com.anibeat.app.player.Player.current().id);
+            if (active) com.anibeat.app.player.Player.toggle();
+            else if (holder.action != null) holder.action.run();
+        });
         return holder;
     }
 
@@ -246,6 +289,11 @@ public final class TrackRows {
         if (track.anime != null && track.anime.year != null) {
             if (sb.length() > 0) sb.append(" · ");
             sb.append(track.anime.year);
+        }
+        String day = Dates.relativeDay(track.createdAt);
+        if (!day.isEmpty()) {
+            if (sb.length() > 0) sb.append(" · ");
+            sb.append(day);
         }
         return sb.toString();
     }

@@ -235,6 +235,12 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 row.onClick(() -> {
                     Block block = holder.block;
                     if (block == null || block.track == null) return;
+                    Models.Track now = com.anibeat.app.player.Player.current();
+                    // Тап по играющему треку ставит паузу, а не запускает его заново.
+                    if (now != null && block.track.id != null && block.track.id.equals(now.id)) {
+                        com.anibeat.app.player.Player.toggle();
+                        return;
+                    }
                     host.playTrack(block.track, tracks, Math.max(0, block.index));
                 });
                 row.onMenu(() -> {
@@ -434,6 +440,7 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                     holder.rowAdapter.submit(block.artists);
                 } else {
                     holder.rowAdapter.submit(block.mixes);
+                    MixCovers.ensure(context, block.mixes, holder.rowAdapter::notifyDataSetChanged);
                 }
                 break;
             }

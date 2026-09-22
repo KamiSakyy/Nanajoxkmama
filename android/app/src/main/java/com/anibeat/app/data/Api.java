@@ -196,6 +196,11 @@ public final class Api {
             t.themeSlug = theme.optString("slug");
             t.type = theme.optString("type", "OP");
             t.sequence = theme.has("sequence") && !theme.isNull("sequence") ? theme.optInt("sequence") : null;
+            String created = theme.optString("created_at", null);
+            if (created == null || created.isEmpty() || "null".equals(created)) {
+                created = entry.optString("created_at", null);
+            }
+            t.createdAt = created == null || "null".equals(created) ? null : created;
             String title = song != null ? song.optString("title", null) : null;
             t.title = (title == null || title.isEmpty()) ? t.themeSlug : title;
             if (song != null) {

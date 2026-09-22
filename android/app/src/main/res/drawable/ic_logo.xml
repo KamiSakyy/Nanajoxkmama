@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Логотип AniBeat: минималистичная звуковая волна. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="64dp"
-    android:height="64dp"
-    android:viewportWidth="64"
-    android:viewportHeight="64">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M32,2 A30,30 0 1,1 31.99,2 Z" />
-    <path android:fillColor="#FF000000" android:pathData="M25.5,43.4a5.6,5.6 0 1,1 -4.2,-5.4V19.6a2,2 0 0,1 1.6,-2l17,-3.8a2,2 0 0,1 2.4,2v18.2a5.6,5.6 0 1,1 -4.2,-5.4V21.2l-12.6,2.8z" />
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#FF8AB4F8" android:pathData="M32.6,45h5.2v18h-5.2z" />
+    <path android:fillColor="#FF8AB4F8" android:pathData="M42,36h5.2v36H42z" />
+    <path android:fillColor="#FF8AB4F8" android:pathData="M51.4,30h5.2v48h-5.2z" />
+    <path android:fillColor="#FF8AB4F8" android:pathData="M60.8,40h5.2v28h-5.2z" />
+    <path android:fillColor="#FF7EE0C0" android:pathData="M70.2,45h5.2v18h-5.2z" />
 </vector>
