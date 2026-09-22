@@ -118,6 +118,7 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 boolean playing = block.track.id != null && block.track.id.equals(value);
                 if (playing != block.playing) {
                     block.playing = playing;
+                    block.invalidate();
                     notifyItemChanged(i, PAYLOAD_PLAYING);
                 }
             }

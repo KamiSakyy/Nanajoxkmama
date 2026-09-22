@@ -77,8 +77,21 @@ public final class Block {
         }
     }
 
+    /** Готовый отпечаток: считается один раз, чтобы прокрутка не строила строки заново. */
+    private String cachedSignature;
+
+    /** Сбросить отпечаток (данные блока изменились). */
+    public void invalidate() {
+        cachedSignature = null;
+    }
+
     /** Отпечаток содержимого: если он не изменился, блок перерисовывать не нужно. */
     public String signature() {
+        if (cachedSignature == null) cachedSignature = computeSignature();
+        return cachedSignature;
+    }
+
+    private String computeSignature() {
         StringBuilder sb = new StringBuilder(96);
         sb.append(kind).append('|').append(id).append('|').append(title).append('|').append(subtitle)
                 .append('|').append(action).append('|').append(text).append('|').append(badge)

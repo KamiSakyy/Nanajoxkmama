@@ -123,16 +123,44 @@ public class SmokeTest {
     }
 
     private int items(MainActivity activity) {
+        View shown = shownScreen(activity);
         List<Integer> found = new ArrayList<>();
-        collect(activity.getWindow().getDecorView(), found, 0);
-        int best = 0;
+        collect(shown == null ? activity.getWindow().getDecorView() : shown, found, 0);
+        int best = -1;
         for (int value : found) best = Math.max(best, value);
-        return best;
+        return best < 0 ? 0 : best;
+    }
+
+    /** Реально видимый экран: он один и лежит в content. */
+    private View shownScreen(MainActivity activity) {
+        ViewGroup root = (ViewGroup) activity.getWindow().getDecorView();
+        View content = findById(root, android.R.id.content);
+        if (content instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) content;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                if (child.isShown() && child.getAlpha() > 0.99f) return child;
+            }
+        }
+        return null;
+    }
+
+    private View findById(View view, int id) {
+        if (view == null) return null;
+        if (view.getId() == id) return view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = findById(group.getChildAt(i), id);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     private void collect(View view, List<Integer> out, int depth) {
         if (view == null || depth > 12) return;
-        if (view instanceof RecyclerView && view.getVisibility() == View.VISIBLE) {
+        if (view instanceof RecyclerView && view.isShown()) {
             RecyclerView.Adapter<?> adapter = ((RecyclerView) view).getAdapter();
             if (adapter != null) out.add(adapter.getItemCount());
             else out.add(-1);
