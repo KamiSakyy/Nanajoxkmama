@@ -790,7 +790,7 @@ public final class Api {
         String videoId = videoIdOf(track);
         if (videoId == null) return;
         String url = Net.buildUrl(BASE, "/video/" + Net.encode(videoId), fields(params("include", "audio"), F));
-        Net.getLow(url, DAY, 30 * DAY, (json, error) -> {
+        Net.getLow(url, Net.DAY, 30 * Net.DAY, (json, error) -> {
             try {
                 if (json == null) return;
                 JSONObject video = json.optJSONObject("video");
