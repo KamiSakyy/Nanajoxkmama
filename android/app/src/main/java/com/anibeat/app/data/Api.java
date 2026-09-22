@@ -1,6 +1,7 @@
 package com.anibeat.app.data;
 
 import com.anibeat.app.core.Net;
+import com.anibeat.app.core.Ui;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
