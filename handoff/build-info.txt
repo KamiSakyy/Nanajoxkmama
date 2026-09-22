@@ -1,9 +1,9 @@
-AniBeat Android — сборка от 2026-09-22T09:02:55Z
-версия: 2.0.65 (versionCode 65)
-файл: handoff/AniBeat-2.0.65.apk
+AniBeat Android — сборка от 2026-09-22T14:36:56Z
+версия: 2.0.66 (versionCode 66)
+файл: handoff/AniBeat-2.0.66.apk
 
 SHA-256:
-b75a76519b1152cf9d1f6b66d03e8c28265ff42f54bb699fd828dc6b6558ef8d  android/app/build/outputs/apk/release/app-release.apk
+90af077601fcf8da855efb21f5dd59a149ee92cbb22651c79e04d946bdaac280  android/app/build/outputs/apk/release/app-release.apk
 
 Подпись:
 Verifies
