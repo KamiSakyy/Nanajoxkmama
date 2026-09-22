@@ -146,10 +146,45 @@ public class SmokeTest {
             report.add("финал, вкладка " + names[tab] + ": элементов " + items(activity));
         }
 
+        clickSafely("возврат на Главную", () -> activity.showTab(0, false));
+        layout(activity);
+        report.add("тексты Главной: " + visibleTexts(activity, 6));
+        report.add("перехваченных сбоев: " + com.anibeat.app.core.Ui.problems());
+        if (com.anibeat.app.core.Ui.problems() > 0) {
+            failures.add("перехвачено сбоев: " + com.anibeat.app.core.Ui.problems());
+        }
+
         System.out.println("=== ОТЧЁТ ===");
         for (String line : report) System.out.println(line);
         System.out.println("нажатий: " + clicks + ", падений: " + failures.size());
         assertTrue(buildReport(), failures.isEmpty());
+    }
+
+    /** Видимые подписи на экране — по ним видно, что реально нарисовано. */
+    private String visibleTexts(MainActivity activity, int max) {
+        View shown = shownScreen(activity);
+        List<String> out = new ArrayList<>();
+        collectTexts(shown == null ? activity.getWindow().getDecorView() : shown, out, 0, max);
+        StringBuilder sb = new StringBuilder();
+        for (String text : out) {
+            if (sb.length() > 0) sb.append(" | ");
+            sb.append(text);
+        }
+        return sb.toString();
+    }
+
+    private void collectTexts(View view, List<String> out, int depth, int max) {
+        if (view == null || depth > 16 || out.size() >= max) return;
+        if (view instanceof android.widget.TextView && view.isShown()) {
+            CharSequence text = ((android.widget.TextView) view).getText();
+            if (text != null && text.length() > 0) out.add(text.toString());
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collectTexts(group.getChildAt(i), out, depth + 1, max);
+            }
+        }
     }
 
     private String firstText(View view, int depth) {

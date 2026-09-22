@@ -54,7 +54,16 @@ public final class Ui {
         MAIN.postDelayed(() -> safe(action), delayMs);
     }
 
+    private static final java.util.concurrent.atomic.AtomicInteger PROBLEMS =
+            new java.util.concurrent.atomic.AtomicInteger();
+
+    /** Сколько сбоев перехвачено (используется в тестах). */
+    public static int problems() {
+        return PROBLEMS.get();
+    }
+
     public static void report(Throwable error) {
+        PROBLEMS.incrementAndGet();
         try {
             Log.e(TAG, "Сбой", error);
         } catch (Throwable ignored) {
