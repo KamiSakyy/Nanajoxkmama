@@ -74,10 +74,16 @@ public class MainActivity extends AppCompatActivity implements Host {
     private boolean miniVisible;
     private boolean started;
 
+    private String shownTrackId = "";
+
     private final Player.Listener playerListener = () -> Ui.postSafe(() -> {
         updateBars(true);
         if (mini != null) mini.refresh();
         if (nowPlaying != null && nowPlaying.isOpen()) nowPlaying.refresh();
+        Models.Track now = Player.current();
+        String id = now == null ? "" : now.id;
+        if (id.equals(shownTrackId)) return;
+        shownTrackId = id;
         Screen current = currentScreen();
         if (current instanceof ListScreen) ((ListScreen) current).refreshPlaying();
     });
@@ -92,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements Host {
             } catch (Throwable t) {
                 Ui.report(t);
             }
-            ticker.postDelayed(this, 500);
+            ticker.postDelayed(this, 1000);
         }
     };
 
@@ -103,7 +109,6 @@ public class MainActivity extends AppCompatActivity implements Host {
             boot();
         } catch (Throwable t) {
             Ui.report(t);
-            AniBeatApp.write(this, "запуск", t);
             emergency(t);
         }
     }
@@ -165,7 +170,6 @@ public class MainActivity extends AppCompatActivity implements Host {
         getOnBackPressedDispatcher().addCallback(this, backCallback);
         showTab(0, false);
         askForNotifications();
-        reportCrashIfAny();
         started = true;
     }
 
@@ -198,15 +202,6 @@ public class MainActivity extends AppCompatActivity implements Host {
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 900);
             }
         });
-    }
-
-    private void reportCrashIfAny() {
-        Ui.postDelayed(() -> Ui.safe(() -> {
-            String text = AniBeatApp.read(this);
-            if (text == null || text.isEmpty()) return;
-            AniBeatApp.clear(this);
-            Sheets.showText(this, "Предыдущий запуск завершился сбоем", text);
-        }), 700);
     }
 
     /** Аварийный экран: приложение открыто и видно, что произошло. */
@@ -423,7 +418,7 @@ public class MainActivity extends AppCompatActivity implements Host {
     protected void onResume() {
         super.onResume();
         ticker.removeCallbacks(tickTask);
-        ticker.postDelayed(tickTask, 500);
+        ticker.postDelayed(tickTask, 1000);
         Ui.postSafe(() -> {
             if (mini != null) mini.refresh();
             if (nowPlaying != null && nowPlaying.isOpen()) nowPlaying.refresh();

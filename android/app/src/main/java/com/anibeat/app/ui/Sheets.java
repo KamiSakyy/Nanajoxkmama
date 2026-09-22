@@ -118,7 +118,7 @@ public final class Sheets {
             column.addView(sub);
         }
         row.setOnClickListener(v -> Ui.safe(action));
-        Ui.ripple(row);
+        Ui.press(row);
         return row;
     }
 
@@ -537,14 +537,6 @@ public final class Sheets {
                     host.toast("Скачанные файлы удалены");
                 }));
         body.addView(actionRow(context, R.drawable.ic_info, "О приложении", "AniBeat — музыка аниме", () -> about(host)));
-        body.addView(actionRow(context, R.drawable.ic_error_outline, "Последний сбой", "Показать текст ошибки", () -> {
-            String text = AniBeatApp.read(context);
-            if (text == null || text.isEmpty()) {
-                host.toast("Сбоев не зафиксировано");
-                return;
-            }
-            showText(host.activity(), "Последний сбой", text);
-        }));
         open(context, "Настройки", body);
     }
 

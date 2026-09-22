@@ -50,6 +50,54 @@ public final class Block {
     public Runnable onLongClick;
     public ChipListener onChip;
 
+
+    /** Стабильный ключ блока: по нему список понимает, тот же это элемент или другой. */
+    public String key() {
+        switch (kind) {
+            case TRACK:
+                return "t:" + (track == null ? index : track.id);
+            case ROW:
+                return "r:" + (rows.isEmpty() || rows.get(0).id == null ? title : rows.get(0).id) + ":" + rows.size();
+            case PLAYLIST_ROW:
+                return "p:" + (playlists.isEmpty() ? title : playlists.get(0).id);
+            case ANIME_PAIR:
+                return "ap:" + (animes.isEmpty() ? title : animes.get(0).slug) + ":" + animes.size();
+            case ANIME_ROW:
+                return "a:" + title;
+            case ARTIST_ROW:
+                return "ar:" + title;
+            case MIX_ROW:
+                return "m:" + title;
+            case TRACK_ROW:
+                return "tr:" + title;
+            case CHIPS:
+                return "c:" + title;
+            default:
+                return "k:" + kind + ":" + title + ":" + subtitle + ":" + text;
+        }
+    }
+
+    /** Отпечаток содержимого: если он не изменился, блок перерисовывать не нужно. */
+    public String signature() {
+        StringBuilder sb = new StringBuilder(96);
+        sb.append(kind).append('|').append(id).append('|').append(title).append('|').append(subtitle)
+                .append('|').append(action).append('|').append(text).append('|').append(badge)
+                .append('|').append(index).append('|').append(playing).append('|').append(heightDp)
+                .append('|').append(selectedChip).append('|').append(chips.size());
+        for (String chip : chips) sb.append(',').append(chip);
+        if (track != null) sb.append('|').append(track.id).append('|').append(track.themeSlug);
+        for (Models.Track item : tracks) sb.append('|').append(item.id);
+        for (Models.AnimeSummary anime : animes) sb.append('|').append(anime.slug);
+        for (Models.ArtistSummary artist : artists) sb.append('|').append(artist.slug).append('~').append(artist.name);
+        for (Models.Mix mix : mixes) sb.append('|').append(mix.id).append('~').append(mix.title);
+        for (Models.Playlist playlist : playlists) sb.append('|').append(playlist.id).append('~').append(playlist.name).append(':').append(playlist.tracks.size());
+        for (Row row : rows) {
+            sb.append('|').append(row.id).append('~').append(row.title).append('~').append(row.subtitle)
+                    .append('~').append(row.icon).append('~').append(row.playing).append('~').append(row.chevron);
+        }
+        return sb.toString();
+    }
+
     /** Нажатие на «чипс» (жанр, год, раздел). */
     public interface ChipListener {
         void onChip(String id, String label);

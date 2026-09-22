@@ -27,6 +27,8 @@ public abstract class ListScreen extends FrameLayout implements Screen {
     private final Meta.Listener metaListener = () -> Ui.postSafe(this::onMetaChanged);
     private boolean metaWatched;
     private boolean loaded;
+    private int padTop = -1;
+    private int padBottom = -1;
 
     public ListScreen(Context context, Host host) {
         super(context);
@@ -43,6 +45,10 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         list.setLayoutManager(new LinearLayoutManager(context));
         list.setBackgroundColor(Theme.BG);
         list.setClipToPadding(false);
+        list.setHasFixedSize(true);
+        list.setItemViewCacheSize(8);
+        list.setItemAnimator(null);
+        list.setOverScrollMode(View.OVER_SCROLL_NEVER);
         adapter = new BlockAdapter(host);
         list.setAdapter(adapter);
         swipe.addView(list, new FrameLayout.LayoutParams(
@@ -74,6 +80,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
             }
             if (!loaded) {
                 loaded = true;
+                showLoading();
                 load(false);
             } else {
                 adapter.setPlayingId(playingId());
@@ -99,16 +106,29 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         Ui.safe(this::rebuild);
     }
 
-    /** Перестроить содержимое: экраны с заголовками из метаданных переопределяют. */
+    /** Прокрутить список вверх. */
+    public void toTop() {
+        Ui.safe(() -> list.scrollToPosition(0));
+    }
+
+    /** Перестроить содержимое: перерисовываются только изменившиеся блоки. */
     protected void rebuild() {
-        adapter.setPlayingId(playingId());
-        adapter.notifyDataSetChanged();
+        adapter.refreshChanged();
+    }
+
+    /** Сколько сверху занимает собственная панель экрана (например, строка поиска). */
+    protected int extraTop() {
+        return 0;
     }
 
     /** Отступы содержимого под системные полосы, мини-плеер и меню. */
     public void setContentPadding(int top, int bottom) {
+        final int realTop = top + extraTop();
+        if (realTop == padTop && bottom == padBottom) return;
+        padTop = realTop;
+        padBottom = bottom;
         Ui.safe(() -> {
-            list.setPadding(0, top, 0, bottom);
+            list.setPadding(0, realTop, 0, bottom);
             list.setClipToPadding(false);
         });
     }
@@ -129,10 +149,12 @@ public abstract class ListScreen extends FrameLayout implements Screen {
 
     protected void render(List<Block> blocks, List<Models.Track> tracks) {
         Ui.safe(() -> {
+            boolean wasEmpty = adapter.getItemCount() == 0;
             adapter.submit(blocks, tracks);
             adapter.setPlayingId(playingId());
             swipe.setRefreshing(false);
-            list.scrollToPosition(0);
+            // Наверх поднимаем только при первой загрузке: иначе прокрутка сбивается на каждом обновлении.
+            if (wasEmpty) list.scrollToPosition(0);
         });
     }
 
@@ -146,6 +168,16 @@ public abstract class ListScreen extends FrameLayout implements Screen {
             retry.chevron = false;
             retry.action = () -> load(true);
             blocks.add(Block.row(retry));
+            adapter.submit(blocks, new ArrayList<>());
+        });
+    }
+
+    /** Пока данные едут, экран не должен оставаться пустым. */
+    protected void showLoading() {
+        if (adapter.getItemCount() > 0) return;
+        Ui.postSafe(() -> {
+            List<Block> blocks = new ArrayList<>();
+            blocks.add(Block.empty("Загрузка…", "Получаем данные источника"));
             adapter.submit(blocks, new ArrayList<>());
         });
     }

@@ -41,6 +41,8 @@ public class SearchScreen extends ListScreen {
     private String mode = "all";
     private String query = "";
     private boolean searching;
+    private int barHeight;
+    private int generation;
 
     public SearchScreen(Context context, Host host) {
         super(context, host);
@@ -85,7 +87,7 @@ public class SearchScreen extends ListScreen {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         barParams.setMargins(Theme.dp(context, 12), Theme.dp(context, 8), Theme.dp(context, 12), 0);
         addView(bar, barParams);
-        setContentPadding(Theme.dp(context, 68), Theme.dp(context, 150));
+        this.barHeight = Theme.dp(context, 68);
 
         input.addTextChangedListener(new TextWatcher() {
             @Override
@@ -100,7 +102,7 @@ public class SearchScreen extends ListScreen {
             public void afterTextChanged(Editable s) {
                 query = s == null ? "" : s.toString().trim();
                 debounce.removeCallbacks(searchTask);
-                if (query.length() >= 2) debounce.postDelayed(searchTask, 420);
+                if (query.length() >= 2) debounce.postDelayed(searchTask, 300);
                 else if (query.isEmpty()) {
                     results = null;
                     showStart();
@@ -116,6 +118,11 @@ public class SearchScreen extends ListScreen {
     }
 
     @Override
+    protected int extraTop() {
+        return barHeight;
+    }
+
+    @Override
     protected void load(boolean refresh) {
         if (query.length() >= 2) search();
         else showStart();
@@ -126,11 +133,13 @@ public class SearchScreen extends ListScreen {
             showStart();
             return;
         }
-        if (searching) return;
         searching = true;
+        final String asked = query;
+        final int ticket = ++generation;
         setRefreshing(true);
-        Library.addRecentSearch(query);
-        Api.searchAll(query, (found, error) -> Ui.postSafe(() -> {
+        Library.addRecentSearch(asked);
+        Api.searchAll(asked, (found, error) -> Ui.postSafe(() -> {
+            if (ticket != generation) return;
             searching = false;
             setRefreshing(false);
             if (error != null || found == null) {
@@ -164,8 +173,6 @@ public class SearchScreen extends ListScreen {
             };
             blocks.add(recent);
         }
-        blocks.add(Block.text("Подсказка", "Начните вводить название аниме, темы или исполнителя — "
-                + "поиск работает по всем источникам сразу."));
         Block genres = Block.chips("Жанры", genreIds(), genreNames(), null);
         genres.onChip = (id, label) -> host.openGenre(id, label);
         blocks.add(genres);

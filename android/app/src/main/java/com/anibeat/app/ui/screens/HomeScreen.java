@@ -35,7 +35,6 @@ public class HomeScreen extends ListScreen {
         if (refresh) setRefreshing(true);
 
         blocks.add(Block.header("AniBeat"));
-        blocks.add(Block.text("", "Темы из аниме: слушай, скачивай и собирай коллекцию"));
 
         Block genres = Block.chips("Жанры", genreIds(), genreNames(), null);
         genres.onChip = (id, label) -> host.openGenre(id, label);

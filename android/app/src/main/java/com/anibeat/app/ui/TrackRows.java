@@ -113,7 +113,7 @@ public final class TrackRows {
             onMenu.onClick(v);
             return true;
         });
-        Ui.ripple(row);
+        Ui.press(row);
         return row;
     }
 

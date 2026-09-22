@@ -42,9 +42,33 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
     }
 
     public void submit(List<?> list) {
+        List<Object> fresh = new ArrayList<>();
+        if (list != null) fresh.addAll(list);
+        if (sameItems(fresh)) return;
         items.clear();
-        if (list != null) items.addAll(list);
+        items.addAll(fresh);
         notifyDataSetChanged();
+    }
+
+    /** Список тот же — перерисовка не нужна. */
+    private boolean sameItems(List<Object> fresh) {
+        if (fresh.size() != items.size()) return false;
+        for (int i = 0; i < fresh.size(); i++) {
+            if (!String.valueOf(keyOf(fresh.get(i))).equals(String.valueOf(keyOf(items.get(i))))) return false;
+        }
+        return true;
+    }
+
+    private static String keyOf(Object item) {
+        if (item instanceof Models.Track) {
+            Models.Track track = (Models.Track) item;
+            return track.id + "~" + track.themeSlug + "~" + track.type;
+        }
+        if (item instanceof Models.AnimeSummary) return ((Models.AnimeSummary) item).slug;
+        if (item instanceof Models.ArtistSummary) return ((Models.ArtistSummary) item).slug;
+        if (item instanceof Models.Mix) return ((Models.Mix) item).id;
+        if (item instanceof Models.Playlist) return ((Models.Playlist) item).id;
+        return String.valueOf(item);
     }
 
     public int kind() {
@@ -52,8 +76,10 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
     }
 
     public void setPlayingId(String id) {
-        playingId = id == null ? "" : id;
-        notifyDataSetChanged();
+        String value = id == null ? "" : id;
+        if (value.equals(playingId)) return;
+        playingId = value;
+        if (kind == TRACK) notifyDataSetChanged();
     }
 
     static class VH extends RecyclerView.ViewHolder {
@@ -212,7 +238,7 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
             }
         }
         holder.itemView.setPadding(0, 0, Theme.dp(context, 10), 0);
-        Ui.ripple(holder.itemView);
+        Ui.press(holder.itemView);
         return holder;
     }
 

@@ -13,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -29,6 +30,9 @@ import java.util.List;
 /** Вертикальный список блоков: заголовки, строки треков, карусели, чипсы. */
 public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
 
+    /** Частичное обновление: меняется только отметка играющего трека. */
+    static final Object PAYLOAD_PLAYING = new Object();
+
     private final Host host;
     private final List<Block> blocks = new ArrayList<>();
     private List<Models.Track> tracks = new ArrayList<>();
@@ -38,17 +42,101 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         this.host = host;
     }
 
+    /**
+     * Показать новый набор блоков. Перерисовываются только те элементы, у которых
+     * изменилось содержимое, — обложки больше не перезагружаются на каждый чих.
+     */
     public void submit(List<Block> data, List<Models.Track> trackList) {
+        final List<Block> previous = new ArrayList<>(blocks);
+        final String[] oldSignatures = new String[previous.size()];
+        for (int i = 0; i < previous.size(); i++) oldSignatures[i] = previous.get(i).signature();
+
         blocks.clear();
         if (data != null) blocks.addAll(data);
         tracks = trackList == null ? new ArrayList<>() : trackList;
-        notifyDataSetChanged();
+
+        final String[] newSignatures = new String[blocks.size()];
+        for (int i = 0; i < blocks.size(); i++) newSignatures[i] = blocks.get(i).signature();
+
+        boolean same = previous.size() == blocks.size();
+        if (same) {
+            for (int i = 0; i < oldSignatures.length; i++) {
+                if (!oldSignatures[i].equals(newSignatures[i])) {
+                    same = false;
+                    break;
+                }
+            }
+        }
+        if (same) return;
+
+        DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return previous.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return blocks.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldPos, int newPos) {
+                Block a = previous.get(oldPos);
+                Block b = blocks.get(newPos);
+                return a.kind == b.kind && a.key().equals(b.key());
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldPos, int newPos) {
+                return oldSignatures[oldPos].equals(newSignatures[newPos]);
+            }
+
+            @Override
+            public Object getChangePayload(int oldPos, int newPos) {
+                Block a = previous.get(oldPos);
+                Block b = blocks.get(newPos);
+                if (a.kind == Block.TRACK && a.track != null && b.track != null
+                        && a.track.id.equals(b.track.id) && a.playing != b.playing) {
+                    return PAYLOAD_PLAYING;
+                }
+                return null;
+            }
+        }, true).dispatchUpdatesTo(this);
+        blockKnown.clear();
+        for (Block block : blocks) blockKnown.add(block.signature());
     }
 
+    /** Обновить только отметку играющего трека. */
     public void setPlayingId(String id) {
-        playingId = id == null ? "" : id;
-        notifyDataSetChanged();
+        String value = id == null ? "" : id;
+        if (value.equals(playingId)) return;
+        playingId = value;
+        for (int i = 0; i < blocks.size(); i++) {
+            Block block = blocks.get(i);
+            if (block.kind == Block.TRACK && block.track != null) {
+                boolean playing = block.track.id != null && block.track.id.equals(value);
+                if (playing != block.playing) {
+                    block.playing = playing;
+                    notifyItemChanged(i, PAYLOAD_PLAYING);
+                }
+            }
+        }
     }
+
+    /** Обновить данные (русские названия Shikimori подтянулись) — точечно, без перезагрузки обложек. */
+    public void refreshChanged() {
+        for (int i = 0; i < blocks.size(); i++) {
+            Block block = blocks.get(i);
+            if (block.kind == Block.TRACK || block.kind == Block.TRACK_ROW || block.kind == Block.ANIME_ROW
+                    || block.kind == Block.ANIME_PAIR || block.kind == Block.ARTIST_ROW || block.kind == Block.TEXT) {
+                if (i < blockKnown.size()) blockKnown.set(i, "");
+                notifyItemChanged(i);
+            }
+        }
+    }
+
+    private final List<String> blockKnown = new ArrayList<>();
 
     static class VH extends RecyclerView.ViewHolder {
         TextView title;
@@ -61,6 +149,7 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         RowAdapter rowAdapter;
         ChipGroup chips;
         FrameLayout pair;
+        String boundSignature = "";
 
         VH(View view) {
             super(view);
@@ -233,9 +322,24 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
     }
 
     @Override
+    public void onBindViewHolder(@NonNull VH holder, int position, @NonNull List<Object> payloads) {
+        if (!payloads.isEmpty()) {
+            holder.boundSignature = "";
+            onBindViewHolder(holder, position);
+            return;
+        }
+        onBindViewHolder(holder, position);
+    }
+
+    @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
         Block block = blocks.get(position);
         Context context = holder.itemView.getContext();
+        String signature = block.signature();
+        if (signature.equals(holder.boundSignature)) {
+            return;
+        }
+        holder.boundSignature = signature;
         switch (block.kind) {
             case Block.HEADER:
             case Block.SECTION:
@@ -370,7 +474,7 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         }
         if (row.action != null) {
             line.setOnClickListener(v -> row.action.run());
-            Ui.ripple(line);
+            Ui.press(line);
         }
         return line;
     }
@@ -400,7 +504,7 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         chevron.setColorFilter(Theme.ON_DIM);
         line.addView(chevron, new LinearLayout.LayoutParams(Theme.dp(context, 20), Theme.dp(context, 20)));
         line.setOnClickListener(v -> host.openPlaylist(playlist));
-        Ui.ripple(line);
+        Ui.press(line);
         return line;
     }
 
@@ -432,7 +536,7 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         subtitle.setText(TextUtils.isEmpty(year) ? extra : (extra.isEmpty() ? year : extra + " · " + year));
         column.addView(subtitle);
         column.setOnClickListener(v -> host.openAnime(anime));
-        Ui.ripple(column);
+        Ui.press(column);
         return column;
     }
 
@@ -447,6 +551,7 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
     @Override
     public void onViewRecycled(@NonNull VH holder) {
         super.onViewRecycled(holder);
+        holder.boundSignature = "";
         if (holder.image != null) Img.clear(holder.image);
         if (holder.rowAdapter != null) {
             holder.rowAdapter.setPlayingId("");

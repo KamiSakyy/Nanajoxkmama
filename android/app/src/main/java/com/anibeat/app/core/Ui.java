@@ -62,13 +62,6 @@ public final class Ui {
     public static void report(Throwable error) {
         try {
             Log.e(TAG, "Сбой", error);
-            Context context = app;
-            if (context == null) return;
-            File file = new File(context.getFilesDir(), "problems.log");
-            FileOutputStream out = new FileOutputStream(file, true);
-            String stamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date());
-            out.write(("=== " + stamp + "\n" + Log.getStackTraceString(error) + "\n").getBytes("UTF-8"));
-            out.close();
         } catch (Throwable ignored) {
         }
     }
@@ -111,10 +104,31 @@ public final class Ui {
         return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{from, to});
     }
 
+    /** Волна нажатия строго внутри самой кнопки: маска не даёт ей растектись по экрану. */
     public static void ripple(View view) {
         try {
             Drawable background = view.getBackground();
-            view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), background, null));
+            GradientDrawable mask = new GradientDrawable();
+            mask.setShape(GradientDrawable.RECTANGLE);
+            mask.setColor(Color.WHITE);
+            float radius = view instanceof android.widget.TextView ? 12f : 999f;
+            mask.setCornerRadius(Theme.dpF(view.getContext(), radius));
+            view.setBackground(new RippleDrawable(ColorStateList.valueOf(0x1FFFFFFF), background, mask));
+        } catch (Throwable t) {
+            report(t);
+        }
+    }
+
+    /** Тихая подсветка нажатия для строк списков: без волны по всему экрану. */
+    public static void press(View view) {
+        try {
+            if (view == null) return;
+            if (view.getBackground() instanceof android.graphics.drawable.StateListDrawable) return;
+            Drawable base = view.getBackground();
+            android.graphics.drawable.StateListDrawable states = new android.graphics.drawable.StateListDrawable();
+            states.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(0x1FFFFFFF));
+            states.addState(new int[]{}, base == null ? new ColorDrawable(Color.TRANSPARENT) : base);
+            view.setBackground(states);
         } catch (Throwable t) {
             report(t);
         }

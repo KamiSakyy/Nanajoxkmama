@@ -60,7 +60,7 @@ public final class Img {
 
     private static void load(ImageView view, String url, int px, float radiusDp, boolean circle) {
         if (view == null) return;
-        Drawable placeholder = new ColorDrawable(Theme.SURFACE_3);
+        Drawable placeholder = new ColorDrawable(Theme.SURFACE_4);
         try {
             if (url == null || url.isEmpty()) {
                 view.setImageDrawable(placeholder);
@@ -81,7 +81,7 @@ public final class Img {
             Glide.with(view)
                     .load(url)
                     .apply(options)
-                    .transition(DrawableTransitionOptions.withCrossFade(160))
+                    .transition(DrawableTransitionOptions.withCrossFade(120))
                     .into(view);
         } catch (Throwable t) {
             com.anibeat.app.core.Ui.report(t);
