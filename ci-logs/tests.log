@@ -11,8 +11,8 @@ Daemon will be stopped at the end of the build
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
+> Task :app:mergeDebugResources
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
@@ -21,8 +21,8 @@ Daemon will be stopped at the end of the build
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -30,10 +30,10 @@ Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
 > Task :app:bundleDebugClassesToRuntimeJar
-> Task :app:packageDebugUnitTestForUnitTest
 > Task :app:bundleDebugClassesToCompileJar
-> Task :app:generateDebugUnitTestConfig
+> Task :app:packageDebugUnitTestForUnitTest
 > Task :app:compileDebugUnitTestJavaWithJavac
+> Task :app:generateDebugUnitTestConfig
 
 > Task :app:testDebugUnitTest
 
