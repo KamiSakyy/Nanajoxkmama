@@ -1,5 +1,5 @@
-run: 35707283080  job: build-apk  status: success
-version: 2.0.63
+run: 35707581166  job: build-apk  status: success
+version: 2.0.64
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -22,11 +22,12 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifestForPackage
+> Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
@@ -36,13 +37,12 @@ Daemon will be stopped at the end of the build
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseJavaRes NO-SOURCE
 > Task :app:collectReleaseDependencies
-> Task :app:mergeExtDexRelease
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
-> Task :app:processReleaseResources
 > Task :app:mergeReleaseJavaResource
+> Task :app:processReleaseResources
 > Task :app:compileReleaseJavaWithJavac FROM-CACHE
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
@@ -53,7 +53,7 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 54s
+BUILD SUCCESSFUL in 56s
 39 actionable tasks: 34 executed, 5 from cache
 
 --- тесты ---
@@ -67,10 +67,10 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
@@ -80,8 +80,8 @@ Daemon will be stopped at the end of the build
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
-> Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugManifestForPackage
+> Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -99,19 +99,19 @@ Note: Recompile with -Xlint:deprecation for details.
 SmokeTest > appOpensAndTabsWork STANDARD_OUT
     === ОТЧЁТ ===
     вкладка Главная: элементов 30 ← первый заход
-    вкладка Поиск: элементов 30 ← первый заход
-    вкладка Обзор: элементов 30 ← первый заход
-    вкладка Медиатека: элементов 30 ← первый заход
+    вкладка Поиск: элементов 5 ← первый заход
+    вкладка Обзор: элементов 8 ← первый заход
+    вкладка Медиатека: элементов 3 ← первый заход
     вкладка Главная: элементов 30 ← возврат
-    вкладка Поиск: элементов 30 ← возврат
-    вкладка Обзор: элементов 30 ← возврат
-    вкладка Медиатека: элементов 30 ← возврат
-    скачанное: элементов 30
+    вкладка Поиск: элементов 5 ← возврат
+    вкладка Обзор: элементов 8 ← возврат
+    вкладка Медиатека: элементов 3 ← возврат
+    скачанное: элементов 5
     финал, вкладка Главная: элементов 30
-    финал, вкладка Поиск: элементов 30
-    финал, вкладка Обзор: элементов 30
-    финал, вкладка Медиатека: элементов 30
+    финал, вкладка Поиск: элементов 5
+    финал, вкладка Обзор: элементов 8
+    финал, вкладка Медиатека: элементов 5
     нажатий: 63, падений: 0
 
-BUILD SUCCESSFUL in 1m 8s
+BUILD SUCCESSFUL in 1m 9s
 24 actionable tasks: 23 executed, 1 from cache

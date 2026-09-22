@@ -8,10 +8,10 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
@@ -21,8 +21,8 @@ Daemon will be stopped at the end of the build
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
-> Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugManifestForPackage
+> Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -40,19 +40,19 @@ Note: Recompile with -Xlint:deprecation for details.
 SmokeTest > appOpensAndTabsWork STANDARD_OUT
     === ОТЧЁТ ===
     вкладка Главная: элементов 30 ← первый заход
-    вкладка Поиск: элементов 30 ← первый заход
-    вкладка Обзор: элементов 30 ← первый заход
-    вкладка Медиатека: элементов 30 ← первый заход
+    вкладка Поиск: элементов 5 ← первый заход
+    вкладка Обзор: элементов 8 ← первый заход
+    вкладка Медиатека: элементов 3 ← первый заход
     вкладка Главная: элементов 30 ← возврат
-    вкладка Поиск: элементов 30 ← возврат
-    вкладка Обзор: элементов 30 ← возврат
-    вкладка Медиатека: элементов 30 ← возврат
-    скачанное: элементов 30
+    вкладка Поиск: элементов 5 ← возврат
+    вкладка Обзор: элементов 8 ← возврат
+    вкладка Медиатека: элементов 3 ← возврат
+    скачанное: элементов 5
     финал, вкладка Главная: элементов 30
-    финал, вкладка Поиск: элементов 30
-    финал, вкладка Обзор: элементов 30
-    финал, вкладка Медиатека: элементов 30
+    финал, вкладка Поиск: элементов 5
+    финал, вкладка Обзор: элементов 8
+    финал, вкладка Медиатека: элементов 5
     нажатий: 63, падений: 0
 
-BUILD SUCCESSFUL in 1m 8s
+BUILD SUCCESSFUL in 1m 9s
 24 actionable tasks: 23 executed, 1 from cache
