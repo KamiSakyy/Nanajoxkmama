@@ -59,11 +59,11 @@ public class HomeScreen extends ListScreen {
                 com.anibeat.app.R.drawable.ic_favorite);
         favorites.action = () -> host.openLibraryTab(LibraryScreen.TAB_FAVORITES);
         shelf.add(favorites);
-        Block.Row history = new Block.Row("history", "История",
+        Block.Row historyRow = new Block.Row("history", "История",
                 Format.plural(Library.history().size(), "запись", "записи", "записей"),
                 com.anibeat.app.R.drawable.ic_history);
-        history.action = () -> host.openLibraryTab(LibraryScreen.TAB_HISTORY);
-        shelf.add(history);
+        historyRow.action = () -> host.openLibraryTab(LibraryScreen.TAB_HISTORY);
+        shelf.add(historyRow);
         blocks.add(Block.rows(shelf));
 
         List<Models.Track> history = Library.history();

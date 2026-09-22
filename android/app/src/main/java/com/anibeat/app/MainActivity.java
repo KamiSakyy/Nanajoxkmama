@@ -588,7 +588,6 @@ public class MainActivity extends AppCompatActivity implements Host {
     }
 
     @Override
-    @Override
     public void openLibraryTab(String tab) {
         showTab(3, true);
         Screen screen = tabs[3];
