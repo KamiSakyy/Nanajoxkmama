@@ -1,5 +1,5 @@
-run: 35751747846  job: build-apk  status: success
-version: 2.0.69
+run: 35758557015  job: build-apk  status: success
+version: 2.0.72
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -25,8 +25,8 @@ Daemon will be stopped at the end of the build
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifestForPackage
+> Task :app:mergeReleaseResources
 > Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
@@ -42,8 +42,8 @@ Daemon will be stopped at the end of the build
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
 > Task :app:processReleaseResources
-> Task :app:mergeReleaseJavaResource
 > Task :app:compileReleaseJavaWithJavac FROM-CACHE
+> Task :app:mergeReleaseJavaResource
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
 > Task :app:optimizeReleaseResources
@@ -53,7 +53,7 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 56s
+BUILD SUCCESSFUL in 54s
 39 actionable tasks: 34 executed, 5 from cache
 
 --- тесты ---
@@ -67,29 +67,29 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
-> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:generateDebugUnitTestConfig
@@ -113,9 +113,11 @@ SmokeTest > appOpensAndTabsWork STANDARD_OUT
     финал, вкладка Поиск: элементов 5
     финал, вкладка Обзор: элементов 8
     финал, вкладка Медиатека: элементов 5
+    исполнитель: элементов 0
+    подборка: Главная | Поиск | Обзор | Медиатека | Сейчас играет | Ничего не играет | 0:00 | 0:00
     тексты Главной: AniBeat | Жанры | Экшен | Фантастика | Романтика | Комедия
     перехваченных сбоев: 0
     нажатий: 133, падений: 0
 
-BUILD SUCCESSFUL in 1m 19s
+BUILD SUCCESSFUL in 1m 24s
 24 actionable tasks: 23 executed, 1 from cache
