@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols: ic_playlist_add -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.7"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M4 6.4h11M4 11h11M4 15.6h6.6M17.6 12.4v7.2M14 16h7.2" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M14 10H2v2h12v-2zm0-4H2v2h12V6zm4 8v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM2 16h8v-2H2v2z" />
 </vector>

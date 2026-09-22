@@ -22,7 +22,7 @@ public final class Display {
     public static Display of(Models.AnimeRef anime, String fallbackCover, String fallbackSmall) {
         Display d = new Display();
         d.malId = anime == null ? null : anime.malId;
-        Models.AnimeMeta meta = Meta.get(d.malId);
+        Models.AnimeMeta meta = Meta.peek(d.malId);
         String name = anime == null || anime.name == null ? "" : anime.name;
         String ru = Settings.ruTitles && meta != null ? meta.ru : null;
         d.title = ru != null && !ru.isEmpty() ? ru : (name.isEmpty() && meta != null && meta.name != null ? meta.name : name);

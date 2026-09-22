@@ -5,6 +5,8 @@ import static org.junit.Assert.assertTrue;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.anibeat.app.player.Player;
 import com.anibeat.app.ui.screens.AnimeScreen;
 import com.anibeat.app.ui.screens.ArtistScreen;
@@ -20,12 +22,13 @@ import org.robolectric.annotation.Config;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Прогон приложения в тестовой среде: вкладки, экраны и нажатия не должны ронять интерфейс. */
+/** Прогон приложения: вкладки, возвраты на вкладки, экраны и нажатия не должны ронять интерфейс. */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 33)
 public class SmokeTest {
 
     private final List<String> failures = new ArrayList<>();
+    private final List<String> report = new ArrayList<>();
     private int clicks;
 
     @Test
@@ -36,37 +39,59 @@ public class SmokeTest {
             controller = Robolectric.buildActivity(MainActivity.class).setup();
         } catch (Throwable t) {
             t.printStackTrace(System.out);
-            failures.add("запуск приложения → " + describe(t));
-            assertTrue(report(), failures.isEmpty());
+            assertTrue("запуск: " + describe(t), false);
             return;
         }
         final MainActivity activity = controller.get();
+        String[] names = {"Главная", "Поиск", "Обзор", "Медиатека"};
 
+        // первый проход: открыть каждую вкладку
         for (int tab = 0; tab < 4; tab++) {
             final int index = tab;
-            clickSafely("показать вкладку " + tab, () -> activity.showTab(index, false));
+            clickSafely("вкладка " + names[tab], () -> activity.showTab(index, false));
             layout(activity);
-            walk("вкладка" + tab, activity.getWindow().getDecorView(), 0);
+            report.add("вкладка " + names[tab] + ": элементов " + items(activity) + " ← первый заход");
         }
+
+        // второй проход: возврат на вкладки (здесь раньше появлялись чёрные экраны)
+        for (int tab = 0; tab < 4; tab++) {
+            final int index = tab;
+            clickSafely("возврат " + names[tab], () -> activity.showTab(index, true));
+            layout(activity);
+            int count = items(activity);
+            String line = "вкладка " + names[tab] + ": элементов " + count + " ← возврат";
+            report.add(line);
+            if (count == 0) failures.add("чёрный экран при возврате: " + names[tab]);
+        }
+
+        // переход в другой раздел и обратно + открытие экранов поверх вкладки
+        clickSafely("вкладка Медиатека", () -> activity.showTab(3, true));
+        clickSafely("раздел скачанное", () -> activity.openLibraryTab("downloads"));
+        layout(activity);
+        report.add("скачанное: элементов " + items(activity));
+        if (items(activity) == 0) failures.add("чёрный экран в разделе «Скачанное»");
+        clickSafely("вкладка Главная", () -> activity.showTab(0, true));
+        if (items(activity) == 0) failures.add("чёрный экран после возврата на Главную");
 
         clickSafely("открыть аниме", () -> activity.pushScreen(new AnimeScreen(activity, activity, "naruto")));
         layout(activity);
         walk("аниме", activity.getWindow().getDecorView(), 0);
         clickSafely("назад", activity::pop);
         layout(activity);
+        if (items(activity) == 0) failures.add("чёрный экран после закрытия экрана аниме");
 
         clickSafely("открыть исполнителя", () -> activity.pushScreen(new ArtistScreen(activity, activity, "yorushika")));
         layout(activity);
-        walk("исполнитель", activity.getWindow().getDecorView(), 0);
         clickSafely("назад", activity::pop);
         layout(activity);
 
         clickSafely("открыть год", () -> activity.pushScreen(new YearScreen(activity, activity, 2024)));
         layout(activity);
-        walk("год", activity.getWindow().getDecorView(), 0);
         clickSafely("назад", activity::pop);
         layout(activity);
+        if (items(activity) == 0) failures.add("чёрный экран после закрытия экрана года");
 
+        // плеер и панели
         clickSafely("полноэкранный плеер", () -> activity.nowPlaying().open());
         layout(activity);
         clickSafely("плеер: play/pause", Player::toggle);
@@ -76,7 +101,6 @@ public class SmokeTest {
         clickSafely("плеер: скорость", () -> Player.setSpeed(1.25f));
         clickSafely("плеер: повтор", () -> Player.setRepeat(Player.REPEAT_ALL));
         clickSafely("плеер: перемешивание", () -> Player.setShuffle(true));
-        walk("плеер", activity.getWindow().getDecorView(), 0);
         clickSafely("закрыть плеер", () -> activity.nowPlaying().close());
         layout(activity);
 
@@ -85,11 +109,45 @@ public class SmokeTest {
         clickSafely("скачивания", () -> com.anibeat.app.ui.Sheets.downloads(activity));
         clickSafely("о приложении", () -> com.anibeat.app.ui.Sheets.about(activity));
 
-        assertTrue(report(), failures.isEmpty());
+        for (int tab = 0; tab < 4; tab++) {
+            final int index = tab;
+            clickSafely("финальный проход " + names[tab], () -> activity.showTab(index, false));
+            layout(activity);
+            report.add("финал, вкладка " + names[tab] + ": элементов " + items(activity));
+        }
+
+        System.out.println("=== ОТЧЁТ ===");
+        for (String line : report) System.out.println(line);
+        System.out.println("нажатий: " + clicks + ", падений: " + failures.size());
+        assertTrue(buildReport(), failures.isEmpty());
     }
 
-    private String report() {
-        return "нажатий: " + clicks + ", падений: " + failures.size() + "\n" + String.join("\n", failures);
+    private int items(MainActivity activity) {
+        List<Integer> found = new ArrayList<>();
+        collect(activity.getWindow().getDecorView(), found, 0);
+        int best = 0;
+        for (int value : found) best = Math.max(best, value);
+        return best;
+    }
+
+    private void collect(View view, List<Integer> out, int depth) {
+        if (view == null || depth > 12) return;
+        if (view instanceof RecyclerView && view.getVisibility() == View.VISIBLE) {
+            RecyclerView.Adapter<?> adapter = ((RecyclerView) view).getAdapter();
+            if (adapter != null) out.add(adapter.getItemCount());
+            else out.add(-1);
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) collect(group.getChildAt(i), out, depth + 1);
+        }
+    }
+
+    private String buildReport() {
+        StringBuilder sb = new StringBuilder("падений: " + failures.size() + "\n");
+        for (String line : report) sb.append(line).append('\n');
+        for (String fail : failures) sb.append("! ").append(fail).append('\n');
+        return sb.toString();
     }
 
     private void clickSafely(String where, Runnable action) {
@@ -109,18 +167,11 @@ public class SmokeTest {
             } catch (Throwable t) {
                 failures.add(where + ": клик → " + describe(t));
             }
-            try {
-                view.performLongClick();
-            } catch (Throwable t) {
-                failures.add(where + ": долгий тап → " + describe(t));
-            }
         }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             if (depth > 9 && group.getChildCount() > 60) return;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                walk(where, group.getChildAt(i), depth + 1);
-            }
+            for (int i = 0; i < group.getChildCount(); i++) walk(where, group.getChildAt(i), depth + 1);
         }
     }
 

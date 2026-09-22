@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols: ic_videocam -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="1.7"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M4.2 8.2c0-.9.7-1.6 1.6-1.6h8a1.6 1.6 0 0 1 1.6 1.6v7.6a1.6 1.6 0 0 1-1.6 1.6h-8a1.6 1.6 0 0 1-1.6-1.6zM15.4 10.6l3.4-2.5c.5-.4 1.2 0 1.2.6v6.6c0 .6-.7 1-1.2.6l-3.4-2.5z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
 </vector>

@@ -33,6 +33,9 @@ public interface Host {
     void openNowPlaying();
 
     /** Открыть произвольный экран поверх текущего. */
+    /** Открыть медиатеку на нужном разделе: favorites, playlists, downloads, history. */
+    void openLibraryTab(String tab);
+
     void pushScreen(Screen screen);
 
     /** Закрыть текущий экран. */

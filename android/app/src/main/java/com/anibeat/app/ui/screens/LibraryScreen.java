@@ -124,6 +124,13 @@ public class LibraryScreen extends ListScreen {
         });
     }
 
+    /** Открыть конкретный раздел медиатеки (например, «Скачанное»). */
+    public void showTab(String value) {
+        if (value == null || value.isEmpty()) return;
+        tab = value;
+        rebuild();
+    }
+
     @Override
     public void onShow() {
         super.onShow();

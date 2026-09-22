@@ -10,6 +10,7 @@ import com.anibeat.app.data.Settings;
 import com.anibeat.app.ui.Block;
 import com.anibeat.app.ui.Host;
 import com.anibeat.app.ui.ListScreen;
+import com.anibeat.app.ui.screens.LibraryScreen;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -93,7 +94,10 @@ public class BrowseScreen extends ListScreen {
         blocks.add(Block.mixRow("Подборки", Api.MIXES));
 
         List<Block.Row> service = new ArrayList<>();
-        Block.Row downloads = new Block.Row("downloads", "Скачивания", "Очередь и скачанные файлы", R.drawable.ic_download);
+        Block.Row library = new Block.Row("library", "Скачанное и плейлисты", "Всё, что сохранено", R.drawable.ic_download_done);
+        library.action = () -> host.openLibraryTab(LibraryScreen.TAB_DOWNLOADS);
+        service.add(library);
+        Block.Row downloads = new Block.Row("downloads", "Очередь загрузок", "Ход скачивания и отмена", R.drawable.ic_cloud_download);
         downloads.action = () -> com.anibeat.app.ui.Sheets.downloads(host);
         service.add(downloads);
         Block.Row settings = new Block.Row("settings", "Настройки", "Трафик, качество, кэш", R.drawable.ic_settings);

@@ -64,6 +64,24 @@ public final class Meta {
         }
     }
 
+    /** Метаданные только из памяти: без обращения к сети. Для отрисовки списков. */
+    public static AnimeMeta peek(Integer malId) {
+        if (malId == null) return null;
+        return STORE.get(malId);
+    }
+
+    /** Прогреть метаданные пачкой (русские названия подтянутся фоном, без тормозов списка). */
+    public static void warmAll(List<Integer> ids) {
+        if (ids == null || ids.isEmpty()) return;
+        List<Integer> fresh = new ArrayList<>();
+        for (Integer id : ids) {
+            if (id == null || id <= 0) continue;
+            if (REQUESTED.contains(id) || STORE.containsKey(id) || NONE.contains(String.valueOf(id))) continue;
+            fresh.add(id);
+        }
+        if (!fresh.isEmpty()) warm(fresh);
+    }
+
     /** Метаданные из памяти; null — ещё не загружены. */
     public static AnimeMeta get(Integer malId) {
         if (malId == null) return null;

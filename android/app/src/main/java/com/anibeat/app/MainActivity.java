@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements Host {
     private boolean started;
 
     private String shownTrackId = "";
+    private boolean navSync;
 
     private final Player.Listener playerListener = () -> Ui.postSafe(() -> {
         updateBars(true);
@@ -188,6 +189,8 @@ public class MainActivity extends AppCompatActivity implements Host {
         menu.add(0, 3, 2, "Обзор").setIcon(R.drawable.ic_explore);
         menu.add(0, 4, 3, "Медиатека").setIcon(R.drawable.ic_library_music);
         view.setOnItemSelectedListener(item -> {
+            // Синхронизация выделения из кода не должна запускать переключение повторно.
+            if (navSync) return true;
             showTab(item.getItemId() - 1, true);
             return true;
         });
@@ -259,6 +262,8 @@ public class MainActivity extends AppCompatActivity implements Host {
 
     private void showTabSafe(int index, boolean animate) {
         if (index < 0 || index >= 4) return;
+        boolean sameTab = index == tabIndex && stack.isEmpty() && tabs[index] != null
+                && tabs[index].view().getVisibility() == View.VISIBLE;
         tabIndex = index;
         for (Screen screen : stack) {
             content.removeView(screen.view());
@@ -281,26 +286,48 @@ public class MainActivity extends AppCompatActivity implements Host {
                     break;
             }
         }
-        setContent(tabs[index], animate);
-        if (nav != null) nav.setSelectedItemId(index + 1);
+        setContent(tabs[index], animate && !sameTab);
+        if (nav != null && nav.getSelectedItemId() != index + 1) {
+            navSync = true;
+            try {
+                nav.setSelectedItemId(index + 1);
+            } finally {
+                navSync = false;
+            }
+        }
         updateBars(true);
     }
 
-    private void setContent(Screen screen, boolean animate) {
-        View view = screen.view();
-        if (view.getParent() == null) content.addView(view);
+    /** Спрятать лишние экраны и вернуть им нормальный вид (иначе остаются прозрачными = чёрный экран). */
+    private void hideExcept(View keep) {
         for (int i = 0; i < content.getChildCount(); i++) {
             View child = content.getChildAt(i);
-            child.setVisibility(child == view ? View.VISIBLE : View.GONE);
+            if (child == keep) continue;
+            child.animate().cancel();
+            child.setAlpha(1f);
+            child.setTranslationX(0f);
+            child.setVisibility(View.GONE);
         }
+    }
+
+    private void setContent(Screen screen, boolean animate) {
+        final View view = screen.view();
+        if (view.getParent() == null) content.addView(view);
+        hideExcept(view);
+        view.animate().cancel();
+        view.setVisibility(View.VISIBLE);
+        view.setAlpha(1f);
+        view.setTranslationX(0f);
         if (animate) {
-            view.setTranslationX(Theme.dp(this, 26));
             view.setAlpha(0f);
-            view.animate().translationX(0f).alpha(1f)
-                    .setDuration(Theme.DUR_SEGMENT).setInterpolator(Theme.EASE_OUT).start();
-        } else {
-            view.setAlpha(1f);
-            view.setTranslationX(0f);
+            view.setTranslationX(Theme.dp(this, 18));
+            view.animate().alpha(1f).translationX(0f)
+                    .setDuration(Theme.DUR_FAST).setInterpolator(Theme.EASE_OUT)
+                    .withEndAction(() -> {
+                        view.setAlpha(1f);
+                        view.setTranslationX(0f);
+                    })
+                    .start();
         }
         screen.onShow();
         applyPadding(view);
@@ -330,13 +357,14 @@ public class MainActivity extends AppCompatActivity implements Host {
         View view = screen.view();
         content.addView(view, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        for (int i = 0; i < content.getChildCount(); i++) {
-            View child = content.getChildAt(i);
-            child.setVisibility(child == view ? View.VISIBLE : View.GONE);
-        }
+        hideExcept(view);
+        view.setVisibility(View.VISIBLE);
+        view.setAlpha(1f);
+        view.setTranslationX(0f);
         if (animate) {
-            view.setTranslationX(Theme.dp(this, 34));
-            view.animate().translationX(0f).setDuration(Theme.DUR_SEGMENT).setInterpolator(Theme.EASE_OUT).start();
+            view.setTranslationX(Theme.dp(this, 26));
+            view.animate().translationX(0f).setDuration(Theme.DUR_SEGMENT).setInterpolator(Theme.EASE_OUT)
+                    .withEndAction(() -> view.setTranslationX(0f));
         }
         screen.onShow();
         applyPadding(view);
@@ -350,20 +378,22 @@ public class MainActivity extends AppCompatActivity implements Host {
             Screen back = stack.remove(stack.size() - 1);
             final View leavingView = leaving == null ? null : leaving.view();
             View backView = back.view();
-            for (int i = 0; i < content.getChildCount(); i++) {
-                View child = content.getChildAt(i);
-                child.setVisibility(child == backView ? View.VISIBLE : View.GONE);
-            }
+            hideExcept(backView);
+            backView.setAlpha(1f);
+            backView.setTranslationX(0f);
+            backView.setVisibility(View.VISIBLE);
             back.onShow();
             if (leavingView != null) {
-                leavingView.animate().translationX(Theme.dp(this, 34)).alpha(0f)
+                final View gone = leavingView;
+                gone.animate().translationX(Theme.dp(this, 26)).alpha(0f)
                         .setDuration(Theme.DUR_FAST)
                         .withEndAction(() -> Ui.safe(() -> {
-                            content.removeView(leavingView);
+                            content.removeView(gone);
+                            gone.setAlpha(1f);
+                            gone.setTranslationX(0f);
                             if (leaving != null) leaving.release();
                         }))
                         .start();
-                leavingView.setAlpha(1f);
             }
             applyPadding(backView);
             updateBars(true);
@@ -558,6 +588,16 @@ public class MainActivity extends AppCompatActivity implements Host {
     }
 
     @Override
+    @Override
+    public void openLibraryTab(String tab) {
+        showTab(3, true);
+        Screen screen = tabs[3];
+        if (screen instanceof LibraryScreen) {
+            ((LibraryScreen) screen).showTab(tab);
+            ((LibraryScreen) screen).toTop();
+        }
+    }
+
     public void pushScreen(Screen screen) {
         push(screen, true);
     }

@@ -4,12 +4,15 @@ import android.content.Context;
 
 import com.anibeat.app.core.Ui;
 import com.anibeat.app.data.Api;
+import com.anibeat.app.data.Downloads;
 import com.anibeat.app.data.Library;
 import com.anibeat.app.data.Models;
 import com.anibeat.app.data.Settings;
 import com.anibeat.app.ui.Block;
 import com.anibeat.app.ui.Host;
+import com.anibeat.app.ui.Format;
 import com.anibeat.app.ui.ListScreen;
+import com.anibeat.app.ui.screens.LibraryScreen;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +44,27 @@ public class HomeScreen extends ListScreen {
         blocks.add(genres);
 
         blocks.add(Block.mixRow("Подборки", Api.MIXES));
+
+        // Скачанное и медиатека — всегда под рукой, а не спрятаны в настройках.
+        List<Block.Row> shelf = new ArrayList<>();
+        int offline = Downloads.offlineTracks().size();
+        Block.Row downloaded = new Block.Row("downloads", "Скачанное",
+                offline == 0 ? "Пока пусто — скачайте трек из меню «⋮»"
+                        : Format.plural(offline, "трек", "трека", "треков") + " · " + Downloads.formatBytes(Downloads.offlineTotalSize()),
+                com.anibeat.app.R.drawable.ic_download_done);
+        downloaded.action = () -> host.openLibraryTab(LibraryScreen.TAB_DOWNLOADS);
+        shelf.add(downloaded);
+        Block.Row favorites = new Block.Row("favorites", "Избранное",
+                Format.plural(Library.favorites().size(), "трек", "трека", "треков"),
+                com.anibeat.app.R.drawable.ic_favorite);
+        favorites.action = () -> host.openLibraryTab(LibraryScreen.TAB_FAVORITES);
+        shelf.add(favorites);
+        Block.Row history = new Block.Row("history", "История",
+                Format.plural(Library.history().size(), "запись", "записи", "записей"),
+                com.anibeat.app.R.drawable.ic_history);
+        history.action = () -> host.openLibraryTab(LibraryScreen.TAB_HISTORY);
+        shelf.add(history);
+        blocks.add(Block.rows(shelf));
 
         List<Models.Track> history = Library.history();
         if (!history.isEmpty()) {

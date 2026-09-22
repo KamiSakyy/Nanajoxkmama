@@ -78,7 +78,8 @@ public abstract class ListScreen extends FrameLayout implements Screen {
                 Meta.addListener(metaListener);
                 metaWatched = true;
             }
-            if (!loaded) {
+            // Экран мог остаться без содержимого (первый заход не удался) — пробуем снова.
+            if (!loaded || adapter.getItemCount() == 0) {
                 loaded = true;
                 showLoading();
                 load(false);
@@ -94,11 +95,12 @@ public abstract class ListScreen extends FrameLayout implements Screen {
 
     @Override
     public void release() {
+        // Отписываемся от метаданных, но содержимое НЕ уничтожаем:
+        // вкладка обязана открыться снова мгновенно, а не остаться чёрной.
         if (metaWatched) {
             Meta.removeListener(metaListener);
             metaWatched = false;
         }
-        Ui.safe(() -> list.setAdapter(null));
     }
 
     protected void onMetaChanged() {
@@ -147,8 +149,34 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         render(blocks, baseTracks());
     }
 
+    /** Собрать id аниме из блоков, чтобы подтянуть русские названия одним запросом. */
+    private static void warmMeta(List<Block> blocks, List<Models.Track> tracks) {
+        List<Integer> ids = new ArrayList<>();
+        if (tracks != null) {
+            for (Models.Track track : tracks) {
+                if (track.anime != null && track.anime.malId != null) ids.add(track.anime.malId);
+            }
+        }
+        if (blocks != null) {
+            for (Block block : blocks) {
+                if (block.anime != null && block.anime.malId != null) ids.add(block.anime.malId);
+                if (block.track != null && block.track.anime != null && block.track.anime.malId != null) {
+                    ids.add(block.track.anime.malId);
+                }
+                for (Models.AnimeRef anime : block.animes) {
+                    if (anime != null && anime.malId != null) ids.add(anime.malId);
+                }
+                for (Models.Track item : block.tracks) {
+                    if (item.anime != null && item.anime.malId != null) ids.add(item.anime.malId);
+                }
+            }
+        }
+        if (!ids.isEmpty()) Meta.warmAll(ids);
+    }
+
     protected void render(List<Block> blocks, List<Models.Track> tracks) {
         Ui.safe(() -> {
+            warmMeta(blocks, tracks);
             boolean wasEmpty = adapter.getItemCount() == 0;
             adapter.submit(blocks, tracks);
             adapter.setPlayingId(playingId());

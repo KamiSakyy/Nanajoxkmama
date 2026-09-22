@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols: ic_music_note -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -6,5 +7,5 @@
     android:viewportHeight="24">
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M9.6 17.4a2.7 2.7 0 1 1-5.4 0 2.7 2.7 0 0 1 5.4 0M9.6 17.4V6.2l10.4-2.3v11.1" />
+        android:pathData="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
 </vector>
