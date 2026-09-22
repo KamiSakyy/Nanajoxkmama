@@ -215,6 +215,22 @@ public final class Downloads {
         return n;
     }
 
+    /** Процент загрузки трека: -1 — не качается, 0..100 — идёт загрузка. */
+    public static int progressOf(String trackId, String kind) {
+        if (trackId == null) return -1;
+        String k = key(trackId, kind);
+        for (Job j : JOBS) {
+            if (!k.equals(j.key)) continue;
+            if (j.status == Status.QUEUED) return 0;
+            if (j.status == Status.DOWNLOADING) {
+                return j.total > 0 ? (int) Math.min(100, j.received * 100 / j.total) : 1;
+            }
+            if (j.status == Status.DONE) return 100;
+            return -1;
+        }
+        return -1;
+    }
+
     public static void download(Models.Track track, String kind, boolean saveToDevice) {
         final String k = key(track.id, kind);
         for (Job j : JOBS) {

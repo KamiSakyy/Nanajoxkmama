@@ -87,9 +87,24 @@ public final class TrackRows {
         badgeParams.leftMargin = Theme.dp(context, 8);
         row.addView(badge, badgeParams);
 
+        int progress = Downloads.progressOf(track.id, Downloads.KIND_AUDIO);
+        if (progress < 100) progress = Math.max(progress, Downloads.progressOf(track.id, Downloads.KIND_VIDEO));
+        if (progress >= 0 && progress < 100) {
+            TextView downloading = new TextView(context);
+            downloading.setText(progress <= 0 ? "…" : progress + "%");
+            downloading.setTextSize(10.5f);
+            downloading.setTextColor(Theme.ACCENT);
+            downloading.setBackground(Ui.rounded(context, Theme.mix(Theme.SURFACE_3, Theme.ACCENT, 0.25f), 7f));
+            downloading.setPadding(Theme.dp(context, 7), Theme.dp(context, 3), Theme.dp(context, 7), Theme.dp(context, 3));
+            LinearLayout.LayoutParams dlParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dlParams.leftMargin = Theme.dp(context, 8);
+            row.addView(downloading, dlParams);
+        }
+
         boolean offline = Downloads.hasOffline(track.id, Downloads.KIND_AUDIO)
                 || Downloads.hasOffline(track.id, Downloads.KIND_VIDEO);
-        if (offline) {
+        if (offline && !(progress >= 0 && progress < 100)) {
             ImageView done = new ImageView(context);
             done.setImageResource(com.anibeat.app.R.drawable.ic_download_done);
             done.setColorFilter(Theme.TERTIARY);

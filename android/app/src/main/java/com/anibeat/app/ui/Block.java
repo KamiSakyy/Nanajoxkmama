@@ -98,7 +98,10 @@ public final class Block {
                 .append('|').append(index).append('|').append(playing).append('|').append(heightDp)
                 .append('|').append(selectedChip).append('|').append(chips.size());
         for (String chip : chips) sb.append(',').append(chip);
-        if (track != null) sb.append('|').append(track.id).append('|').append(track.themeSlug);
+        if (track != null) {
+            sb.append('|').append(track.id).append('|').append(track.themeSlug)
+                    .append('|').append(com.anibeat.app.data.Downloads.progressOf(track.id, com.anibeat.app.data.Downloads.KIND_AUDIO));
+        }
         for (Models.Track item : tracks) sb.append('|').append(item.id);
         for (Models.AnimeSummary anime : animes) sb.append('|').append(anime.slug);
         for (Models.ArtistSummary artist : artists) sb.append('|').append(artist.slug).append('~').append(artist.name);
