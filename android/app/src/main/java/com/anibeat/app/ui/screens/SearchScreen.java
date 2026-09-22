@@ -213,7 +213,7 @@ public class SearchScreen extends ListScreen {
         }
         if (trackList.isEmpty() && (results.anime == null || results.anime.isEmpty())
                 && (results.artists == null || results.artists.isEmpty())) {
-            blocks.add(Block.empty("Ничего не найдено", "Попробуйте другое написание или русское название"));
+            blocks.add(Block.empty("Ничего не найдено", ""));
         }
         render(blocks, trackList);
     }

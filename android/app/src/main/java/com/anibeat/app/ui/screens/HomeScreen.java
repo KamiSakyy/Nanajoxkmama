@@ -127,7 +127,7 @@ public class HomeScreen extends ListScreen {
             return;
         }
         if (tracks.isEmpty() && blocks.size() <= 5 && failed > 0) {
-            fail("Источник не отвечает. Потяните вниз, чтобы повторить");
+            fail("Источник не отвечает");
             return;
         }
         render(blocks, tracks);

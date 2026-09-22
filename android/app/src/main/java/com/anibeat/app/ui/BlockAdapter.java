@@ -256,6 +256,9 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 RecyclerView list = new RecyclerView(context);
                 list.setLayoutManager(new LinearLayoutManager(context, RecyclerView.HORIZONTAL, false));
                 list.setClipToPadding(false);
+                list.setHasFixedSize(true);
+                list.setItemViewCacheSize(6);
+                list.setItemAnimator(null);
                 list.setPadding(Theme.dp(context, 16), 0, Theme.dp(context, 6), 0);
                 int height = viewType == Block.ARTIST_ROW ? Theme.dp(context, 128)
                         : viewType == Block.MIX_ROW ? Theme.dp(context, 114)

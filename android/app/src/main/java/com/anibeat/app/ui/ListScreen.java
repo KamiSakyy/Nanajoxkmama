@@ -163,7 +163,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         Ui.postSafe(() -> {
             swipe.setRefreshing(false);
             List<Block> blocks = new ArrayList<>();
-            blocks.add(Block.empty("Не удалось загрузить", message == null ? "Проверьте соединение и потяните вниз" : message));
+            blocks.add(Block.empty("Не удалось загрузить", message == null ? "Нет связи с источником" : message));
             Block.Row retry = new Block.Row("retry", "Повторить", "Запросить данные заново", com.anibeat.app.R.drawable.ic_refresh);
             retry.chevron = false;
             retry.action = () -> load(true);
@@ -177,7 +177,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         if (adapter.getItemCount() > 0) return;
         Ui.postSafe(() -> {
             List<Block> blocks = new ArrayList<>();
-            blocks.add(Block.empty("Загрузка…", "Получаем данные источника"));
+            blocks.add(Block.empty("Загрузка…", ""));
             adapter.submit(blocks, new ArrayList<>());
         });
     }
