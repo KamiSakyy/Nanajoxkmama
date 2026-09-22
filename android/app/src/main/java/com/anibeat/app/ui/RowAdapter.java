@@ -106,11 +106,11 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
             case ANIME: {
                 LinearLayout column = new LinearLayout(context);
                 column.setOrientation(LinearLayout.VERTICAL);
-                int width = Theme.dp(context, 118);
+                int width = Theme.dp(context, 112);
                 column.setLayoutParams(new RecyclerView.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT));
                 MaterialCardView card = new MaterialCardView(context);
                 card.setCardBackgroundColor(Theme.SURFACE_2);
-                card.setRadius(Theme.dpF(context, 14));
+                card.setRadius(Theme.dpF(context, 12));
                 card.setCardElevation(0f);
                 FrameLayout frame = new FrameLayout(context);
                 ImageView image = new ImageView(context);
@@ -118,29 +118,39 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
                 frame.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 TextView score = new TextView(context);
                 score.setTextSize(10.5f);
-                score.setTextColor(Theme.ON);
-                score.setBackground(Ui.rounded(context, 0xCC000000, 7f));
+                score.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                score.setTextColor(0xFFFFFFFF);
+                score.setBackground(Ui.rounded(context, 0xB3000000, 7f));
                 score.setPadding(Theme.dp(context, 6), Theme.dp(context, 2), Theme.dp(context, 6), Theme.dp(context, 2));
                 FrameLayout.LayoutParams scoreParams = new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                scoreParams.gravity = Gravity.TOP | Gravity.END;
+                scoreParams.gravity = Gravity.TOP | Gravity.START;
                 scoreParams.topMargin = Theme.dp(context, 6);
-                scoreParams.rightMargin = Theme.dp(context, 6);
+                scoreParams.leftMargin = Theme.dp(context, 6);
                 frame.addView(score, scoreParams);
-                card.addView(frame, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 162)));
+                card.addView(frame, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 168)));
                 column.addView(card);
                 TextView title = new TextView(context);
-                title.setTextSize(12.5f);
+                title.setTextSize(13.5f);
                 title.setTextColor(Theme.ON);
                 title.setMaxLines(2);
                 title.setEllipsize(TextUtils.TruncateAt.END);
                 LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                titleParams.topMargin = Theme.dp(context, 7);
+                titleParams.topMargin = Theme.dp(context, 8);
                 column.addView(title, titleParams);
+                TextView year = new TextView(context);
+                year.setTextSize(12f);
+                year.setTextColor(Theme.ON_VARIANT);
+                year.setMaxLines(1);
+                LinearLayout.LayoutParams yearParams = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                yearParams.topMargin = Theme.dp(context, 4);
+                column.addView(year, yearParams);
                 holder = new VH(column);
                 holder.image = image;
                 holder.title = title;
+                holder.subtitle = year;
                 holder.badge = score;
                 break;
             }
@@ -148,12 +158,12 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
                 LinearLayout column = new LinearLayout(context);
                 column.setOrientation(LinearLayout.VERTICAL);
                 column.setGravity(Gravity.CENTER_HORIZONTAL);
-                column.setLayoutParams(new RecyclerView.LayoutParams(Theme.dp(context, 100), ViewGroup.LayoutParams.WRAP_CONTENT));
+                column.setLayoutParams(new RecyclerView.LayoutParams(Theme.dp(context, 92), ViewGroup.LayoutParams.WRAP_CONTENT));
                 ImageView image = new ImageView(context);
                 image.setLayoutParams(new LinearLayout.LayoutParams(Theme.dp(context, 84), Theme.dp(context, 84)));
                 column.addView(image);
                 TextView title = new TextView(context);
-                title.setTextSize(12f);
+                title.setTextSize(13f);
                 title.setTextColor(Theme.ON);
                 title.setGravity(Gravity.CENTER);
                 title.setMaxLines(2);
@@ -170,7 +180,7 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
             case MIX:
             case PLAYLIST: {
                 FrameLayout frame = new FrameLayout(context);
-                frame.setLayoutParams(new RecyclerView.LayoutParams(Theme.dp(context, 210), Theme.dp(context, 112)));
+                frame.setLayoutParams(new RecyclerView.LayoutParams(Theme.dp(context, 196), Theme.dp(context, 108)));
                 MaterialCardView card = new MaterialCardView(context);
                 card.setCardBackgroundColor(Theme.SURFACE_3);
                 card.setRadius(Theme.dpF(context, 16));
@@ -209,23 +219,23 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
                 FrameLayout.LayoutParams playParams = new FrameLayout.LayoutParams(
                         Theme.dp(context, 34), Theme.dp(context, 34));
                 playParams.gravity = Gravity.RIGHT | Gravity.BOTTOM;
-                playParams.rightMargin = Theme.dp(context, 12);
+                playParams.rightMargin = Theme.dp(context, 14);
                 playParams.bottomMargin = Theme.dp(context, 12);
                 frame.addView(play, playParams);
                 LinearLayout column = new LinearLayout(context);
                 column.setOrientation(LinearLayout.VERTICAL);
                 column.setGravity(Gravity.BOTTOM);
-                column.setPadding(Theme.dp(context, 14), Theme.dp(context, 12), Theme.dp(context, 14), Theme.dp(context, 12));
+                column.setPadding(Theme.dp(context, 16), Theme.dp(context, 12), Theme.dp(context, 48), Theme.dp(context, 14));
                 frame.addView(column, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 TextView title = new TextView(context);
-                title.setTextSize(14f);
+                title.setTextSize(15f);
                 title.setTextColor(Theme.ON);
                 title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
                 title.setMaxLines(2);
                 title.setEllipsize(TextUtils.TruncateAt.END);
                 column.addView(title);
                 TextView subtitle = new TextView(context);
-                subtitle.setTextSize(11f);
+                subtitle.setTextSize(12f);
                 subtitle.setTextColor(0xFFD0D0D6);
                 subtitle.setMaxLines(1);
                 subtitle.setEllipsize(TextUtils.TruncateAt.END);
@@ -242,14 +252,14 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
             default: {
                 LinearLayout column = new LinearLayout(context);
                 column.setOrientation(LinearLayout.VERTICAL);
-                column.setLayoutParams(new RecyclerView.LayoutParams(Theme.dp(context, 156), ViewGroup.LayoutParams.WRAP_CONTENT));
+                column.setLayoutParams(new RecyclerView.LayoutParams(Theme.dp(context, 138), ViewGroup.LayoutParams.WRAP_CONTENT));
                 MaterialCardView card = new MaterialCardView(context);
                 card.setCardBackgroundColor(Theme.SURFACE_2);
                 card.setRadius(Theme.dpF(context, 14));
                 card.setCardElevation(0f);
                 ImageView image = new ImageView(context);
                 image.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                card.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 156)));
+                card.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 138)));
                 column.addView(card);
                 TextView title = new TextView(context);
                 title.setTextSize(13f);
@@ -288,6 +298,10 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
             Display display = Display.summary(anime);
             Img.loadRounded(holder.image, display.thumb != null ? display.thumb : display.cover, Img.size(context, 118), 14f);
             holder.title.setText(display.title);
+            if (holder.subtitle != null) {
+                holder.subtitle.setText(anime.year != null ? String.valueOf(anime.year) : "");
+                holder.subtitle.setVisibility(anime.year != null ? View.VISIBLE : View.GONE);
+            }
             TextView score = (TextView) holder.badge;
             if (display.score != null && display.score > 0) {
                 score.setVisibility(View.VISIBLE);

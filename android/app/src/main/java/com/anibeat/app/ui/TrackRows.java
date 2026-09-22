@@ -42,6 +42,7 @@ public final class TrackRows {
         private Models.Track currentTrack;
         private String shownCover = "\u0000";
         private String shownProgress = "";
+        private String shownTone = "\u0000";
 
         Holder(View view, TextView marker, ImageView cover, ImageView playOverlay, TextView title,
                TextView subtitle, TextView badge, TextView progress, ImageView done, ImageView menu) {
@@ -102,6 +103,14 @@ public final class TrackRows {
                     ? (track.type == null ? "" : track.type) : track.themeSlug.toUpperCase();
             if (!badgeText.equals(badge.getText().toString())) badge.setText(badgeText);
             badge.setVisibility(badgeText.isEmpty() ? View.GONE : View.VISIBLE);
+            String typeKey = track.type == null ? "" : track.type.toUpperCase();
+            int tone = "ED".equals(typeKey) ? Theme.SECONDARY : ("IN".equals(typeKey) ? Theme.TERTIARY : Theme.PRIMARY);
+            String toneKey = typeKey + "|" + badgeText;
+            if (!toneKey.equals(shownTone)) {
+                shownTone = toneKey;
+                badge.setTextColor(tone);
+                badge.setBackground(Ui.rounded(view.getContext(), Theme.mix(Theme.SURFACE_3, tone, 0.18f), 7f));
+            }
 
             Display display = Display.track(track);
             String url = display.thumb != null ? display.thumb : display.cover;
@@ -179,13 +188,18 @@ public final class TrackRows {
         column.setOrientation(LinearLayout.VERTICAL);
         column.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
+        LinearLayout head = new LinearLayout(context);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = new TextView(context);
         title.setTextSize(14.5f);
         title.setTextColor(Theme.ON);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setSingleLine(true);
         title.setEllipsize(TextUtils.TruncateAt.END);
-        column.addView(title);
+        title.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        head.addView(title);
+        column.addView(head);
 
         TextView subtitle = new TextView(context);
         subtitle.setTextSize(11.5f);

@@ -283,6 +283,7 @@ public class NowPlayingView extends FrameLayout {
         ImageView queue = extra(context, extras, R.drawable.ic_queue_music);
         queue.setOnClickListener(v -> Sheets.queue(host));
         videoToggle = extra(context, extras, R.drawable.ic_videocam_off);
+        videoToggle.setVisibility(View.GONE);
         videoToggle.setOnClickListener(v -> {
             Models.Track track = Player.current();
             if (track == null) return;
@@ -412,7 +413,9 @@ public class NowPlayingView extends FrameLayout {
             anime.setText(animeName);
             status.setVisibility(Player.isBuffering() ? VISIBLE : GONE);
             status.setText("Загрузка…");
-            boolean videoOn = Player.videoMode() && track.videoUrl != null && !track.videoUrl.isEmpty();
+            boolean hasVideo = Player.hasOfflineVideo(track) || (track.videoUrl != null && !track.videoUrl.isEmpty());
+            videoToggle.setVisibility(hasVideo ? VISIBLE : GONE);
+            boolean videoOn = Player.videoMode() && hasVideo;
             videoBox.setVisibility(videoOn ? VISIBLE : GONE);
             art.setVisibility(videoOn ? GONE : VISIBLE);
             videoToggle.setImageResource(videoOn ? R.drawable.ic_videocam : R.drawable.ic_videocam_off);
