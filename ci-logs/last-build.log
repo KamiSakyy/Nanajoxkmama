@@ -1,5 +1,5 @@
-run: 35751356675  job: build-apk  status: success
-version: 2.0.68
+run: 35751747846  job: build-apk  status: success
+version: 2.0.69
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -22,11 +22,12 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifestForPackage
+> Task :app:mergeExtDexRelease
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
@@ -40,20 +41,19 @@ Daemon will be stopped at the end of the build
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
-> Task :app:mergeReleaseJavaResource
 > Task :app:processReleaseResources
+> Task :app:mergeReleaseJavaResource
 > Task :app:compileReleaseJavaWithJavac FROM-CACHE
 > Task :app:dexBuilderRelease
 > Task :app:mergeReleaseGlobalSynthetics
 > Task :app:optimizeReleaseResources
-> Task :app:mergeExtDexRelease
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 41s
+BUILD SUCCESSFUL in 56s
 39 actionable tasks: 34 executed, 5 from cache
 
 --- тесты ---
@@ -67,21 +67,21 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
-> Task :app:processDebugManifestForPackage
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
@@ -98,22 +98,24 @@ Note: Recompile with -Xlint:deprecation for details.
 
 SmokeTest > appOpensAndTabsWork STANDARD_OUT
     === ОТЧЁТ ===
-    вкладка Главная: элементов 5 ← первый заход
+    вкладка Главная: элементов 30 ← первый заход
     вкладка Поиск: элементов 5 ← первый заход
     вкладка Обзор: элементов 8 ← первый заход
     вкладка Медиатека: элементов 3 ← первый заход
-    вкладка Главная: элементов 5 ← возврат
+    вкладка Главная: элементов 30 ← возврат
     вкладка Поиск: элементов 5 ← возврат
     вкладка Обзор: элементов 8 ← возврат
     вкладка Медиатека: элементов 3 ← возврат
     скачанное: элементов 5
     после аниме-ошибки: элементов 3
     первый текст медиатеки: Медиатека
-    финал, вкладка Главная: элементов 5
+    финал, вкладка Главная: элементов 30
     финал, вкладка Поиск: элементов 5
     финал, вкладка Обзор: элементов 8
     финал, вкладка Медиатека: элементов 5
-    нажатий: 89, падений: 0
+    тексты Главной: AniBeat | Жанры | Экшен | Фантастика | Романтика | Комедия
+    перехваченных сбоев: 0
+    нажатий: 133, падений: 0
 
 BUILD SUCCESSFUL in 1m 19s
 24 actionable tasks: 23 executed, 1 from cache
