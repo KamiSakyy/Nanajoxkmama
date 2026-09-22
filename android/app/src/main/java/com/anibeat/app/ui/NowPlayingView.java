@@ -59,6 +59,23 @@ public class NowPlayingView extends FrameLayout {
         column.setOrientation(LinearLayout.VERTICAL);
         addView(column, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        /* полоска-ручка: видно, что панель можно смахнуть вниз */
+        FrameLayout handleBox = new FrameLayout(context);
+        View handle = new View(context);
+        android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable();
+        pill.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        pill.setColor(0x66FFFFFF);
+        pill.setCornerRadius(Theme.dpF(context, 3f));
+        handle.setBackground(pill);
+        FrameLayout.LayoutParams pillParams = new FrameLayout.LayoutParams(
+                Theme.dp(context, 44), Theme.dp(context, 5));
+        pillParams.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
+        pillParams.topMargin = Theme.dp(context, 8);
+        handleBox.addView(handle, pillParams);
+        handleBox.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 20)));
+        column.addView(handleBox);
+
         /* верхняя строка */
         LinearLayout top = new LinearLayout(context);
         top.setOrientation(LinearLayout.HORIZONTAL);
@@ -268,11 +285,21 @@ public class NowPlayingView extends FrameLayout {
         videoToggle = extra(context, extras, R.drawable.ic_videocam_off);
         videoToggle.setOnClickListener(v -> {
             Models.Track track = Player.current();
-            if (track == null || track.videoUrl == null || track.videoUrl.isEmpty()) {
-                host.toast("У этого трека нет видео");
+            if (track == null) return;
+            boolean offline = Player.hasOfflineVideo(track);
+            boolean remote = track.videoUrl != null && !track.videoUrl.isEmpty();
+            if (!offline && !remote) {
+                host.toast("У этой темы нет видео");
                 return;
             }
-            Player.toggleVideoMode();
+            boolean nextState = !Player.videoMode();
+            Player.setVideoMode(nextState);
+            if (nextState) {
+                Player.bindVideo(video);
+                host.toast(offline ? "Видео с устройства" : "Включаю видео");
+            } else {
+                host.toast("Только звук");
+            }
             refresh();
         });
         ImageView share = extra(context, extras, R.drawable.ic_share);
@@ -281,7 +308,7 @@ public class NowPlayingView extends FrameLayout {
             if (track != null) Share.track(getContext(), track);
         });
 
-        top.setOnTouchListener(new OnTouchListener() {
+        OnTouchListener dragListener = new OnTouchListener() {
             private float startY;
             private boolean dragging;
 
@@ -291,10 +318,11 @@ public class NowPlayingView extends FrameLayout {
                     case MotionEvent.ACTION_DOWN:
                         startY = event.getRawY();
                         dragging = false;
-                        return false;
+                        // true — иначе жест не доходит до обработчика и смахнуть нельзя
+                        return true;
                     case MotionEvent.ACTION_MOVE:
                         float delta = event.getRawY() - startY;
-                        if (delta > Theme.dp(getContext(), 8)) dragging = true;
+                        if (delta > Theme.dp(getContext(), 6)) dragging = true;
                         if (dragging) {
                             setTranslationY(Math.max(0f, delta));
                             return true;
@@ -313,7 +341,11 @@ public class NowPlayingView extends FrameLayout {
                         return false;
                 }
             }
-        });
+        };
+        // Смахивать можно за ручку, верхнюю строку и сцену (обложку/видео).
+        handleBox.setOnTouchListener(dragListener);
+        top.setOnTouchListener(dragListener);
+        stage.setOnTouchListener(dragListener);
 
         refresh();
     }

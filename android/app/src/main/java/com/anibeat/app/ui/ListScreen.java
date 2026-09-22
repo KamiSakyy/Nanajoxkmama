@@ -189,6 +189,11 @@ public abstract class ListScreen extends FrameLayout implements Screen {
     /** Показать ошибку без падения приложения. */
     protected void fail(String message) {
         Ui.postSafe(() -> {
+            if (adapter.getItemCount() > 0 && adapter.hasContent()) {
+                // На экране уже что-то есть — не выкидываем содержимое из-за одной ошибки.
+                swipe.setRefreshing(false);
+                return;
+            }
             swipe.setRefreshing(false);
             List<Block> blocks = new ArrayList<>();
             blocks.add(Block.empty("Не удалось загрузить", message == null ? "Нет связи с источником" : message));

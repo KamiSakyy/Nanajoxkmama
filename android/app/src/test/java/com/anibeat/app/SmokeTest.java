@@ -104,6 +104,25 @@ public class SmokeTest {
         clickSafely("закрыть плеер", () -> activity.nowPlaying().close());
         layout(activity);
 
+        // видео и офлайн
+        clickSafely("режим видео", () -> Player.setVideoMode(true));
+        clickSafely("режим видео выкл", () -> Player.toggleVideoMode());
+        clickSafely("проверка скачанного видео", () -> Player.hasOfflineVideo(new com.anibeat.app.data.Models.Track()));
+
+        // экран аниме с несуществующим слагом не должен ронять приложение
+        clickSafely("аниме: пустой слаг", () -> activity.openAnime(new com.anibeat.app.data.Models.AnimeRef()));
+        clickSafely("аниме: чужой слаг", () -> activity.pushScreen(
+                new AnimeScreen(activity, activity, "нет-такого-аниме-12345")));
+        layout(activity);
+        walk("аниме-ошибка", activity.getWindow().getDecorView(), 0);
+        clickSafely("назад", activity::pop);
+        layout(activity);
+        report.add("после аниме-ошибки: элементов " + items(activity));
+
+        // меню скачанного трека
+        clickSafely("меню скачанного", () -> com.anibeat.app.ui.Sheets.offlineMenu(activity, new com.anibeat.app.data.Models.Track()));
+        clickSafely("меню трека", () -> com.anibeat.app.ui.Sheets.trackMenu(activity, new com.anibeat.app.data.Models.Track(), null));
+
         clickSafely("настройки", () -> com.anibeat.app.ui.Sheets.settings(activity));
         clickSafely("очередь", () -> com.anibeat.app.ui.Sheets.queue(activity));
         clickSafely("скачивания", () -> com.anibeat.app.ui.Sheets.downloads(activity));

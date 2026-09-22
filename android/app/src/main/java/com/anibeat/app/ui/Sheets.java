@@ -209,6 +209,25 @@ public final class Sheets {
         body.addView(header(context, track));
         body.addView(actionRow(context, R.drawable.ic_play_arrow, "Играть сейчас", null,
                 () -> host.playTrack(track, one(track), 0)));
+        if ((track.videoUrl != null && !track.videoUrl.isEmpty()) || Player.hasOfflineVideo(track)) {
+            final boolean offlineVideo = Player.hasOfflineVideo(track);
+            body.addView(actionRow(context, R.drawable.ic_videocam,
+                    offlineVideo ? "Смотреть скачанное видео" : "Смотреть видео",
+                    offlineVideo ? "С устройства, без интернета" : "Клип из источника", () -> {
+                        Player.setVideoMode(true);
+                        host.playTrack(track, one(track), 0);
+                        host.openNowPlaying();
+                    }));
+        }
+        if (Player.hasOfflineVideo(track)
+                || Downloads.hasOffline(track.id, Downloads.KIND_AUDIO)) {
+            body.addView(actionRow(context, R.drawable.ic_download_done, "Скачано на устройство",
+                    "Играет без интернета", () -> {
+                        Player.setVideoMode(false);
+                        host.playTrack(track, one(track), 0);
+                        host.openNowPlaying();
+                    }));
+        }
         body.addView(actionRow(context, R.drawable.ic_playlist_play, "Играть следующим", null,
                 () -> {
                     Player.playNext(track);
@@ -239,6 +258,15 @@ public final class Sheets {
                         host.toast("Скачивание видео началось");
                     }));
         }
+        if (Downloads.hasOffline(track.id, Downloads.KIND_AUDIO) || Downloads.hasOffline(track.id, Downloads.KIND_VIDEO)) {
+            body.addView(actionRow(context, R.drawable.ic_delete, "Удалить скачанное",
+                    Downloads.formatBytes(Downloads.offlineSizeOf(track.id, Downloads.KIND_AUDIO)
+                            + Downloads.offlineSizeOf(track.id, Downloads.KIND_VIDEO)), () -> {
+                        Downloads.removeOffline(track.id, Downloads.KIND_AUDIO);
+                        Downloads.removeOffline(track.id, Downloads.KIND_VIDEO);
+                        host.toast("Файлы удалены с устройства");
+                    }));
+        }
         body.addView(actionRow(context, R.drawable.ic_share, "Поделиться", null,
                 () -> Share.track(context, track)));
         body.addView(actionRow(context, R.drawable.ic_tv, "Открыть аниме", track.anime == null ? "" : track.anime.name,
@@ -253,6 +281,46 @@ public final class Sheets {
             host.toast("Добавлено в историю");
         }));
         open(context, "Действия с треком", body);
+    }
+
+    /** Что делать со скачанным треком: смотреть, слушать, удалить файлы. */
+    public static void offlineMenu(final Host host, final Models.Track track) {
+        if (track == null) return;
+        Context context = host.activity();
+        LinearLayout body = body(context);
+        body.addView(header(context, track));
+        final boolean offlineVideo = Player.hasOfflineVideo(track);
+        if (offlineVideo) {
+            body.addView(actionRow(context, R.drawable.ic_videocam, "Смотреть видео с устройства",
+                    "Без интернета", () -> {
+                        Player.setVideoMode(true);
+                        host.playTrack(track, one(track), 0);
+                        host.openNowPlaying();
+                    }));
+        }
+        if (Downloads.hasOffline(track.id, Downloads.KIND_AUDIO)) {
+            body.addView(actionRow(context, R.drawable.ic_play_arrow, "Слушать с устройства",
+                    "Без интернета", () -> {
+                        Player.setVideoMode(false);
+                        host.playTrack(track, one(track), 0);
+                        host.openNowPlaying();
+                    }));
+        }
+        if (track.videoUrl != null && !track.videoUrl.isEmpty() && !offlineVideo) {
+            body.addView(actionRow(context, R.drawable.ic_download, "Скачать видео",
+                    "Сохранить клип на устройство", () -> {
+                        Downloads.download(track, Downloads.KIND_VIDEO, true);
+                        host.toast("Скачивание видео началось");
+                    }));
+        }
+        body.addView(actionRow(context, R.drawable.ic_delete, "Удалить с устройства",
+                Downloads.formatBytes(Downloads.offlineSizeOf(track.id, Downloads.KIND_AUDIO)
+                        + Downloads.offlineSizeOf(track.id, Downloads.KIND_VIDEO)), () -> {
+                    Downloads.removeOffline(track.id, Downloads.KIND_AUDIO);
+                    Downloads.removeOffline(track.id, Downloads.KIND_VIDEO);
+                    host.toast("Файлы удалены");
+                }));
+        open(context, "Скачанный трек", body);
     }
 
     private static View header(Context context, Models.Track track) {

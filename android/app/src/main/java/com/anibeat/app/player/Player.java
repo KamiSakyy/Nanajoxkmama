@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
@@ -385,9 +384,10 @@ public final class Player {
         return videoMode;
     }
 
-    /** Включает или выключает видеодорожку для текущего трека. */
-    public static void toggleVideoMode() {
-        videoMode = !videoMode;
+    /** Включить или выключить видео для текущего трека. */
+    public static void setVideoMode(boolean value) {
+        if (videoMode == value) return;
+        videoMode = value;
         if (index >= 0 && index < QUEUE.size() && engine != null) {
             long position = position();
             List<MediaItem> items = new ArrayList<>();
@@ -397,6 +397,22 @@ public final class Player {
             engine.play();
         }
         notifyChanged();
+    }
+
+    public static void toggleVideoMode() {
+        setVideoMode(!videoMode);
+    }
+
+    /** Есть ли у трека скачанное видео на устройстве. */
+    public static boolean hasOfflineVideo(Models.Track track) {
+        if (track == null || track.id == null) return false;
+        try {
+            java.io.File file = com.anibeat.app.data.Downloads.offlineFile(
+                    track.id, com.anibeat.app.data.Downloads.KIND_VIDEO);
+            return file != null && file.exists();
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     public static void setSleepTimer(long minutes) {
@@ -580,9 +596,32 @@ public final class Player {
         }
     }
 
+    /** Файл на устройстве, если трек уже скачан: тогда интернет не расходуется вообще. */
+    private static String offlineUri(Models.Track track) {
+        try {
+            if (track == null || track.id == null) return null;
+            String kind = videoMode ? com.anibeat.app.data.Downloads.KIND_VIDEO
+                    : com.anibeat.app.data.Downloads.KIND_AUDIO;
+            java.io.File file = com.anibeat.app.data.Downloads.offlineFile(track.id, kind);
+            if (file == null && !videoMode) {
+                // аудио нет, но скачано видео — играем его и включаем видеодорожку
+                file = com.anibeat.app.data.Downloads.offlineFile(track.id, com.anibeat.app.data.Downloads.KIND_VIDEO);
+                if (file != null) videoMode = true;
+            }
+            if (file != null && file.exists() && file.length() > 0) return Uri.fromFile(file).toString();
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+        return null;
+    }
+
     private static MediaItem item(Models.Track track) {
-        String uri = track.audioUrl;
-        if (videoMode && track.videoUrl != null && !track.videoUrl.isEmpty()) uri = track.videoUrl;
+        String uri = offlineUri(track);
+        boolean local = uri != null;
+        if (!local) {
+            uri = track.audioUrl;
+            if (videoMode && track.videoUrl != null && !track.videoUrl.isEmpty()) uri = track.videoUrl;
+        }
         MediaMetadata.Builder meta = new MediaMetadata.Builder()
                 .setTitle(track.title == null || track.title.isEmpty() ? track.themeSlug : track.title)
                 .setArtist(track.artistNames())

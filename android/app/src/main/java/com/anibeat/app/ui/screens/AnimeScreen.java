@@ -33,17 +33,26 @@ public class AnimeScreen extends ListScreen {
 
     @Override
     protected void load(boolean refresh) {
+        if (slug == null || slug.isEmpty()) {
+            fail("Аниме не найдено");
+            return;
+        }
         setRefreshing(true);
         Api.getAnime(slug, (found, error) -> Ui.postSafe(() -> {
-            setRefreshing(false);
-            if (error != null || found == null) {
-                fail(error == null ? "Аниме не найдено" : error);
-                return;
+            try {
+                setRefreshing(false);
+                if (error != null || found == null) {
+                    fail(error == null ? "Аниме не найдено" : error);
+                    return;
+                }
+                detail = found;
+                tracks = found.tracks == null ? new ArrayList<>() : found.tracks;
+                if (found.malId != null && found.malId > 0) Meta.warmAll(Collections.singletonList(found.malId));
+                rebuild();
+            } catch (Throwable t) {
+                Ui.report(t);
+                fail("Не удалось показать аниме");
             }
-            detail = found;
-            tracks = found.tracks == null ? new ArrayList<>() : found.tracks;
-            if (found.malId != null) Meta.warm(Collections.singletonList(found.malId));
-            rebuild();
         }));
     }
 
@@ -65,7 +74,15 @@ public class AnimeScreen extends ListScreen {
     private List<Block> blocks() {
         List<Block> blocks = new ArrayList<>();
         if (detail == null) return blocks;
-        Display display = Display.summary(detail);
+        Display display;
+        try {
+            display = Display.summary(detail);
+        } catch (Throwable t) {
+            Ui.report(t);
+            display = null;
+        }
+        if (display == null) display = Display.summary(new Models.AnimeSummary());
+        if (display.title == null) display.title = detail.name == null ? "" : detail.name;
         blocks.add(Block.header(display.title));
 
         List<String> meta = new ArrayList<>();
@@ -83,7 +100,7 @@ public class AnimeScreen extends ListScreen {
         }
         if (line.length() > 0) blocks.add(Block.text("", line.toString()));
 
-        Models.AnimeMeta info = Meta.get(detail.malId);
+        Models.AnimeMeta info = Meta.peek(detail.malId);
         if (info != null && info.genres != null && !info.genres.isEmpty()) {
             StringBuilder genres = new StringBuilder();
             for (String genre : info.genres) {
@@ -92,7 +109,8 @@ public class AnimeScreen extends ListScreen {
             }
             blocks.add(Block.text("Жанры", genres.toString()));
         }
-        String synopsis = info != null && info.ru != null && detail.synopsis != null ? detail.synopsis : detail.synopsis;
+        String synopsis = detail.synopsis;
+        if (synopsis == null && info != null) synopsis = info.ru;
         if (synopsis != null && !synopsis.isEmpty()) {
             blocks.add(Block.text("Описание", clean(synopsis)));
         }
@@ -129,6 +147,7 @@ public class AnimeScreen extends ListScreen {
         for (String type : new String[]{"OP", "ED", "IN"}) {
             List<Models.Track> group = new ArrayList<>();
             for (Models.Track track : queue) {
+                if (track == null) continue;
                 if (type.equalsIgnoreCase(track.type == null ? "" : track.type)) group.add(track);
             }
             if (group.isEmpty()) continue;
@@ -137,6 +156,9 @@ public class AnimeScreen extends ListScreen {
                 int index = queue.indexOf(track);
                 blocks.add(Block.track(track, Math.max(0, index), track.id != null && track.id.equals(playingId)));
             }
+        }
+        if (queue.isEmpty()) {
+            blocks.add(Block.empty("Тем пока нет", "Для этого аниме темы ещё не добавлены"));
         }
         return blocks;
     }

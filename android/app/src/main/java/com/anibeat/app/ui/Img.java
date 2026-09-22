@@ -10,7 +10,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 
 import java.io.File;
@@ -40,10 +39,31 @@ public final class Img {
         return dataSaver;
     }
 
-    /** Размер запроса в пикселях: при экономии трафика картинка качается мельче. */
+    /**
+     * Размер запроса в пикселях. Считается от реального размера на экране с запасом
+     * под плотность экрана — картинка не растягивается и не выглядит сжатой.
+     */
     public static int size(Context context, float dp) {
-        float value = dataSaver ? dp * 0.72f : dp;
-        return Math.max(48, Theme.dp(context, value));
+        return size(context, dp, 1.6f);
+    }
+
+    /** Размер запроса в пикселях для крупных поверхностей (обложка в плеере и т. п.). */
+    public static int sizeLarge(Context context, float dp) {
+        return size(context, dp, 2.4f);
+    }
+
+    private static int size(Context context, float dp, float reserve) {
+        float px = Theme.dp(context, dp) * reserve;
+        return (int) Math.max(96f, px);
+    }
+
+    /** Размер по фактической ширине уже отрисованной вьюхи. */
+    public static int sizeOf(android.view.View view) {
+        if (view == null) return 0;
+        int width = view.getWidth(), height = view.getHeight();
+        if (width <= 0 || height <= 0) return 0;
+        int side = Math.max(width, height);
+        return (int) (side * 1.25f);
     }
 
     public static void load(ImageView view, String url, int px) {
@@ -58,20 +78,32 @@ public final class Img {
         load(view, url, px, 0f, true);
     }
 
+    private static final int TAG_URL = 0x7f0e0001;
+    private static final int TAG_SIZE = 0x7f0e0002;
+
     private static void load(ImageView view, String url, int px, float radiusDp, boolean circle) {
         if (view == null) return;
-        Drawable placeholder = new ColorDrawable(Theme.SURFACE_4);
         try {
             if (url == null || url.isEmpty()) {
-                view.setImageDrawable(placeholder);
+                if (!(view.getDrawable() instanceof ColorDrawable)) view.setImageDrawable(empty(view));
+                view.setTag(TAG_URL, null);
                 return;
             }
+            // Та же картинка уже стоит — ничего не трогаем: никакого мигания и лишнего трафика.
+            Object same = view.getTag(TAG_URL);
+            Object samePx = view.getTag(TAG_SIZE);
+            if (url.equals(same) && samePx != null && samePx.equals(px)) return;
+            view.setTag(TAG_URL, url);
+            view.setTag(TAG_SIZE, px);
+
             Context context = view.getContext();
+            Drawable current = view.getDrawable();
+            // Заглушку показываем только там, где картинки ещё нет, иначе будет вспышка.
+            Drawable placeholder = current != null ? current : empty(view);
             RequestOptions options = new RequestOptions()
                     .centerCrop()
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .placeholder(placeholder)
-                    .error(placeholder);
+                    .error(empty(view));
             if (px > 0) options = options.override(px, px);
             if (circle) {
                 options = options.bitmapTransform(new CircleCrop());
@@ -81,15 +113,19 @@ public final class Img {
             Glide.with(view)
                     .load(url)
                     .apply(options)
-                    .transition(DrawableTransitionOptions.withCrossFade(120))
+                    .dontAnimate()
                     .into(view);
         } catch (Throwable t) {
             com.anibeat.app.core.Ui.report(t);
-            try {
-                view.setImageDrawable(placeholder);
-            } catch (Throwable ignored) {
-            }
         }
+    }
+
+    /** Нейтральная подложка вместо чёрного провала. */
+    private static Drawable empty(ImageView view) {
+        android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+                new int[]{Theme.SURFACE_4, Theme.SURFACE_3});
+        return drawable;
     }
 
     public static void clear(ImageView view) {

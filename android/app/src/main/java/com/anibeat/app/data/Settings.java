@@ -32,7 +32,8 @@ public final class Settings {
 
     public static void init(Context context) {
         if (context != null) appContext = context.getApplicationContext();
-        dataSaver = Prefs.getBool("settings.dataSaver", isMetered(context));
+        // По умолчанию картинки грузятся в полном размере: сжатие только по желанию в настройках.
+        dataSaver = Prefs.getBool("settings.dataSaver", false);
         preloadNext = Prefs.getBool("settings.preloadNext", true);
         downloadKind = Prefs.getString("settings.downloadKind", "audio");
         ruTitles = Prefs.getBool("settings.ruTitles", true);

@@ -398,6 +398,10 @@ public final class Api {
     }
 
     public static void getAnime(String slug, Cb<Models.AnimeDetail> cb) {
+        if (slug == null || slug.isEmpty()) {
+            cb.on(null, "Аниме не найдено");
+            return;
+        }
         String url = Net.buildUrl(BASE, "/anime/" + Net.encode(slug), fields(params(
                 "include", ANIME_THEMES_INCLUDE + ",studios,series",
                 "fields[anime]", "id,name,slug,year,season,media_format,synopsis",
@@ -410,7 +414,13 @@ public final class Api {
                 return;
             }
             Models.AnimeDetail d = new Models.AnimeDetail();
-            Models.AnimeSummary s = toAnimeSummary(a);
+            Models.AnimeSummary s;
+            try {
+                s = toAnimeSummary(a);
+            } catch (Throwable t) {
+                cb.on(null, "Ответ источника не разобран");
+                return;
+            }
             d.id = s.id;
             d.name = s.name;
             d.slug = s.slug;

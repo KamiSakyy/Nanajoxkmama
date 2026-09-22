@@ -125,6 +125,18 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         }
     }
 
+    /** Есть ли на экране настоящий контент (а не только заголовок и сообщение). */
+    public boolean hasContent() {
+        for (Block block : blocks) {
+            if (block.kind == Block.TRACK || block.kind == Block.TRACK_ROW || block.kind == Block.ANIME_ROW
+                    || block.kind == Block.ANIME_PAIR || block.kind == Block.ARTIST_ROW
+                    || block.kind == Block.MIX_ROW || block.kind == Block.PLAYLIST_ROW) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Обновить данные (русские названия Shikimori подтянулись) — точечно, без перезагрузки обложек. */
     public void refreshChanged() {
         for (int i = 0; i < blocks.size(); i++) {
@@ -150,6 +162,8 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         RowAdapter rowAdapter;
         ChipGroup chips;
         FrameLayout pair;
+        TrackRows.Holder trackRow;
+        Block block;
         String boundSignature = "";
 
         VH(View view) {
@@ -216,6 +230,20 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 FrameLayout frame = new FrameLayout(context);
                 frame.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 VH holder = new VH(frame);
+                final TrackRows.Holder row = TrackRows.holder(context, null, null);
+                holder.trackRow = row;
+                row.onClick(() -> {
+                    Block block = holder.block;
+                    if (block == null || block.track == null) return;
+                    host.playTrack(block.track, tracks, Math.max(0, block.index));
+                });
+                row.onMenu(() -> {
+                    Block block = holder.block;
+                    if (block == null || block.track == null) return;
+                    if (block.onLongClick != null) block.onLongClick.run();
+                    else host.trackMenu(block.track, row.view);
+                });
+                frame.addView(row.view);
                 return holder;
             }
             case Block.ROW: {
@@ -359,14 +387,9 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 break;
             case Block.TRACK: {
                 FrameLayout frame = (FrameLayout) holder.itemView;
-                frame.removeAllViews();
-                final int index = block.index;
-                frame.addView(TrackRows.create(context, block.track, index + 1, block.playing,
-                        v -> host.playTrack(block.track, tracks, index),
-                        v -> {
-                            if (block.onLongClick != null) block.onLongClick.run();
-                            else host.trackMenu(block.track, v);
-                        }));
+                final TrackRows.Holder row = holder.trackRow;
+                holder.block = block;
+                row.bind(block.track, block.index + 1, block.playing);
                 break;
             }
             case Block.ROW: {
@@ -556,7 +579,9 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
     public void onViewRecycled(@NonNull VH holder) {
         super.onViewRecycled(holder);
         holder.boundSignature = "";
+        holder.block = null;
         if (holder.image != null) Img.clear(holder.image);
+        if (holder.trackRow != null) holder.trackRow.clearCover();
         if (holder.rowAdapter != null) {
             holder.rowAdapter.setPlayingId("");
         }

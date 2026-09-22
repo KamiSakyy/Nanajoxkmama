@@ -13,11 +13,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 /** Мелкие утилиты: безопасный запуск кода, отчёт о сбоях, тосты, скругления. */
 public final class Ui {
@@ -119,11 +114,14 @@ public final class Ui {
         }
     }
 
+    private static final int PRESS_TAG = 0x7f0e0003;
+
     /** Тихая подсветка нажатия для строк списков: без волны по всему экрану. */
     public static void press(View view) {
         try {
             if (view == null) return;
-            if (view.getBackground() instanceof android.graphics.drawable.StateListDrawable) return;
+            if (Boolean.TRUE.equals(view.getTag(PRESS_TAG))) return;
+            view.setTag(PRESS_TAG, Boolean.TRUE);
             Drawable base = view.getBackground();
             android.graphics.drawable.StateListDrawable states = new android.graphics.drawable.StateListDrawable();
             states.addState(new int[]{android.R.attr.state_pressed}, new ColorDrawable(0x1FFFFFFF));

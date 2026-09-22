@@ -11,6 +11,7 @@ import com.anibeat.app.ui.Block;
 import com.anibeat.app.ui.Format;
 import com.anibeat.app.ui.Host;
 import com.anibeat.app.ui.ListScreen;
+import com.anibeat.app.player.Player;
 import com.anibeat.app.ui.Sheets;
 
 import java.util.ArrayList;
@@ -51,6 +52,27 @@ public class LibraryScreen extends ListScreen {
                 rebuild();
             };
             blocks.add(chips);
+
+            if (TAB_DOWNLOADS.equals(tab)) {
+                List<Models.Track> all = Downloads.offlineTracks();
+                int videos = 0;
+                for (Models.Track track : all) if (Player.hasOfflineVideo(track)) videos++;
+                if (videos > 0) {
+                    final Models.Track firstVideo = firstOfflineVideo(all);
+                    Block.Row watch = new Block.Row("watch", "Смотреть скачанное видео",
+                            Format.plural(videos, "клип", "клипа", "клипов") + " · с устройства, без интернета",
+                            R.drawable.ic_videocam);
+                    watch.chevron = false;
+                    watch.action = () -> {
+                        if (firstVideo != null) {
+                            Player.setVideoMode(true);
+                            host.playTrack(firstVideo, Downloads.offlineTracks(), 0);
+                            host.openNowPlaying();
+                        }
+                    };
+                    blocks.add(Block.row(watch));
+                }
+            }
 
             if (TAB_FAVORITES.equals(tab)) {
                 List<Models.Track> favorites = Library.favorites();
@@ -98,8 +120,11 @@ public class LibraryScreen extends ListScreen {
                     blocks.add(Block.row(clear));
                     trackList.addAll(offline);
                     for (int i = 0; i < offline.size(); i++) {
-                        Models.Track track = offline.get(i);
-                        blocks.add(Block.track(track, i, track.id != null && track.id.equals(playingId())));
+                        final Models.Track track = offline.get(i);
+                        Block block = Block.track(track, i, track.id != null && track.id.equals(playingId()));
+                        // долгое нажатие — что делать со скачанным: смотреть видео, слушать или удалить
+                        block.onLongClick = () -> Sheets.offlineMenu(host, track);
+                        blocks.add(block);
                     }
                 }
             } else {
@@ -122,6 +147,13 @@ public class LibraryScreen extends ListScreen {
             }
             render(blocks, trackList);
         });
+    }
+
+    private static Models.Track firstOfflineVideo(List<Models.Track> tracks) {
+        for (Models.Track track : tracks) {
+            if (Player.hasOfflineVideo(track)) return track;
+        }
+        return null;
     }
 
     /** Открыть конкретный раздел медиатеки (например, «Скачанное»). */

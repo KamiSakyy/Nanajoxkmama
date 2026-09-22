@@ -315,7 +315,7 @@ public final class Downloads {
                     job.received = received;
                     job.total = total;
                     long now = System.currentTimeMillis();
-                    if (now - lastEmit > 150) {
+                    if (now - lastEmit > 500) {
                         lastEmit = now;
                         MAIN.post(Downloads::emit);
                     }
