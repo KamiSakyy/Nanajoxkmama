@@ -31,6 +31,11 @@ public class AniBeatApp extends Application {
                 } catch (Throwable ignored) {
                 }
                 Log.e(TAG, "Сбой", error);
+                if (thread == android.os.Looper.getMainLooper().getThread()) {
+                    // Основной поток: приложение снова откроется вместо закрытия.
+                    relaunch(AniBeatApp.this, error);
+                    return;
+                }
                 if (previous != null) {
                     previous.uncaughtException(thread, error);
                 }
@@ -38,6 +43,31 @@ public class AniBeatApp extends Application {
         } catch (Throwable t) {
             Log.e(TAG, "не удалось включить запись сбоев", t);
         }
+    }
+
+    /** Метка времени последнего перезапуска: не даём приложению уйти в бесконечную петлю. */
+    private static long lastRestart;
+
+    /** Открыть приложение заново после сбоя вместо закрытия окна. */
+    private static void relaunch(final android.content.Context context, final Throwable error) {
+        long now = System.currentTimeMillis();
+        if (now - lastRestart < 15000) {
+            Log.e(TAG, "повторный сбой — перезапуск отменён", error);
+            return;
+        }
+        lastRestart = now;
+        try {
+            android.content.Intent intent = new android.content.Intent(context, MainActivity.class);
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                    | android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+            context.startActivity(intent);
+        } catch (Throwable t) {
+            Log.e(TAG, "не удалось перезапустить приложение", t);
+            return;
+        }
+        android.os.Process.killProcess(android.os.Process.myPid());
+        System.exit(10);
     }
 
     public static String describe(Throwable error) {

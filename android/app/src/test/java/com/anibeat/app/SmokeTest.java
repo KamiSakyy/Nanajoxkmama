@@ -146,6 +146,39 @@ public class SmokeTest {
             report.add("финал, вкладка " + names[tab] + ": элементов " + items(activity));
         }
 
+        // Никаких эмодзи вместо кнопок: в интерфейсе не должно быть символов-эмодзи
+        layout(activity);
+        String emojiFree = visibleTexts(activity, 40);
+        for (String forbidden : new String[]{"\u23f8", "\u25b6", "\u23f9", "\u2b1b"}) {
+            if (emojiFree.contains(forbidden)) failures.add("в интерфейсе остался эмодзи: " + forbidden);
+        }
+
+        // Экран исполнителя открывается и закрывается без вылета
+        clickSafely("исполнитель", () -> {
+            com.anibeat.app.data.Models.ArtistRef ref = new com.anibeat.app.data.Models.ArtistRef();
+            ref.slug = "lisa";
+            ref.name = "LiSA";
+            activity.openArtist(ref);
+        });
+        layout(activity);
+        report.add("исполнитель: элементов " + items(activity));
+        clickSafely("назад с исполнителя", activity::pop);
+
+        // Подборка: при неудаче показывается ошибка с «Повторить», а не вечная «Загрузка»
+        com.anibeat.app.data.Models.Mix testMix = com.anibeat.app.data.Api.MIXES.isEmpty()
+                ? null : com.anibeat.app.data.Api.MIXES.get(0);
+        if (testMix != null) {
+            clickSafely("подборка", () -> activity.openMix(testMix));
+            layout(activity);
+            String mixText = visibleTexts(activity, 40);
+            report.add("подборка: " + mixText);
+            clickSafely("назад с подборки", activity::pop);
+        }
+
+        // Прогрессивная загрузка треков подборки не должна падать на пустом списке
+        clickSafely("пустая подборка", () -> com.anibeat.app.data.Api.getTracksForAnimeSlugsProgressive(
+                new java.util.ArrayList<>(), 3, (partial, error) -> { }, (all, error) -> { }));
+
         clickSafely("возврат на Главную", () -> activity.showTab(0, false));
         layout(activity);
         report.add("тексты Главной: " + visibleTexts(activity, 6));

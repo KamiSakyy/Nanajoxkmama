@@ -87,21 +87,31 @@ public final class MixCovers {
             return;
         }
         loading = true;
-        Api.getAnimeBySlugs(need, (list, error) -> Ui.postSafe(() -> {
-            try {
-                if (list != null) {
-                    for (Models.AnimeSummary anime : list) {
-                        String cover = anime.cover != null && !anime.cover.isEmpty() ? anime.cover : anime.coverSmall;
-                        if (anime.slug != null && cover != null && !cover.isEmpty()) COVERS.put(anime.slug, cover);
+        // Запрашиваем пачками по 8 слагов: мелкие ответы приходят быстро и не отваливаются по таймауту.
+        List<List<String>> chunks = new ArrayList<>();
+        for (int i = 0; i < need.size(); i += 8) {
+            chunks.add(new ArrayList<>(need.subList(i, Math.min(need.size(), i + 8))));
+        }
+        final java.util.concurrent.atomic.AtomicInteger left =
+                new java.util.concurrent.atomic.AtomicInteger(chunks.size());
+        for (List<String> chunk : chunks) {
+            Api.getAnimeBySlugs(chunk, (list, error) -> Ui.postSafe(() -> {
+                Ui.safe(() -> {
+                    if (list != null) {
+                        for (Models.AnimeSummary anime : list) {
+                            if (anime == null) continue;
+                            String cover = anime.cover != null && !anime.cover.isEmpty() ? anime.cover : anime.coverSmall;
+                            if (anime.slug != null && cover != null && !cover.isEmpty()) COVERS.put(anime.slug, cover);
+                        }
+                        persist();
                     }
-                    persist();
+                });
+                if (left.decrementAndGet() == 0) {
+                    loading = false;
+                    flush();
                 }
-            } catch (Throwable t) {
-                Ui.report(t);
-            }
-            loading = false;
-            flush();
-        }));
+            }));
+        }
     }
 
     private static void persist() {

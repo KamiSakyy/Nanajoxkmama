@@ -367,7 +367,7 @@ public class PlaybackService extends Service {
             text.append(track.artistNames());
             if (track.anime != null && track.anime.name != null && !track.anime.name.isEmpty()) {
                 if (text.length() > 0) text.append(" · ");
-                text.append(track.anime.name);
+                if (track.anime != null) text.append(track.anime.name);
             }
         }
         if (text.length() == 0) text.append("Готовим воспроизведение");

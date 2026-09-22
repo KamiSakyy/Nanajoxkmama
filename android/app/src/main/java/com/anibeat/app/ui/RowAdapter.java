@@ -91,6 +91,8 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
         android.widget.GridLayout mosaic;
         ImageView[] tiles;
         ImageView play;
+        FrameLayout tilePlay;
+        ImageView tilePlayIcon;
 
         VH(View view) {
             super(view);
@@ -260,6 +262,23 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
                 ImageView image = new ImageView(context);
                 image.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 card.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 138)));
+                View tileScrim = new View(context);
+                tileScrim.setBackgroundColor(0x40000000);
+                card.addView(tileScrim, new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 138)));
+                FrameLayout tilePlay = new FrameLayout(context);
+                tilePlay.setBackground(Ui.circle(0xFFFFFFFF));
+                ImageView tilePlayIcon = new ImageView(context);
+                tilePlayIcon.setImageResource(com.anibeat.app.R.drawable.ic_play_arrow);
+                tilePlayIcon.setColorFilter(0xFF101014);
+                int tilePad = Theme.dp(context, 13);
+                tilePlayIcon.setPadding(tilePad, tilePad, tilePad, tilePad);
+                tilePlay.addView(tilePlayIcon, new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                FrameLayout.LayoutParams tilePlayParams = new FrameLayout.LayoutParams(
+                        Theme.dp(context, 48), Theme.dp(context, 48));
+                tilePlayParams.gravity = Gravity.CENTER;
+                card.addView(tilePlay, tilePlayParams);
                 column.addView(card);
                 TextView title = new TextView(context);
                 title.setTextSize(13f);
@@ -280,6 +299,8 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
                 holder.image = image;
                 holder.title = title;
                 holder.subtitle = subtitle;
+                holder.tilePlay = tilePlay;
+                holder.tilePlayIcon = tilePlayIcon;
                 break;
             }
         }
@@ -290,6 +311,14 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
 
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
+        try {
+            bindSafe(holder, position);
+        } catch (Throwable t) {
+            com.anibeat.app.core.Ui.report(t);
+        }
+    }
+
+    private void bindSafe(@NonNull VH holder, int position) {
         Object item = items.get(position);
         Context context = holder.itemView.getContext();
         final int index = position;
@@ -338,7 +367,22 @@ public class RowAdapter extends RecyclerView.Adapter<RowAdapter.VH> {
             holder.subtitle.setText(track.artistNames());
             if (playing) holder.title.setTextColor(Theme.ACCENT);
             else holder.title.setTextColor(Theme.ON);
-            holder.itemView.setOnClickListener(v -> host.playTrack(track, tracks(), index));
+            if (holder.tilePlayIcon != null) {
+                boolean isPlaying = playing && com.anibeat.app.player.Player.isPlaying();
+                holder.tilePlayIcon.setImageResource(isPlaying
+                        ? com.anibeat.app.R.drawable.ic_pause
+                        : com.anibeat.app.R.drawable.ic_play_arrow);
+            }
+            final Runnable tileToggle = () -> {
+                Models.Track now = com.anibeat.app.player.Player.current();
+                if (playing && now != null && track.id != null && track.id.equals(now.id)) {
+                    com.anibeat.app.player.Player.toggle();
+                } else {
+                    host.playTrack(track, tracks(), index);
+                }
+            };
+            holder.itemView.setOnClickListener(v -> tileToggle.run());
+            if (holder.tilePlay != null) holder.tilePlay.setOnClickListener(v -> tileToggle.run());
             holder.itemView.setOnLongClickListener(v -> {
                 host.trackMenu(track, v);
                 return true;

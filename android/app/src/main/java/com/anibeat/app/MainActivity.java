@@ -163,6 +163,7 @@ public class MainActivity extends AppCompatActivity implements Host {
             insetBottom = bars.bottom;
             content.setPadding(0, insetTop, 0, 0);
             nav.setPadding(0, 0, 0, insetBottom);
+            nowPlaying.setPadding(0, insetTop, 0, insetBottom);
             updateBars(true);
             return insets;
         });
@@ -513,7 +514,12 @@ public class MainActivity extends AppCompatActivity implements Host {
         if (track == null) return;
         try {
             List<Models.Track> queue = list == null || list.isEmpty() ? java.util.Collections.singletonList(track) : list;
-            Player.play(queue, Math.max(0, Math.min(index, queue.size() - 1)));
+            int start = Math.max(0, Math.min(index, queue.size() - 1));
+            for (Models.Track item : queue) {
+                if (item != null && item.audioUrl != null && !item.audioUrl.isEmpty()) continue;
+                com.anibeat.app.data.Api.attachAudio(item);
+            }
+            Player.play(queue, start);
             updateBars(true);
             if (mini != null) mini.refresh();
         } catch (Throwable t) {
@@ -556,11 +562,23 @@ public class MainActivity extends AppCompatActivity implements Host {
     @Override
     public void openMix(final Models.Mix mix) {
         if (mix == null) return;
-        push(new TracksScreen(this, this, mix.title, "Подборка: " + mix.subtitle, (refresh, sink) ->
-                com.anibeat.app.data.Api.getTracksForAnimeSlugs(Arrays.asList(mix.slugs), (tracks, error) -> {
-                    if (error != null) sink.tracks(null, error);
-                    else sink.tracks(tracks, null);
-                })), true);
+        push(new TracksScreen(this, this, mix.title, "Подборка: " + mix.subtitle, (refresh, sink) -> {
+            List<String> slugs = mix.slugs == null ? new ArrayList<>() : Arrays.asList(mix.slugs);
+            com.anibeat.app.data.Api.getTracksForAnimeSlugsProgressive(slugs, 3,
+                    (partial, error) -> {
+                        if (partial != null && !partial.isEmpty()) sink.tracks(partial, null);
+                    },
+                    (all, error) -> {
+                        if (all != null && !all.isEmpty()) sink.tracks(all, null);
+                        else sink.tracks(null, error == null ? "В подборке нет треков" : error);
+                    });
+        }), true);
+    }
+
+    /** Треки подборки без ссылки на звук догружаем по одной теме — иначе кнопка не работает. */
+    public static void ensureAudio(final Models.Track track) {
+        if (track == null || (track.audioUrl != null && !track.audioUrl.isEmpty())) return;
+        com.anibeat.app.data.Api.attachAudio(track);
     }
 
     @Override

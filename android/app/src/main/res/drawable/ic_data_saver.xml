@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Material Symbols: ic_data_saver -->
+<!-- AniBeat · иконка из набора сайта (единый штрих 1.7, скругления). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M13 2v8h8c0-4.42-3.58-8-8-8zm-2 2c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h-6V4z" />
+        android:pathData="M5 15.4a7 7 0 1 1 14 0M12 15.4l3.6-3.8M8.4 19.4h7.2"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
 </vector>

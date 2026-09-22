@@ -65,7 +65,7 @@ public final class Net {
     private static final ExecutorService POOL = Executors.newFixedThreadPool(4);
     private static final ExecutorService HIGH = Executors.newFixedThreadPool(2);
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
-    private static final long[] RETRY = {600, 1500, 3200};
+    private static final long[] RETRY = {500, 1200};
     private static File cacheDir;
 
     private Net() {
@@ -178,7 +178,7 @@ public final class Net {
             String body = null;
             String error = null;
             for (int attempt = 0; ; attempt++) {
-                HttpResult res = fetch(url, postBody, 15000);
+                HttpResult res = fetch(url, postBody, 10000);
                 if (res.body != null) {
                     body = res.body;
                     break;

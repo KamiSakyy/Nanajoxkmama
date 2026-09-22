@@ -36,10 +36,20 @@ public class TracksScreen extends ListScreen {
     @Override
     protected void load(boolean refresh) {
         if (refresh) setRefreshing(true);
+        final java.util.concurrent.atomic.AtomicBoolean answered =
+                new java.util.concurrent.atomic.AtomicBoolean();
+        // Сторож: если источник молчит дольше 20 секунд, показываем понятную ошибку и «Повторить».
+        com.anibeat.app.core.Ui.postDelayed(() -> {
+            if (answered.get()) return;
+            answered.set(true);
+            fail("Источник не ответил. Проверьте соединение");
+        }, 20000);
         try {
             loader.load(refresh, (tracks, error) -> {
+                answered.set(true);
                 if (error != null || tracks == null || tracks.isEmpty()) {
-                    fail(error == null ? "Ничего не найдено" : error);
+                    if (data == null || data.isEmpty()) fail(error == null ? "Ничего не найдено" : error);
+                    else setRefreshing(false);
                     return;
                 }
                 data = tracks;

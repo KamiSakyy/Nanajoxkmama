@@ -371,6 +371,14 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
 
     @Override
     public void onBindViewHolder(@NonNull VH holder, int position) {
+        try {
+            bindSafe(holder, position);
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
+    }
+
+    private void bindSafe(@NonNull VH holder, int position) {
         Block block = blocks.get(position);
         Context context = holder.itemView.getContext();
         String signature = block.signature();

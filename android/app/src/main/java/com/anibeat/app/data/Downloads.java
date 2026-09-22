@@ -197,7 +197,8 @@ public final class Downloads {
             String candidate = url.substring(dot + 1).replaceAll("[^a-zA-Z0-9]", "");
             if (candidate.length() >= 2 && candidate.length() <= 4) ext = candidate.toLowerCase();
         }
-        String raw = track.artistNames() + " - " + track.title + " [" + track.anime.name + " " + track.themeSlug + "]";
+        String animeName = track.anime == null ? "" : track.anime.name;
+        String raw = track.artistNames() + " - " + track.title + " [" + animeName + " " + track.themeSlug + "]";
         raw = raw.replaceAll("[\\\\/:*?\"<>|]+", "").replaceAll("\\s+", " ").trim();
         if (raw.length() > 150) raw = raw.substring(0, 150);
         return raw + "." + ext;

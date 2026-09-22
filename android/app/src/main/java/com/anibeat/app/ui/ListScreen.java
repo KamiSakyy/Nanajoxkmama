@@ -177,6 +177,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
     }
 
     protected void render(List<Block> blocks, List<Models.Track> tracks) {
+        watchdogToken = new Object();
         hideLoading();
         Ui.safe(() -> {
             warmMeta(blocks, tracks);
@@ -191,6 +192,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
 
     /** Показать ошибку без падения приложения. */
     protected void fail(String message) {
+        watchdogToken = new Object();
         hideLoading();
         Ui.postSafe(() -> {
             if (adapter.getItemCount() > 0 && adapter.hasContent()) {
@@ -227,7 +229,21 @@ public abstract class ListScreen extends FrameLayout implements Screen {
             adapter.submit(blocks, new ArrayList<>());
         });
         loader.postDelayed(loaderTask, 260);
+        armWatchdog();
     }
+
+    /** Сторож: если источник молчит — на экране появится ошибка с «Повторить», а не вечная «Загрузка». */
+    private void armWatchdog() {
+        final Object token = new Object();
+        watchdogToken = token;
+        loader.postDelayed(() -> {
+            if (watchdogToken != token) return;
+            if (adapter.getItemCount() > 0) return;
+            fail("Источник не отвечает. Проверьте соединение");
+        }, 20000);
+    }
+
+    private Object watchdogToken = new Object();
 
     private void hideLoading() {
         if (loaderTask != null) {

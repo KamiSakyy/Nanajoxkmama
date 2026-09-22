@@ -15,7 +15,7 @@ public final class Share {
 
     public static String track(Context context, Models.Track track) {
         String text = track.title + " — " + track.artistNames() + "\n"
-                + track.anime.name + " · " + track.themeSlug + "\nСлушаю в AniBeat";
+                + (track.anime == null ? "" : track.anime.name + " · ") + track.themeSlug + "\nСлушаю в AniBeat";
         try {
             Intent send = new Intent(Intent.ACTION_SEND);
             send.setType("text/plain");

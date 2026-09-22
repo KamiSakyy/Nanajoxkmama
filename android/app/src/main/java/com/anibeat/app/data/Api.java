@@ -82,10 +82,26 @@ public final class Api {
         return map;
     }
 
+    /**
+     * Дополняет параметры запроса: принимает и карты (наборы полей F/FR), и пары «ключ, значение».
+     * Без этого наборы полей терялись и источник отдавал полные объекты — запросы были огромными.
+     */
     private static Map<String, String> fields(Map<String, String> base, Object... extra) {
         Map<String, String> map = new LinkedHashMap<>(base);
-        for (int i = 0; i + 1 < extra.length; i += 2) {
-            if (extra[i + 1] != null) map.put(String.valueOf(extra[i]), String.valueOf(extra[i + 1]));
+        List<Object> pairs = new ArrayList<>();
+        for (Object item : extra) {
+            if (item instanceof Map) {
+                for (Map.Entry<?, ?> entry : ((Map<?, ?>) item).entrySet()) {
+                    if (entry.getKey() != null && entry.getValue() != null) {
+                        map.put(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
+                    }
+                }
+            } else {
+                pairs.add(item);
+            }
+        }
+        for (int i = 0; i + 1 < pairs.size(); i += 2) {
+            if (pairs.get(i + 1) != null) map.put(String.valueOf(pairs.get(i)), String.valueOf(pairs.get(i + 1)));
         }
         return map;
     }
@@ -295,6 +311,7 @@ public final class Api {
     public static void attachIds(List<Models.Track> tracks, Runnable done) {
         List<String> need = new ArrayList<>();
         for (Models.Track t : tracks) {
+            if (t == null || t.anime == null || t.anime.slug == null) continue;
             if (t.anime.malId == null && !need.contains(t.anime.slug)) need.add(t.anime.slug);
         }
         if (need.isEmpty()) {
@@ -303,13 +320,14 @@ public final class Api {
         }
         resolveIds(need, (map, err) -> {
             for (Models.Track t : tracks) {
+                if (t == null || t.anime == null) continue;
                 if (t.anime.malId != null) continue;
                 int[] ids = map.get(t.anime.slug);
                 t.anime.malId = ids != null && ids[0] > 0 ? ids[0] : null;
                 t.anime.anilistId = ids != null && ids[1] > 0 ? ids[1] : null;
             }
             List<Integer> warm = new ArrayList<>();
-            for (Models.Track t : tracks) warm.add(t.anime.malId);
+            for (Models.Track t : tracks) if (t != null && t.anime != null) warm.add(t.anime.malId);
             Meta.warm(warm);
             if (done != null) done.run();
         });
@@ -471,14 +489,25 @@ public final class Api {
                 return;
             }
             Models.ArtistDetail d = new Models.ArtistDetail();
-            Models.ArtistSummary s = toArtistSummary(ar);
+            Models.ArtistSummary s;
+            try {
+                s = toArtistSummary(ar);
+            } catch (Throwable t) {
+                cb.on(null, "Ответ источника не разобран");
+                return;
+            }
             d.id = s.id;
             d.name = s.name;
             d.slug = s.slug;
             d.image = s.image;
             d.imageSmall = s.imageSmall;
             d.information = ar.isNull("information") ? null : ar.optString("information", null);
-            JSONArray songs = ar.optJSONArray("songs");
+            JSONArray songs;
+            try {
+                songs = ar.optJSONArray("songs");
+            } catch (Throwable t) {
+                songs = null;
+            }
             Set<String> seen = new HashSet<>();
             List<Models.Track> tracks = new ArrayList<>();
             if (songs != null) for (int i = 0; i < songs.length(); i++) {
@@ -499,8 +528,8 @@ public final class Api {
                 }
             }
             tracks.sort((a, b) -> {
-                int ya = a.anime.year == null ? 0 : a.anime.year;
-                int yb = b.anime.year == null ? 0 : b.anime.year;
+                int ya = a == null || a.anime == null || a.anime.year == null ? 0 : a.anime.year;
+                int yb = b == null || b.anime == null || b.anime.year == null ? 0 : b.anime.year;
                 return yb - ya;
             });
             d.tracks = tracks;
@@ -715,6 +744,82 @@ public final class Api {
         });
     }
 
+    /**
+     * Треки нескольких аниме (подборки) — грузим частями по несколько слагов:
+     * мелкие запросы приходят быстро, треки показываются сразу, больших таймаутов нет.
+     */
+    public static void getTracksForAnimeSlugsProgressive(List<String> slugs, int chunkSize,
+                                                         Cb<List<Models.Track>> onPartial,
+                                                         Cb<List<Models.Track>> onDone) {
+        List<String> clean = new ArrayList<>();
+        if (slugs != null) for (String slug : slugs) if (slug != null && !slug.isEmpty()) clean.add(slug);
+        if (clean.isEmpty()) {
+            if (onDone != null) onDone.on(new ArrayList<>(), null);
+            return;
+        }
+        final int size = Math.max(1, chunkSize);
+        List<List<String>> chunks = new ArrayList<>();
+        for (int i = 0; i < clean.size(); i += size) {
+            chunks.add(new ArrayList<>(clean.subList(i, Math.min(clean.size(), i + size))));
+        }
+        final List<Models.Track> collected = java.util.Collections.synchronizedList(new ArrayList<>());
+        final java.util.concurrent.atomic.AtomicInteger left = new java.util.concurrent.atomic.AtomicInteger(chunks.size());
+        final java.util.concurrent.atomic.AtomicInteger failed = new java.util.concurrent.atomic.AtomicInteger();
+        final String[] lastError = new String[1];
+        for (final List<String> chunk : chunks) {
+            getTracksForAnimeSlugs(chunk, (tracks, error) -> {
+                if (tracks != null && !tracks.isEmpty()) {
+                    collected.addAll(tracks);
+                    List<Models.Track> snapshot = new ArrayList<>(collected);
+                    if (onPartial != null) onPartial.on(snapshot, null);
+                } else if (error != null) {
+                    failed.incrementAndGet();
+                    lastError[0] = error;
+                }
+                if (left.decrementAndGet() == 0 && onDone != null) {
+                    List<Models.Track> all = new ArrayList<>(collected);
+                    onDone.on(all, all.isEmpty() && failed.get() > 0 ? lastError[0] : null);
+                }
+            });
+        }
+    }
+
+    /** Ссылка на звук конкретной темы: если её не было в общем ответе — дозапрашиваем. */
+    public static void attachAudio(final Models.Track track) {
+        if (track == null) return;
+        String videoId = videoIdOf(track);
+        if (videoId == null) return;
+        String url = Net.buildUrl(BASE, "/video/" + Net.encode(videoId), fields(params("include", "audio"), F));
+        Net.getLow(url, DAY, 30 * DAY, (json, error) -> {
+            try {
+                if (json == null) return;
+                JSONObject video = json.optJSONObject("video");
+                if (video == null) return;
+                JSONObject audio = video.optJSONObject("audio");
+                String link = audio == null ? null : audio.optString("link", null);
+                if (link != null && !link.isEmpty() && "null".equals(link)) link = null;
+                if (link != null) track.audioUrl = link;
+                if (track.videoUrl == null || track.videoUrl.isEmpty()) {
+                    String videoLink = video.optString("link", null);
+                    if (videoLink != null && !videoLink.isEmpty() && !"null".equals(videoLink)) track.videoUrl = videoLink;
+                }
+            } catch (Throwable t) {
+                Ui.report(t);
+            }
+        });
+    }
+
+    /** id видео из составного id трека (themeId:entryId:videoId). */
+    private static String videoIdOf(Models.Track track) {
+        if (track == null || track.id == null) return null;
+        int first = track.id.indexOf(':');
+        if (first < 0) return null;
+        int second = track.id.indexOf(':', first + 1);
+        if (second < 0) return null;
+        String id = track.id.substring(second + 1);
+        return id.isEmpty() ? null : id;
+    }
+
     public static void getSeasonTracks(int year, String season, Cb<List<Models.Track>> cb) {
         String url = Net.buildUrl(BASE, "/anime", fields(params(
                 "filter[year]", year,
@@ -798,7 +903,7 @@ public final class Api {
         MIXES.add(new Models.Mix("epic", "Эпик и драма", "AoT · FMA · Code Geass", new String[]{"shingeki_no_kyojin", "fullmetal_alchemist_brotherhood", "code_geass_hangyaku_no_lelouch", "vinland_saga", "death_note", "psycho_pass", "tokyo_ghoul", "monster", "berserk", "tengen_toppa_gurren_lagann"}));
         MIXES.add(new Models.Mix("chill", "Чилл и романтика", "Toradora · Clannad · Frieren", new String[]{"toradora", "clannad", "horimiya", "sousou_no_frieren", "violet_evergarden", "kaguya_sama_wa_kokurasetai_tensai_tachi_no_renai_zunousen", "k_on", "angel_beats", "nichijou", "suzumiya_haruhi_no_yuuutsu"}));
         MIXES.add(new Models.Mix("modern", "Новая волна", "Chainsaw Man · Oshi no Ko", new String[]{"chainsaw_man", "oshi_no_ko", "dandadan", "bocchi_the_rock", "spy_x_family", "cyberpunk_edgerunners", "kaijuu_8_gou", "ore_dake_level_up_na_ken", "tokyo_revengers", "mushoku_tensei_isekai_ittara_honki_dasu"}));
-        MIXES.add(new Models.Mix("classic", "Классика", "Bebop · Evangelion · Champloo", new String[]{"cowboy_bebop", "neon_genesis_evangelion", "samurai_champloo", "serial_experiments_lain", "hunter_x_hunter_2011", "gintama", "soul_eater", "durara", "no_game_no_life"}));
+        MIXES.add(new Models.Mix("classic", "Классика", "Bebop · Evangelion · Champloo", new String[]{"cowboy_bebop", "neon_genesis_evangelion", "samurai_champloo", "serial_experiments_lain", "hunter_x_hunter_2011", "gintama", "soul_eater", "durarara", "no_game_no_life"}));
 
         String[] legends = {"shingeki_no_kyojin", "kimetsu_no_yaiba", "jujutsu_kaisen", "fullmetal_alchemist_brotherhood", "death_note",
                 "sousou_no_frieren", "chainsaw_man", "spy_x_family", "boku_no_hero_academia", "hunter_x_hunter_2011",
@@ -808,7 +913,7 @@ public final class Api {
                 "dragon_ball_z", "yakusoku_no_neverland", "dr_stone", "vinland_saga", "cyberpunk_edgerunners", "dandadan",
                 "one_piece", "tokyo_revengers", "gintama", "fairy_tail", "noragami", "psycho_pass", "samurai_champloo",
                 "ore_dake_level_up_na_ken", "kaguya_sama_wa_kokurasetai_tensai_tachi_no_renai_zunousen", "nanatsu_no_taizai",
-                "durara", "soul_eater", "ao_no_exorcist", "akame_ga_kill", "kill_la_kill", "tengen_toppa_gurren_lagann",
+                "durarara", "soul_eater", "ao_no_exorcist", "akame_ga_kill", "kill_la_kill", "tengen_toppa_gurren_lagann",
                 "monster", "berserk", "horimiya", "mushoku_tensei_isekai_ittara_honki_dasu", "tensei_shitara_slime_datta_ken",
                 "kaijuu_8_gou", "kuroko_no_basket", "nichijou", "suzumiya_haruhi_no_yuuutsu", "serial_experiments_lain"};
         java.util.Collections.addAll(LEGEND_SLUGS, legends);

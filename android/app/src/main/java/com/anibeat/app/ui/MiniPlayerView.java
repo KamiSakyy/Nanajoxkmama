@@ -20,7 +20,7 @@ import com.google.android.material.card.MaterialCardView;
 /** Мини-плеер над нижним меню. */
 public class MiniPlayerView extends FrameLayout {
 
-    public static final int HEIGHT_DP = 60;
+    public static final int HEIGHT_DP = 64;
 
     private final ImageView cover;
     private final TextView title;
@@ -60,6 +60,7 @@ public class MiniPlayerView extends FrameLayout {
         title.setTextSize(13.5f);
         title.setTextColor(Theme.ON);
         title.setSingleLine(true);
+        title.setIncludeFontPadding(false);
         title.setEllipsize(TextUtils.TruncateAt.MARQUEE);
         title.setMarqueeRepeatLimit(3);
         title.setSelected(true);
@@ -68,6 +69,7 @@ public class MiniPlayerView extends FrameLayout {
         subtitle = new TextView(context);
         subtitle.setTextSize(11.5f);
         subtitle.setTextColor(Theme.ON_VARIANT);
+        subtitle.setIncludeFontPadding(false);
         subtitle.setSingleLine(true);
         subtitle.setEllipsize(TextUtils.TruncateAt.END);
         column.addView(subtitle);

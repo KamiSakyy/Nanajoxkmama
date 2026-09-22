@@ -667,7 +667,9 @@ public final class Sheets {
 
     /** Что показать рядом с названием: исполнитель и аниме. */
     public static String plainSubtitle(Models.Track track) {
-        return TextUtils.isEmpty(track.artistNames()) ? track.anime.name : track.artistNames() + " · " + track.anime.name;
+        String animeName = track.anime == null ? "" : track.anime.name;
+        if (TextUtils.isEmpty(animeName)) return track.artistNames();
+        return TextUtils.isEmpty(track.artistNames()) ? animeName : track.artistNames() + " · " + animeName;
     }
 
     /** Метаданные аниме, если они уже загружены. */

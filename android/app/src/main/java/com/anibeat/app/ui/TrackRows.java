@@ -29,8 +29,10 @@ public final class TrackRows {
     public static final class Holder {
         public final View view;
         private final TextView marker;
+        private final ImageView markerIcon;
         private final ImageView cover;
         private final ImageView playOverlay;
+        private final View playScrim;
         private final TextView title;
         private final TextView subtitle;
         private final TextView badge;
@@ -44,12 +46,15 @@ public final class TrackRows {
         private String shownProgress = "";
         private String shownTone = "\u0000";
 
-        Holder(View view, TextView marker, ImageView cover, ImageView playOverlay, TextView title,
-               TextView subtitle, TextView badge, TextView progress, ImageView done, ImageView menu) {
+        Holder(View view, TextView marker, ImageView markerIcon, ImageView cover, ImageView playOverlay,
+               View playScrim, TextView title, TextView subtitle, TextView badge, TextView progress,
+               ImageView done, ImageView menu) {
             this.view = view;
             this.marker = marker;
+            this.markerIcon = markerIcon;
             this.cover = cover;
             this.playOverlay = playOverlay;
+            this.playScrim = playScrim;
             this.title = title;
             this.subtitle = subtitle;
             this.badge = badge;
@@ -84,13 +89,24 @@ public final class TrackRows {
             currentTrack = track;
             boolean active = playing;
             boolean isPlaying = active && com.anibeat.app.player.Player.isPlaying();
-            marker.setTextColor(active ? Theme.ACCENT : Theme.ON_DIM);
-            marker.setText(active ? (isPlaying ? "\u25b6" : "\u23f8") : (number > 0 ? String.valueOf(number) : "\u2022"));
+            marker.setVisibility(active ? View.GONE : View.VISIBLE);
+            marker.setTextColor(Theme.ON_DIM);
+            marker.setText(number > 0 ? String.valueOf(number) : "");
+            if (markerIcon != null) {
+                markerIcon.setVisibility(active ? View.VISIBLE : View.GONE);
+                markerIcon.setImageResource(isPlaying
+                        ? com.anibeat.app.R.drawable.ic_graphic_eq
+                        : com.anibeat.app.R.drawable.ic_play_arrow);
+                markerIcon.setColorFilter(Theme.ACCENT);
+            }
             if (playOverlay != null) {
                 playOverlay.setImageResource(isPlaying
                         ? com.anibeat.app.R.drawable.ic_pause
                         : com.anibeat.app.R.drawable.ic_play_arrow);
-                playOverlay.setVisibility(active ? View.VISIBLE : View.GONE);
+                playOverlay.setColorFilter(0xFFFFFFFF);
+            }
+            if (playScrim != null) {
+                playScrim.setBackgroundColor(active ? 0xCC000000 : 0x66000000);
             }
 
             String name = track.title == null || track.title.isEmpty() ? track.themeSlug : track.title;
@@ -146,21 +162,32 @@ public final class TrackRows {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         int pad = Theme.dp(context, 12);
-        row.setPadding(pad, Theme.dp(context, 6), Theme.dp(context, 6), Theme.dp(context, 6));
-        row.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 64)));
+        row.setPadding(pad, Theme.dp(context, 8), Theme.dp(context, 6), Theme.dp(context, 8));
+        row.setMinimumHeight(Theme.dp(context, 72));
+        row.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         FrameLayout markerBox = new FrameLayout(context);
         markerBox.setLayoutParams(new LinearLayout.LayoutParams(Theme.dp(context, 28), Theme.dp(context, 28)));
         TextView marker = new TextView(context);
         marker.setTextSize(11.5f);
+        marker.setTextColor(Theme.ON_DIM);
+        marker.setIncludeFontPadding(false);
         marker.setGravity(Gravity.CENTER);
         markerBox.addView(marker, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        ImageView markerIcon = new ImageView(context);
+        markerIcon.setVisibility(View.GONE);
+        markerIcon.setColorFilter(Theme.ACCENT);
+        FrameLayout.LayoutParams markerIconParams = new FrameLayout.LayoutParams(
+                Theme.dp(context, 17), Theme.dp(context, 17));
+        markerIconParams.gravity = Gravity.CENTER;
+        markerBox.addView(markerIcon, markerIconParams);
         row.addView(markerBox);
 
         FrameLayout coverBox = new FrameLayout(context);
         LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(
-                Theme.dp(context, 46), Theme.dp(context, 46));
+                Theme.dp(context, 50), Theme.dp(context, 50));
         coverParams.rightMargin = Theme.dp(context, 12);
         coverBox.setLayoutParams(coverParams);
 
@@ -169,14 +196,13 @@ public final class TrackRows {
         coverBox.addView(cover, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        // Кнопка «играть/пауза» прямо на обложке — как в карточке песни на сайте.
+        // Кнопка «играть/пауза» прямо на обложке — видна всегда, как в карточке песни на сайте.
         FrameLayout overlay = new FrameLayout(context);
-        overlay.setBackgroundColor(0x8A000000);
-        overlay.setVisibility(View.GONE);
+        overlay.setBackgroundColor(0x66000000);
         ImageView playOverlay = new ImageView(context);
         playOverlay.setImageResource(com.anibeat.app.R.drawable.ic_play_arrow);
         playOverlay.setColorFilter(0xFFFFFFFF);
-        int playPad = Theme.dp(context, 11);
+        int playPad = Theme.dp(context, 13);
         playOverlay.setPadding(playPad, playPad, playPad, playPad);
         overlay.addView(playOverlay, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -196,6 +222,7 @@ public final class TrackRows {
         title.setTextColor(Theme.ON);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setSingleLine(true);
+        title.setIncludeFontPadding(false);
         title.setEllipsize(TextUtils.TruncateAt.END);
         title.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         head.addView(title);
@@ -205,6 +232,7 @@ public final class TrackRows {
         subtitle.setTextSize(11.5f);
         subtitle.setTextColor(Theme.ON_VARIANT);
         subtitle.setSingleLine(true);
+        subtitle.setIncludeFontPadding(false);
         subtitle.setEllipsize(TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -215,6 +243,10 @@ public final class TrackRows {
         TextView badge = new TextView(context);
         badge.setTextSize(10f);
         badge.setTextColor(Theme.ON_VARIANT);
+        badge.setSingleLine(true);
+        badge.setIncludeFontPadding(false);
+        badge.setMaxWidth(Theme.dp(context, 70));
+        badge.setEllipsize(TextUtils.TruncateAt.END);
         badge.setBackground(Ui.rounded(context, Theme.SURFACE_3, 7f));
         badge.setPadding(Theme.dp(context, 7), Theme.dp(context, 3), Theme.dp(context, 7), Theme.dp(context, 3));
         LinearLayout.LayoutParams badgeParams = new LinearLayout.LayoutParams(
@@ -251,7 +283,8 @@ public final class TrackRows {
         menuParams.leftMargin = Theme.dp(context, 4);
         row.addView(menu, menuParams);
 
-        final Holder holder = new Holder(row, marker, cover, playOverlay, title, subtitle, badge, progress, done, menu);
+        final Holder holder = new Holder(row, marker, markerIcon, cover, playOverlay, overlay, title,
+                subtitle, badge, progress, done, menu);
         row.setOnClickListener(v -> {
             if (holder.action != null) holder.action.run();
         });
