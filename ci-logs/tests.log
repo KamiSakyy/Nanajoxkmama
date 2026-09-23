@@ -8,10 +8,10 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
@@ -29,36 +29,32 @@ Daemon will be stopped at the end of the build
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
-> Task :app:bundleDebugClassesToCompileJar
 > Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
 > Task :app:packageDebugUnitTestForUnitTest
-> Task :app:compileDebugUnitTestJavaWithJavac
-> Task :app:generateDebugUnitTestConfig
 
-> Task :app:testDebugUnitTest
+> Task :app:compileDebugUnitTestJavaWithJavac FAILED
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/src/test/java/com/anibeat/app/SmokeTest.java:189: error: cannot find symbol
+        if (opened instanceof ListScreen && !((ListScreen) opened).hasBackButton()) {
+                              ^
+  symbol:   class ListScreen
+  location: class SmokeTest
+/home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/src/test/java/com/anibeat/app/SmokeTest.java:189: error: cannot find symbol
+        if (opened instanceof ListScreen && !((ListScreen) opened).hasBackButton()) {
+                                               ^
+  symbol:   class ListScreen
+  location: class SmokeTest
+2 errors
 
-SmokeTest > appOpensAndTabsWork STANDARD_OUT
-    === ОТЧЁТ ===
-    вкладка Главная: элементов 30 ← первый заход
-    вкладка Поиск: элементов 5 ← первый заход
-    вкладка Обзор: элементов 8 ← первый заход
-    вкладка Медиатека: элементов 3 ← первый заход
-    вкладка Главная: элементов 30 ← возврат
-    вкладка Поиск: элементов 5 ← возврат
-    вкладка Обзор: элементов 8 ← возврат
-    вкладка Медиатека: элементов 3 ← возврат
-    скачанное: элементов 5
-    после аниме-ошибки: элементов 3
-    первый текст медиатеки: Медиатека
-    финал, вкладка Главная: элементов 30
-    финал, вкладка Поиск: элементов 5
-    финал, вкладка Обзор: элементов 8
-    финал, вкладка Медиатека: элементов 5
-    исполнитель: элементов 0
-    подборка: Главная | Поиск | Обзор | Медиатека | Сейчас играет | Ничего не играет | 0:00 | 0:00
-    тексты Главной: AniBeat | Жанры | Экшен | Фантастика | Романтика | Комедия
-    перехваченных сбоев: 0
-    нажатий: 133, падений: 0
+FAILURE: Build failed with an exception.
 
-BUILD SUCCESSFUL in 1m 24s
-24 actionable tasks: 23 executed, 1 from cache
+* What went wrong:
+Execution failed for task ':app:compileDebugUnitTestJavaWithJavac'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+
+BUILD FAILED in 50s
+22 actionable tasks: 21 executed, 1 from cache
