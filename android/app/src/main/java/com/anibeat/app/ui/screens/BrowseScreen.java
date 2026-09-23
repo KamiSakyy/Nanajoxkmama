@@ -26,7 +26,6 @@ public class BrowseScreen extends ListScreen {
     @Override
     protected void load(boolean refresh) {
         List<Block> blocks = new ArrayList<>();
-        blocks.add(Block.header("Обзор"));
 
         List<Block.Row> sections = new ArrayList<>();
         Block.Row novelties = new Block.Row("novelties", "Новинки", "Свежие темы за последнее время", R.drawable.ic_whatshot);

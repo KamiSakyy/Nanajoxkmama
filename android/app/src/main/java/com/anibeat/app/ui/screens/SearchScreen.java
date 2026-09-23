@@ -204,7 +204,6 @@ public class SearchScreen extends ListScreen {
 
     private void showStart() {
         List<Block> blocks = new ArrayList<>();
-        blocks.add(Block.header("Поиск"));
         List<Block.Row> rows = new ArrayList<>();
         for (final String recent : Library.recentSearches()) {
             Block.Row row = new Block.Row(recent, recent, "Недавний запрос");

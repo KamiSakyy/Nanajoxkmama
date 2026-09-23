@@ -385,10 +385,9 @@ public class MainActivity extends AppCompatActivity implements Host {
 
     private void pushSafe(Screen screen, boolean animate) {
         Screen current = currentScreen();
-        if (current != null) {
-            current.onHide();
-            stack.add(current);
-        }
+        if (current != null && current != screen) current.onHide();
+        // В стеке лежат именно открытые поверх вкладок экраны — возврат работает по порядку.
+        if (!stack.contains(screen)) stack.add(screen);
         View view = screen.view();
         if (screen instanceof ListScreen) {
             ((ListScreen) screen).setBackAction(this::pop);
@@ -414,10 +413,13 @@ public class MainActivity extends AppCompatActivity implements Host {
     public void pop() {
         try {
             if (stack.isEmpty()) return;
-            Screen leaving = currentScreen();
-            Screen back = stack.remove(stack.size() - 1);
-            final View leavingView = leaving == null ? null : leaving.view();
+            final Screen leaving = stack.remove(stack.size() - 1);
+            Screen back = currentScreen();
+            if (back == null) return;
+            final View leavingView = leaving.view();
             View backView = back.view();
+            if (backView.getParent() == null) content.addView(backView, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             hideExcept(backView);
             backView.setAlpha(1f);
             backView.setTranslationX(0f);
@@ -431,7 +433,7 @@ public class MainActivity extends AppCompatActivity implements Host {
                             content.removeView(gone);
                             gone.setAlpha(1f);
                             gone.setTranslationX(0f);
-                            if (leaving != null) leaving.release();
+                            leaving.release();
                         }))
                         .start();
             }
@@ -442,9 +444,15 @@ public class MainActivity extends AppCompatActivity implements Host {
         }
     }
 
+    /** Экран, который сейчас видно: верхний открытый или вкладка. */
     public Screen currentScreen() {
         if (!stack.isEmpty()) return stack.get(stack.size() - 1);
         return tabs[tabIndex];
+    }
+
+    /** Сколько экранов открыто поверх вкладки. */
+    public int stackDepth() {
+        return stack.size();
     }
 
     public Screen screenAt(int index) {

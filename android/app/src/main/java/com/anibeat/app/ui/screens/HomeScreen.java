@@ -37,7 +37,6 @@ public class HomeScreen extends ListScreen {
         failed = 0;
         if (refresh) setRefreshing(true);
 
-        blocks.add(Block.header("AniBeat"));
 
         Block genres = Block.chips("Жанры", genreIds(), genreNames(), null);
         genres.onChip = (id, label) -> host.openGenre(id, label);
@@ -49,7 +48,7 @@ public class HomeScreen extends ListScreen {
         List<Block.Row> shelf = new ArrayList<>();
         int offline = Downloads.offlineTracks().size();
         Block.Row downloaded = new Block.Row("downloads", "Скачанное",
-                offline == 0 ? "Пока пусто — скачайте трек из меню «⋮»"
+                offline == 0 ? "Пусто"
                         : Format.plural(offline, "трек", "трека", "треков") + " · " + Downloads.formatBytes(Downloads.offlineTotalSize()),
                 com.anibeat.app.R.drawable.ic_download_done);
         downloaded.action = () -> host.openLibraryTab(LibraryScreen.TAB_DOWNLOADS);

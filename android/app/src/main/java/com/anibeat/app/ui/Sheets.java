@@ -431,7 +431,7 @@ public final class Sheets {
                 if (holder[0] != null) holder[0].dismiss();
             }));
             if (queue.isEmpty()) {
-                body.addView(paragraph(context, "Очередь пуста. Включите любой трек — он появится здесь."));
+                body.addView(paragraph(context, "Очередь пуста"));
                 return;
             }
             body.addView(paragraph(context, "Сейчас в очереди: " + Format.plural(queue.size(), "трек", "трека", "треков")));

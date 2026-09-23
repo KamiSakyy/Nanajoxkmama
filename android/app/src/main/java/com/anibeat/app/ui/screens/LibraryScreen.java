@@ -51,7 +51,6 @@ public class LibraryScreen extends ListScreen {
         Ui.safe(() -> {
             List<Block> blocks = new ArrayList<>();
             List<Models.Track> trackList = new ArrayList<>();
-            blocks.add(Block.header("Медиатека"));
             Block chips = Block.chips("", tabIds(), tabLabels(), tab);
             chips.onChip = (id, label) -> {
                 tab = id;
@@ -83,7 +82,7 @@ public class LibraryScreen extends ListScreen {
             if (TAB_FAVORITES.equals(tab)) {
                 List<Models.Track> favorites = Library.favorites();
                 if (favorites.isEmpty()) {
-                    blocks.add(Block.empty("В избранном пусто", "Нажмите ♥ в плеере или удерживайте трек в списке"));
+                    blocks.add(Block.empty("В избранном пусто", ""));
                 } else {
                     Block.Row shuffle = new Block.Row("shuffle", "Перемешать избранное", Format.plural(favorites.size(), "трек", "трека", "треков"), R.drawable.ic_shuffle);
                     shuffle.action = () -> host.playTrack(favorites.get(0), com.anibeat.app.ui.Format.shuffled(favorites), 0);
@@ -136,7 +135,7 @@ public class LibraryScreen extends ListScreen {
             } else {
                 List<Models.Track> history = Library.history();
                 if (history.isEmpty()) {
-                    blocks.add(Block.empty("История пуста", "Включите любой трек — он появится здесь"));
+                    blocks.add(Block.empty("История пуста", ""));
                 } else {
                     Block.Row clear = new Block.Row("clear", "Очистить историю", Format.plural(history.size(), "запись", "записи", "записей"), R.drawable.ic_delete);
                     clear.action = () -> {
