@@ -182,6 +182,28 @@ public class SmokeTest {
         clickSafely("возврат на Главную", () -> activity.showTab(0, false));
         layout(activity);
         report.add("тексты Главной: " + visibleTexts(activity, 6));
+        // Тема без загруженных видео не должна пропадать из списка песен
+        try {
+            org.json.JSONObject theme = new org.json.JSONObject();
+            theme.put("id", 42);
+            theme.put("slug", "ED1");
+            theme.put("type", "ED");
+            org.json.JSONObject anime = new org.json.JSONObject();
+            anime.put("id", 5);
+            anime.put("name", "Пустое аниме");
+            anime.put("slug", "empty_anime");
+            anime.put("images", new org.json.JSONArray());
+            org.json.JSONArray themes = new org.json.JSONArray();
+            themes.put(theme);
+            anime.put("animethemes", themes);
+            java.util.List<com.anibeat.app.data.Models.Track> parsed =
+                    com.anibeat.app.data.Api.animeToTracks(anime, true);
+            report.add("тема без видео: треков " + parsed.size());
+            if (parsed.isEmpty()) failures.add("тема без видео не показана");
+        } catch (Throwable t) {
+            failures.add("разбор темы без видео упал: " + t);
+        }
+
         // На открытых поверх вкладок экранах есть кнопка «назад»
         clickSafely("аниме-экран", () -> activity.openAnime(animeRef("naruto")));
         layout(activity);

@@ -611,7 +611,7 @@ public class MainActivity extends AppCompatActivity implements Host {
         if (mix == null) return;
         push(new TracksScreen(this, this, mix.title, "Подборка: " + mix.subtitle, (refresh, sink) -> {
             List<String> slugs = mix.slugs == null ? new ArrayList<>() : Arrays.asList(mix.slugs);
-            com.anibeat.app.data.Api.getTracksForAnimeSlugsProgressive(slugs, 3,
+            com.anibeat.app.data.Api.getTracksForAnimeSlugsProgressive(slugs, 2,
                     (partial, error) -> {
                         if (partial != null && !partial.isEmpty()) sink.tracks(partial, null);
                     },

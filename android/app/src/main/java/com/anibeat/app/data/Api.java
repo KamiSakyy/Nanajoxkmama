@@ -56,16 +56,20 @@ public final class Api {
     private static final Map<String, String> FR = new HashMap<>();
 
     static {
-        F.put("fields[anime]", "id,name,slug,year,season,media_format");
-        F.put("fields[animetheme]", "id,slug,type,sequence");
-        F.put("fields[song]", "id,title");
-        F.put("fields[artist]", "id,name,slug");
-        F.put("fields[animethemeentry]", "id,version,episodes,nsfw,spoiler");
-        F.put("fields[video]", "id,link,resolution,tags,nc");
-        F.put("fields[audio]", "id,link");
+        // В наборе полей обязаны быть перечислены и связи (images, animethemes, videos, audio,
+        // song, artists): иначе источник не отдаёт их, и у аниме пропадают песни и аудио.
+        F.put("fields[anime]", "id,name,slug,year,season,media_format,synopsis,images,resources,animethemes,studios,series");
+        F.put("fields[animetheme]", "id,slug,type,sequence,created_at,song,animethemeentries,anime");
+        F.put("fields[song]", "id,title,artists,animethemes");
+        F.put("fields[artist]", "id,name,slug,information,images,songs");
+        F.put("fields[animethemeentry]", "id,version,episodes,nsfw,spoiler,videos,animetheme");
+        F.put("fields[video]", "id,basename,link,resolution,tags,nc,audio,animethemeentry,mimetype,size,overlap");
+        F.put("fields[audio]", "id,basename,link,mimetype,size");
         F.put("fields[image]", "id,facet,link");
+        F.put("fields[studio]", "id,name,slug");
+        F.put("fields[series]", "id,name,slug");
         FR.putAll(F);
-        FR.put("fields[resource]", "site,link,external_id");
+        FR.put("fields[resource]", "site,link,external_id,anime");
     }
 
     private static final String THEME_INCLUDE = "anime.images,song.artists,animethemeentries.videos.audio";
@@ -181,7 +185,12 @@ public final class Api {
             JSONObject audio = v.optJSONObject("audio");
             if (audio != null && audio.optString("link", "").length() > 0) withAudio.add(v);
         }
-        List<JSONObject> pool = !withAudio.isEmpty() ? withAudio : all;
+        List<JSONObject> withLink = new ArrayList<>();
+        for (JSONObject v : all) {
+            if (v.optString("link", "").length() > 0) withLink.add(v);
+        }
+        // Сначала видео со звуком, затем любые со ссылкой, затем всё остальное.
+        List<JSONObject> pool = !withAudio.isEmpty() ? withAudio : (!withLink.isEmpty() ? withLink : all);
         JSONObject best = null;
         int bestScore = Integer.MIN_VALUE;
         for (JSONObject v : pool) {
@@ -201,49 +210,32 @@ public final class Api {
         String coverSmall = pickImage(anime.optJSONArray("images"), "Small Cover");
         Models.AnimeRef ref = toAnimeRef(anime);
         JSONArray entries = theme.optJSONArray("animethemeentries");
-        if (entries == null) return out;
+        if (entries == null || entries.length() == 0) {
+            // Видео у темы ещё не загружено — песня всё равно должна быть видна в списке.
+            Models.Track only = baseTrack(theme, song, ref, cover, coverSmall);
+            out.add(only);
+            return out;
+        }
         for (int i = 0; i < entries.length(); i++) {
             JSONObject entry = entries.optJSONObject(i);
             if (entry == null) continue;
             JSONObject video = bestVideo(entry.optJSONArray("videos"));
-            if (video == null) continue;
             Models.Track t = new Models.Track();
-            t.themeId = theme.optLong("id");
-            t.id = t.themeId + ":" + entry.optLong("id") + ":" + video.optLong("id");
-            t.themeSlug = theme.optString("slug");
-            t.type = theme.optString("type", "OP");
-            t.sequence = theme.has("sequence") && !theme.isNull("sequence") ? theme.optInt("sequence") : null;
-            String created = theme.optString("created_at", null);
-            if (created == null || created.isEmpty() || "null".equals(created)) {
-                created = entry.optString("created_at", null);
+            copyTheme(t, theme, song, ref, cover, coverSmall);
+            String entryCreated = entry.optString("created_at", null);
+            if (t.createdAt == null && entryCreated != null && !entryCreated.isEmpty() && !"null".equals(entryCreated)) {
+                t.createdAt = entryCreated;
             }
-            t.createdAt = created == null || "null".equals(created) ? null : created;
-            String title = song != null ? song.optString("title", null) : null;
-            t.title = (title == null || title.isEmpty()) ? t.themeSlug : title;
-            if (song != null) {
-                JSONArray artists = song.optJSONArray("artists");
-                if (artists != null) {
-                    for (int j = 0; j < artists.length(); j++) {
-                        JSONObject ar = artists.optJSONObject(j);
-                        if (ar == null) continue;
-                        Models.ArtistRef artist = new Models.ArtistRef();
-                        artist.id = ar.optLong("id");
-                        artist.name = ar.optString("name");
-                        artist.slug = ar.optString("slug");
-                        t.artists.add(artist);
-                    }
-                }
-            }
-            t.anime = ref;
-            t.cover = cover;
-            t.coverSmall = coverSmall;
-            JSONObject audio = video.optJSONObject("audio");
+            t.id = t.themeId + ":" + entry.optLong("id") + ":"
+                    + (video == null ? 0 : video.optLong("id"));
+            JSONObject audio = video == null ? null : video.optJSONObject("audio");
             String audioLink = audio != null ? audio.optString("link", null) : null;
-            t.videoUrl = video.optString("link", "");
+            t.videoUrl = video == null ? "" : video.optString("link", "");
             // Только настоящая аудиодорожка: видео-файл вместо музыки не подставляем.
             t.audioUrl = audioLink != null && !audioLink.isEmpty() && !"null".equals(audioLink) ? audioLink : "";
-            t.resolution = video.has("resolution") && !video.isNull("resolution") ? video.optInt("resolution") : null;
-            t.tags = video.optString("tags", "");
+            t.resolution = video != null && video.has("resolution") && !video.isNull("resolution")
+                    ? video.optInt("resolution") : null;
+            t.tags = video == null ? "" : video.optString("tags", "");
             t.version = entry.has("version") && !entry.isNull("version") ? entry.optInt("version") : null;
             t.episodes = entry.isNull("episodes") ? null : entry.optString("episodes", null);
             t.nsfw = entry.optBoolean("nsfw");
@@ -252,6 +244,46 @@ public final class Api {
             out.add(t);
         }
         return out;
+    }
+
+    /** Общие поля темы: название, исполнители, аниме, обложки, дата появления. */
+    private static void copyTheme(Models.Track t, JSONObject theme, JSONObject song, Models.AnimeRef ref,
+                                  String cover, String coverSmall) {
+        t.themeId = theme.optLong("id");
+        t.themeSlug = theme.optString("slug");
+        t.type = theme.optString("type", "OP");
+        t.sequence = theme.has("sequence") && !theme.isNull("sequence") ? theme.optInt("sequence") : null;
+        String title = song != null ? song.optString("title", null) : null;
+        t.title = title == null || title.isEmpty() ? t.themeSlug : title;
+        JSONArray artists = song == null ? null : song.optJSONArray("artists");
+        if (artists != null) {
+            for (int j = 0; j < artists.length(); j++) {
+                JSONObject ar = artists.optJSONObject(j);
+                if (ar == null) continue;
+                Models.ArtistRef artist = new Models.ArtistRef();
+                artist.id = ar.optLong("id");
+                artist.name = ar.optString("name");
+                artist.slug = ar.optString("slug");
+                t.artists.add(artist);
+            }
+        }
+        t.anime = ref;
+        t.cover = cover;
+        t.coverSmall = coverSmall;
+        String created = theme.optString("created_at", null);
+        t.createdAt = created == null || created.isEmpty() || "null".equals(created) ? null : created;
+        t.source = "primary";
+    }
+
+    /** Тема без загруженного видео: показываем её как есть, чтобы песня не пропадала. */
+    private static Models.Track baseTrack(JSONObject theme, JSONObject song, Models.AnimeRef ref,
+                                         String cover, String coverSmall) {
+        Models.Track t = new Models.Track();
+        copyTheme(t, theme, song, ref, cover, coverSmall);
+        t.id = t.themeId + ":0:0";
+        t.audioUrl = "";
+        t.videoUrl = "";
+        return t;
     }
 
     public static List<Models.Track> animeToTracks(JSONObject anime, boolean allVersions) {
@@ -422,15 +454,27 @@ public final class Api {
     }
 
     public static void getAnime(String slug, Cb<Models.AnimeDetail> cb) {
+        getAnimeOnce(slug, true, (detail, error) -> {
+            if (detail != null && detail.tracks != null && !detail.tracks.isEmpty()) {
+                cb.on(detail, error);
+                return;
+            }
+            // У аниме не нашлось песен — спрашиваем источник ещё раз, уже без наборов полей.
+            getAnimeOnce(slug, false, (full, error2) -> cb.on(full != null ? full : detail, error));
+        });
+    }
+
+    private static void getAnimeOnce(String slug, final boolean sparse, Cb<Models.AnimeDetail> cb) {
         if (slug == null || slug.isEmpty()) {
             cb.on(null, "Аниме не найдено");
             return;
         }
-        String url = Net.buildUrl(BASE, "/anime/" + Net.encode(slug), fields(params(
+        Map<String, String> query = params(
                 "include", ANIME_THEMES_INCLUDE + ",studios,series",
                 "fields[anime]", "id,name,slug,year,season,media_format,synopsis",
                 "fields[studio]", "name,slug",
-                "fields[series]", "name,slug"), FR));
+                "fields[series]", "name,slug");
+        String url = Net.buildUrl(BASE, "/anime/" + Net.encode(slug), sparse ? fields(query, FR) : query);
         Net.get(url, 6 * Net.HOUR, 30 * Net.DAY, (json, error) -> {
             JSONObject a = json == null ? null : json.optJSONObject("anime");
             if (a == null) {
@@ -754,14 +798,27 @@ public final class Api {
     }
 
     public static void getTracksForAnimeSlugs(List<String> slugs, Cb<List<Models.Track>> cb) {
+        getTracksForAnimeSlugsOnce(slugs, true, (tracks, error) -> {
+            if (tracks != null && !tracks.isEmpty()) {
+                cb.on(tracks, error);
+                return;
+            }
+            getTracksForAnimeSlugsOnce(slugs, false, (full, error2) -> cb.on(
+                    full != null && !full.isEmpty() ? full : tracks, error));
+        });
+    }
+
+    private static void getTracksForAnimeSlugsOnce(List<String> slugs, final boolean sparse,
+                                                   Cb<List<Models.Track>> cb) {
         if (slugs == null || slugs.isEmpty()) {
             cb.on(new ArrayList<>(), null);
             return;
         }
-        String url = Net.buildUrl(BASE, "/anime", fields(params(
+        Map<String, String> query = params(
                 "filter[slug]", csv(slugs),
                 "include", ANIME_THEMES_INCLUDE,
-                "page[size]", 100), FR));
+                "page[size]", 100);
+        String url = Net.buildUrl(BASE, "/anime", sparse ? fields(query, FR) : query);
         Net.get(url, Net.DAY, 30 * Net.DAY, (json, error) -> {
             Map<String, JSONObject> map = new HashMap<>();
             JSONArray anime = Net.arr(json, "anime");
