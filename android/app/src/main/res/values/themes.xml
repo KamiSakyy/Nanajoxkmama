@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Базовая тема: современный Material 3 (тёмный), без экшн-бара.
+         Никаких нестандартных атрибутов: тема обязана загружаться на любом устройстве. -->
+    <style name="Theme.AniBeat" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/anibeat_accent</item>
+        <item name="colorOnPrimary">@color/anibeat_on_accent</item>
+        <item name="colorPrimaryContainer">@color/anibeat_accent_container</item>
+        <item name="colorOnPrimaryContainer">@color/anibeat_on</item>
+        <item name="colorSecondary">@color/anibeat_tertiary</item>
+        <item name="colorOnSecondary">@color/anibeat_on_accent</item>
+        <item name="colorSecondaryContainer">@color/anibeat_surface_3</item>
+        <item name="colorOnSecondaryContainer">@color/anibeat_on</item>
+        <item name="colorTertiary">@color/anibeat_tertiary</item>
+        <item name="android:colorBackground">@color/anibeat_bg</item>
+        <item name="colorSurface">@color/anibeat_surface_1</item>
+        <item name="colorSurfaceVariant">@color/anibeat_surface_3</item>
+        <item name="colorSurfaceInverse">@color/anibeat_on</item>
+        <item name="colorOnSurface">@color/anibeat_on</item>
+        <item name="colorOnSurfaceVariant">@color/anibeat_on_variant</item>
+        <item name="colorOutline">@color/anibeat_outline</item>
+        <item name="colorOutlineVariant">@color/anibeat_outline_variant</item>
+        <item name="colorError">@color/anibeat_error</item>
+        <item name="colorOnError">@color/anibeat_on_accent</item>
+        <item name="android:windowBackground">@color/anibeat_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="colorControlHighlight">@color/anibeat_ripple</item>
+    </style>
+
+</resources>

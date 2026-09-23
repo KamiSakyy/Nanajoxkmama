@@ -1,0 +1,79 @@
+name: reference-screenshots
+
+# Renders the site in Chromium (exact phone + desktop viewports) and stores the
+# screenshots in docs/screenshots/ so the Android build can be compared 1:1.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/**", "main"]
+    paths:
+      - "web/**"
+      - "tools/screenshots/**"
+      - ".github/workflows/reference-screenshots.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: shots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build the site
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+          ls -la dist
+
+      - name: Serve the build
+        run: |
+          cd web/dist
+          python3 -m http.server 4173 --bind 127.0.0.1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4173/ >/dev/null; then echo "server up"; break; fi
+            sleep 1
+          done
+
+      - name: Prepare Playwright
+        working-directory: tools/screenshots
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Capture
+        working-directory: tools/screenshots
+        env:
+          BASE_URL: http://127.0.0.1:4173/
+          OUT_DIR: ../../docs/screenshots
+        run: node capture.mjs
+
+      - name: Publish screenshots to the branch
+        if: always()
+        run: |
+          set -x
+          git config user.name "anibeat-ci"
+          git config user.email "anibeat-ci@users.noreply.github.com"
+          ls -la docs/screenshots | head -40 || true
+          mkdir -p ci-logs
+          { echo "run: ${{ github.run_id }}"; git log --oneline -3; ls docs/screenshots | wc -l; } > ci-logs/screenshots.log 2>&1
+          git add -f docs/screenshots ci-logs/screenshots.log
+          git commit -m "chore(ci): reference screenshots [skip ci]" || echo "nothing to commit"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash -q || true
+            if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
+            sleep 5
+          done

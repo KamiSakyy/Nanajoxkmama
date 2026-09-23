@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AniBeat · иконка из набора сайта (единый штрих 1.7, скругления). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="m12 4.6 2.3 4.7 5.2.8-3.8 3.6.9 5.1L12 16.4l-4.6 2.4.9-5.1L4.5 10l5.2-.8z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

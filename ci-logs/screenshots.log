@@ -1,0 +1,9 @@
++ echo 'run: 35537318083'
+run: 35537318083
++ git log --oneline -3
+d1640a4 feat(android): нативное приложение AniBeat (Java) — экраны, плеер, шторки, API-слой
+c3cc07d chore(ci): build log [skip ci]
+ed6534f release(android): AniBeat 1.0.7 (versionCode 7) [skip ci]
++ ls docs/screenshots
++ wc -l
+27

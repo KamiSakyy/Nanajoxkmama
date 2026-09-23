@@ -1,0 +1,26 @@
+AniBeat Android — сборка от 2026-09-23T08:39:14Z
+версия: 2.0.79 (versionCode 79)
+файл: handoff/AniBeat-2.0.79.apk
+
+SHA-256:
+060497aba588dbd823e38c43fb82a1f8a3a1177f7c2cdca644c8b9c438d454b6  android/app/build/outputs/apk/release/app-release.apk
+
+Подпись:
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+V2 Signer: certificate DN: CN=AniBeat, OU=Mobile, O=AniBeat, L=Moscow, C=RU
+V2 Signer: certificate SHA-256 digest: ede0323bc1d467dbfe31d72ec7fba38f8122c6aa907bc2440bd16d003460e9ef
+V2 Signer: certificate SHA-1 digest: fb4ce5d052c31c69db33b6100f69a27c2d272eed
+V2 Signer: certificate MD5 digest: b39d58a2c32e498ec83362417d12a4b3
+V2 Signer: key algorithm: RSA
+V2 Signer: key size (bits): 4096
+V2 Signer: public key SHA-256 digest: 0a83780a11db385e47ebe18f0725d842643a15f1ff11c06916aef99da25e6542
+V2 Signer: public key SHA-1 digest: 5c074073b4ce48f414e2dc84fb9f19c125ac7ba1
+V2 Signer: public key MD5 digest: d2c4d1d86ddf227688da83e5bcf50d3b

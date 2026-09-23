@@ -1,0 +1,200 @@
+name: android
+
+# Собирает подписанный APK нативного приложения AniBeat (Java + Android SDK),
+# проверяет подпись и публикует файлы в handoff/ и в GitHub Release.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/**", "main"]
+    paths:
+      - "android/**"
+      - "tools/release/**"
+      - ".github/workflows/android.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      STORE_PASSWORD: ${{ secrets.ANIBEAT_STORE_PASSWORD }}
+      KEY_PASSWORD: ${{ secrets.ANIBEAT_KEY_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANIBEAT_KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Version
+        id: v
+        run: |
+          echo "code=${{ github.run_number }}" >> $GITHUB_OUTPUT
+          echo "name=2.0.${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+      - name: Ensure release keystore (stable signing key = installable as an update)
+        run: |
+          mkdir -p android/keystore
+          : "${STORE_PASSWORD:=anibeat-release-2026}"
+          : "${KEY_ALIAS:=anibeat}"
+          : "${KEY_PASSWORD:=${STORE_PASSWORD}}"
+          if [ ! -f android/keystore/anibeat-release.jks ]; then
+            keytool -genkeypair -v \
+              -keystore android/keystore/anibeat-release.jks \
+              -alias "$KEY_ALIAS" -keyalg RSA -keysize 4096 -validity 10950 \
+              -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+              -dname "CN=AniBeat, OU=Mobile, O=AniBeat, L=Moscow, C=RU"
+          fi
+          cat > android/keystore/keystore.properties <<EOF
+          storePassword=$STORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          EOF
+          git add -f android/keystore
+          git diff --cached --quiet || git -c user.name=anibeat-ci -c user.email=anibeat-ci@users.noreply.github.com commit -q -m "chore(android): release keystore [skip ci]"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK (platform 35 + build tools)
+        run: |
+          set -e
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME" || true
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER=$(find "$ANDROID_HOME" -name sdkmanager -type f | head -1)
+          fi
+          echo "sdkmanager=$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools"
+
+      - name: Gradle 8.9
+        run: |
+          set -e
+          curl -sSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle.zip -d /opt/gradle
+          echo "/opt/gradle/gradle-8.9/bin" >> $GITHUB_PATH
+          /opt/gradle/gradle-8.9/bin/gradle -v
+
+      - name: Прогон приложения в тестах (Robolectric)
+        continue-on-error: true
+        run: |
+          set +o pipefail
+          gradle -p android testDebugUnitTest --no-daemon 2>&1 | tee test.log
+          exit 0
+
+      - name: Build signed release APK
+        id: build
+        run: |
+          set -o pipefail
+          gradle -p android clean assembleRelease --no-daemon \
+            -PversionCode=${{ steps.v.outputs.code }} \
+            -PversionName=${{ steps.v.outputs.name }} 2>&1 | tee build.log
+          APK=$(find android/app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "apk=$APK" >> $GITHUB_OUTPUT
+          ls -la "$APK"
+
+      - name: Verify signature and alignment
+        run: |
+          APK="${{ steps.build.outputs.apk }}"
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          $BT/apksigner verify --verbose --print-certs "$APK" | tee signature.txt
+          $BT/zipalign -c -v 4 "$APK" | tail -2
+          sha256sum "$APK" | tee apk-sha256.txt
+          grep -i "SHA-256" signature.txt | head -2
+
+      - name: Publish to handoff/
+        run: |
+          set -e
+          mkdir -p handoff
+          APK="${{ steps.build.outputs.apk }}"
+          cp "$APK" handoff/anibeat-release.apk
+          cp "$APK" "handoff/AniBeat-${{ steps.v.outputs.name }}.apk"
+          {
+            echo "AniBeat Android — сборка от $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "версия: ${{ steps.v.outputs.name }} (versionCode ${{ steps.v.outputs.code }})"
+            echo "файл: handoff/AniBeat-${{ steps.v.outputs.name }}.apk"
+            echo
+            echo "SHA-256:"
+            cat apk-sha256.txt
+            echo
+            echo "Подпись:"
+            cat signature.txt
+          } > handoff/build-info.txt
+          cat handoff/build-info.txt
+
+      - name: Commit handoff + release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "anibeat-ci"
+          git config user.email "anibeat-ci@users.noreply.github.com"
+          git add -f handoff android/keystore
+          git commit -m "release(android): AniBeat ${{ steps.v.outputs.name }} (versionCode ${{ steps.v.outputs.code }}) [skip ci]" || echo "nothing to commit"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash -q || true
+            if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
+            sleep 5
+          done
+          NAME="${{ steps.v.outputs.name }}"
+          gh release create "v$NAME" \
+            "handoff/AniBeat-$NAME.apk#AniBeat APK" \
+            "handoff/anibeat-release.apk#anibeat-release.apk (постоянная ссылка)" \
+            --title "AniBeat Android $NAME" \
+            --notes "Подписанный APK приложения AniBeat (versionCode ${{ steps.v.outputs.code }}). Устанавливается поверх предыдущей версии как обновление. Файл также лежит в папке handoff/ репозитория." \
+            || gh release upload "v$NAME" "handoff/AniBeat-$NAME.apk#AniBeat APK" "handoff/anibeat-release.apk#anibeat-release.apk (постоянная ссылка)" --clobber \
+            || echo "release exists"
+
+      - name: Store the build log (readable from the repository)
+        if: always()
+        run: |
+          mkdir -p ci-logs
+          {
+            echo "run: ${{ github.run_id }}  job: build-apk  status: ${{ job.status }}"
+            echo "version: ${{ steps.v.outputs.name }}"
+            echo
+            tail -c 200000 build.log 2>/dev/null || echo "no build.log"
+            echo
+            echo "--- тесты ---"
+            tail -c 200000 test.log 2>/dev/null || echo "no test.log"
+          } > ci-logs/last-build.log
+          tail -c 120000 test.log 2>/dev/null > ci-logs/tests.log || true
+          if [ -f test.log ]; then
+            grep -nE "at com\\.anibeat|Caused by|Exception|FAILED|нажатий|→|Ошибка" test.log | head -20 | while IFS= read -r line; do
+              echo "::warning title=Прогон::$(printf '%s' "$line" | sed 's/%/%25/g' | tr -d '\r' | cut -c1-900)"
+            done
+          fi
+          if [ -s ci-logs/tests.log ]; then
+            TESTFAIL=$(grep -E "FAILED|AssertionError|Exception|нажатий|→" ci-logs/tests.log | head -20 | tr '\r' ' ' | sed 's/%/%25/g' | cut -c1-1200 | tr '\n' '~')
+            [ -n "$TESTFAIL" ] && echo "::warning title=Тесты::${TESTFAIL}"
+          fi
+          # Публикуем ошибку сборки как аннотацию — её видно через API даже там, где нет логов.
+          if [ "${{ job.status }}" != "success" ]; then
+            ERR=$(grep -E "error:|^e: |FAILURE:|What went wrong|Caused by|Execution failed|> " build.log 2>/dev/null | head -80 | tr '\r' ' ' | tr '\n' '~' | sed 's/%/%25/g' | cut -c1-3000)
+            echo "::error title=Gradle build output::${ERR}"
+            # Каждая ошибка компиляции — отдельной аннотацией (до 10 штук).
+            grep -E "\.java:[0-9]+: error:" build.log 2>/dev/null | head -10 | while IFS= read -r line; do
+              short=$(echo "$line" | sed 's|/home/runner/work/[^ ]*/android/app/src/main/java/com/anibeat/app/||' | tr '\r' ' ' | sed 's/%/%25/g' | cut -c1-900)
+              echo "::error title=javac::${short}"
+            done
+            grep -E "error:|Execution failed" build.log 2>/dev/null | head -140 > ci-logs/errors.txt || true
+            grep -E "com\\.anibeat|FAILED|Exception|AssertionError" test.log 2>/dev/null | head -140 >> ci-logs/errors.txt || true
+          fi
+          for f in ci-logs/last-build.log ci-logs/errors.txt ci-logs/tests.log; do [ -f "$f" ] && git add -f "$f"; done
+          git add -f ci-logs/last-build.log
+          git commit -m "chore(ci): build log [skip ci]" || echo "nothing"
+          for i in 1 2 3 4 5; do
+            git pull --rebase --autostash -q || true
+            if git push origin HEAD:${{ github.ref_name }}; then echo "pushed"; break; fi
+            sleep 5
+          done

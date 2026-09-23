@@ -1,0 +1,111 @@
+[2026-09-20T20:45:07.535Z] anime slug candidates: one-piece, naruto, jujutsu-kaisen, attack-on-titan...
+[2026-09-20T20:45:08.094Z] console.error: Access to fetch at 'https://shikimori.tv/api/animes?limit=1' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+[2026-09-20T20:45:08.095Z] requestfailed: https://shikimori.tv/api/animes?limit=1 net::ERR_FAILED
+[2026-09-20T20:45:08.095Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:45:08.388Z] console.error: Access to fetch at 'https://shikimori.one/api/animes?limit=1' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+[2026-09-20T20:45:08.388Z] requestfailed: https://shikimori.one/api/animes?limit=1 net::ERR_FAILED
+[2026-09-20T20:45:08.388Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:45:17.847Z] shot mobile-01-home
+[2026-09-20T20:45:19.198Z] shot mobile-02-home-sections
+[2026-09-20T20:45:20.566Z] shot mobile-03-home-more
+[2026-09-20T20:45:24.861Z] shot mobile-04-search-empty
+[2026-09-20T20:45:32.435Z] shot mobile-05-search-results
+[2026-09-20T20:45:33.749Z] shot mobile-06-search-results-scrolled
+[2026-09-20T20:45:41.844Z] shot mobile-07-browse-years
+[2026-09-20T20:45:43.144Z] shot mobile-08-browse-years-scrolled
+[2026-09-20T20:45:50.290Z] shot mobile-09-browse-fresh
+[2026-09-20T20:45:57.438Z] shot mobile-10-browse-op
+[2026-09-20T20:46:05.657Z] shot mobile-11-year-2024
+[2026-09-20T20:46:05.878Z] console.error: Failed to load resource: the server responded with a status of 404 ()
+[2026-09-20T20:46:12.662Z] anime page failed for slug: one-piece
+[2026-09-20T20:46:13.788Z] console.error: Failed to load resource: the server responded with a status of 404 ()
+[2026-09-20T20:46:19.836Z] shot mobile-12-anime-detail
+[2026-09-20T20:46:21.141Z] shot mobile-13-anime-tracks
+[2026-09-20T20:46:21.141Z] anime page ok: naruto
+[2026-09-20T20:46:30.321Z] console.error: Access to image at 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx111-DxnHYJUnO4Dd.jpg' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+[2026-09-20T20:46:30.321Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:46:39.547Z] shot mobile-17-now-playing
+[2026-09-20T20:46:41.579Z] shot mobile-18-queue-sheet
+[2026-09-20T20:47:02.628Z] FAIL playback flow: locator.click: Timeout 20000ms exceeded.
+Call log:
+  - waiting for locator('button[aria-label="Свернуть"]').first()
+    - locator resolved to <button type="button" title="Свернуть" aria-label="Свернуть" class="tap-scale inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:pointer-events-none disabled:opacity-30 text-white/85">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - element is outside of the viewport
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - element is outside of the viewport
+    - retrying click action
+      - waiting 100ms
+    37 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - element is outside of the viewport
+     - retrying click action
+       - waiting 500ms
+
+[2026-09-20T20:47:05.725Z] shot mobile-15-library
+[2026-09-20T20:47:07.358Z] shot mobile-16a-library-downloads
+[2026-09-20T20:47:08.992Z] shot mobile-16b-library-playlists
+[2026-09-20T20:47:10.624Z] shot mobile-16c-library-history
+[2026-09-20T20:47:10.691Z] console.error: Access to image at 'https://pub-92474f7785774e91a790e086dfa6b2ef.r2.dev/anime/large-cover/wzRYymDbwoXZEcHLwVzuuHY6NqxvKaQtujzPrmAN.jpg' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+[2026-09-20T20:47:10.691Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:47:10.765Z] console.error: Access to image at 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx111-DxnHYJUnO4Dd.jpg' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+[2026-09-20T20:47:10.765Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:47:17.703Z] tap [Настройки]
+[2026-09-20T20:47:19.612Z] shot mobile-22-settings
+[2026-09-20T20:47:20.612Z] shot mobile-23-settings-scrolled
+[2026-09-20T20:47:30.807Z] shot desktop-01-home
+[2026-09-20T20:47:38.902Z] shot desktop-02-browse
+[2026-09-20T20:47:38.946Z] PROBLEMS (16):
+[2026-09-20T20:45:08.094Z] console.error: Access to fetch at 'https://shikimori.tv/api/animes?limit=1' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+[2026-09-20T20:45:08.095Z] requestfailed: https://shikimori.tv/api/animes?limit=1 net::ERR_FAILED
+[2026-09-20T20:45:08.095Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:45:08.388Z] console.error: Access to fetch at 'https://shikimori.one/api/animes?limit=1' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+[2026-09-20T20:45:08.388Z] requestfailed: https://shikimori.one/api/animes?limit=1 net::ERR_FAILED
+[2026-09-20T20:45:08.388Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:46:05.878Z] console.error: Failed to load resource: the server responded with a status of 404 ()
+[2026-09-20T20:46:12.662Z] anime page failed for slug: one-piece
+[2026-09-20T20:46:13.788Z] console.error: Failed to load resource: the server responded with a status of 404 ()
+[2026-09-20T20:46:30.321Z] console.error: Access to image at 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx111-DxnHYJUnO4Dd.jpg' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+[2026-09-20T20:46:30.321Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:47:02.628Z] FAIL playback flow: locator.click: Timeout 20000ms exceeded.
+Call log:
+  - waiting for locator('button[aria-label="Свернуть"]').first()
+    - locator resolved to <button type="button" title="Свернуть" aria-label="Свернуть" class="tap-scale inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:pointer-events-none disabled:opacity-30 text-white/85">…</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - element is outside of the viewport
+    - retrying click action
+    - waiting 20ms
+    2 × waiting for element to be visible, enabled and stable
+      - element is visible, enabled and stable
+      - scrolling into view if needed
+      - done scrolling
+      - element is outside of the viewport
+    - retrying click action
+      - waiting 100ms
+    37 × waiting for element to be visible, enabled and stable
+       - element is visible, enabled and stable
+       - scrolling into view if needed
+       - done scrolling
+       - element is outside of the viewport
+     - retrying click action
+       - waiting 500ms
+
+[2026-09-20T20:47:10.691Z] console.error: Access to image at 'https://pub-92474f7785774e91a790e086dfa6b2ef.r2.dev/anime/large-cover/wzRYymDbwoXZEcHLwVzuuHY6NqxvKaQtujzPrmAN.jpg' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+[2026-09-20T20:47:10.691Z] console.error: Failed to load resource: net::ERR_FAILED
+[2026-09-20T20:47:10.765Z] console.error: Access to image at 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx111-DxnHYJUnO4Dd.jpg' from origin 'http://127.0.0.1:4173' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+[2026-09-20T20:47:10.765Z] console.error: Failed to load resource: net::ERR_FAILED
