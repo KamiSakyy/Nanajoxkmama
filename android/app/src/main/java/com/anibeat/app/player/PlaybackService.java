@@ -30,6 +30,7 @@ import android.support.v4.media.session.PlaybackStateCompat;
 
 import com.anibeat.app.MainActivity;
 import com.anibeat.app.R;
+import com.anibeat.app.core.Theme;
 import com.anibeat.app.core.Ui;
 import com.anibeat.app.data.Models;
 

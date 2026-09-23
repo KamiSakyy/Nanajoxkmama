@@ -619,8 +619,16 @@ public final class Api {
      * затем подтягиваем их темы из AniThemes.
      */
     public static void searchRussian(final String query, final Cb<Models.SearchResults> cb) {
-        Meta.searchShikimori(query, (ids, error) -> {
-            if (ids == null || ids.isEmpty()) {
+        Meta.searchShikimori(query, (hits, error) -> {
+            if (hits == null || hits.isEmpty()) {
+                cb.on(new Models.SearchResults(), null);
+                return;
+            }
+            List<Integer> ids = new ArrayList<>();
+            for (Meta.ShikiHit hit : hits) {
+                if (hit != null && hit.malId > 0 && !ids.contains(hit.malId)) ids.add(hit.malId);
+            }
+            if (ids.isEmpty()) {
                 cb.on(new Models.SearchResults(), null);
                 return;
             }
