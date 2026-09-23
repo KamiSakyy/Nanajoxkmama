@@ -1,5 +1,5 @@
-run: 35835413520  job: build-apk  status: success
-version: 2.0.75
+run: 35835715006  job: build-apk  status: success
+version: 2.0.76
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -22,38 +22,38 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
-> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifestForPackage
-> Task :app:processReleaseResources
 > Task :app:mergeExtDexRelease
-> Task :app:compileReleaseJavaWithJavac FROM-CACHE
-> Task :app:dexBuilderRelease
-> Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
+> Task :app:mergeReleaseArtProfile
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
-> Task :app:mergeReleaseGlobalSynthetics
 > Task :app:mergeReleaseAssets
 > Task :app:compressReleaseAssets
 > Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseJavaRes NO-SOURCE
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
-> Task :app:optimizeReleaseResources
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
 > Task :app:mergeReleaseJavaResource
+> Task :app:processReleaseResources
+> Task :app:compileReleaseJavaWithJavac FROM-CACHE
+> Task :app:dexBuilderRelease
+> Task :app:mergeReleaseGlobalSynthetics
+> Task :app:optimizeReleaseResources
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 57s
+BUILD SUCCESSFUL in 58s
 39 actionable tasks: 34 executed, 5 from cache
 
 --- тесты ---
@@ -77,9 +77,9 @@ Daemon will be stopped at the end of the build
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
-> Task :app:processDebugManifestForPackage
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugResources
@@ -91,29 +91,74 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
 > Task :app:packageDebugUnitTestForUnitTest
+> Task :app:compileDebugUnitTestJavaWithJavac
+> Task :app:generateDebugUnitTestConfig
 
-> Task :app:compileDebugUnitTestJavaWithJavac FAILED
-/home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/src/test/java/com/anibeat/app/SmokeTest.java:189: error: cannot find symbol
-        if (opened instanceof ListScreen && !((ListScreen) opened).hasBackButton()) {
-                              ^
-  symbol:   class ListScreen
-  location: class SmokeTest
-/home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/src/test/java/com/anibeat/app/SmokeTest.java:189: error: cannot find symbol
-        if (opened instanceof ListScreen && !((ListScreen) opened).hasBackButton()) {
-                                               ^
-  symbol:   class ListScreen
-  location: class SmokeTest
-2 errors
+> Task :app:testDebugUnitTest
+
+SmokeTest > appOpensAndTabsWork STANDARD_OUT
+    === ОТЧЁТ ===
+    вкладка Главная: элементов 30 ← первый заход
+    вкладка Поиск: элементов 5 ← первый заход
+    вкладка Обзор: элементов 8 ← первый заход
+    вкладка Медиатека: элементов 3 ← первый заход
+    вкладка Главная: элементов 30 ← возврат
+    вкладка Поиск: элементов 5 ← возврат
+    вкладка Обзор: элементов 8 ← возврат
+    вкладка Медиатека: элементов 3 ← возврат
+    скачанное: элементов 5
+    после аниме-ошибки: элементов 3
+    первый текст медиатеки: Медиатека
+    финал, вкладка Главная: элементов 30
+    финал, вкладка Поиск: элементов 5
+    финал, вкладка Обзор: элементов 8
+    финал, вкладка Медиатека: элементов 5
+    исполнитель: элементов 0
+    подборка: Сёнэн-энергия | Главная | Поиск | Обзор | Медиатека | Сейчас играет | Ничего не играет | 0:00 | 0:00
+    тексты Главной: AniBeat | AniBeat | Жанры | Экшен | Фантастика | Романтика
+    разбор темы: треков 2
+    перехваченных сбоев: 0
+    нажатий: 96, падений: 1
+
+SmokeTest > appOpensAndTabsWork FAILED
+    java.lang.AssertionError: падений: 1
+    вкладка Главная: элементов 30 ← первый заход
+    вкладка Поиск: элементов 5 ← первый заход
+    вкладка Обзор: элементов 8 ← первый заход
+    вкладка Медиатека: элементов 3 ← первый заход
+    вкладка Главная: элементов 30 ← возврат
+    вкладка Поиск: элементов 5 ← возврат
+    вкладка Обзор: элементов 8 ← возврат
+    вкладка Медиатека: элементов 3 ← возврат
+    скачанное: элементов 5
+    после аниме-ошибки: элементов 3
+    первый текст медиатеки: Медиатека
+    финал, вкладка Главная: элементов 30
+    финал, вкладка Поиск: элементов 5
+    финал, вкладка Обзор: элементов 8
+    финал, вкладка Медиатека: элементов 5
+    исполнитель: элементов 0
+    подборка: Сёнэн-энергия | Главная | Поиск | Обзор | Медиатека | Сейчас играет | Ничего не играет | 0:00 | 0:00
+    тексты Главной: AniBeat | AniBeat | Жанры | Экшен | Фантастика | Романтика
+    разбор темы: треков 2
+    перехваченных сбоев: 0
+    ! нет кнопки назад на открытом экране
+        at org.junit.Assert.fail(Assert.java:89)
+        at org.junit.Assert.assertTrue(Assert.java:42)
+        at com.anibeat.app.SmokeTest.appOpensAndTabsWork(SmokeTest.java:254)
+
+1 test completed, 1 failed
+
+> Task :app:testDebugUnitTest FAILED
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':app:compileDebugUnitTestJavaWithJavac'.
-> Compilation failed; see the compiler error output for details.
+Execution failed for task ':app:testDebugUnitTest'.
+> There were failing tests. See the report at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/build/reports/tests/testDebugUnitTest/index.html
 
 * Try:
-> Run with --info option to get more log output.
 > Run with --scan to get full insights.
 
-BUILD FAILED in 50s
-22 actionable tasks: 21 executed, 1 from cache
+BUILD FAILED in 1m 12s
+24 actionable tasks: 23 executed, 1 from cache
