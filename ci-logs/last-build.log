@@ -1,5 +1,5 @@
-run: 35836361544  job: build-apk  status: success
-version: 2.0.78
+run: 35838096822  job: build-apk  status: success
+version: 2.0.79
 
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -22,13 +22,18 @@ Daemon will be stopped at the end of the build
 > Task :app:createReleaseCompatibleScreenManifests
 > Task :app:extractDeepLinksRelease FROM-CACHE
 > Task :app:processReleaseMainManifest
+> Task :app:mergeReleaseResources
 > Task :app:processReleaseManifest
 > Task :app:desugarReleaseFileDependencies
-> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseStartupProfile
-> Task :app:mergeReleaseResources
-> Task :app:mergeReleaseShaders
+> Task :app:processReleaseManifestForPackage
+> Task :app:processReleaseResources
+> Task :app:mergeExtDexRelease
+> Task :app:compileReleaseJavaWithJavac FROM-CACHE
+> Task :app:dexBuilderRelease
 > Task :app:mergeReleaseArtProfile
+> Task :app:mergeReleaseShaders
+> Task :app:mergeReleaseGlobalSynthetics
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
@@ -40,20 +45,15 @@ Daemon will be stopped at the end of the build
 > Task :app:validateSigningRelease
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
-> Task :app:processReleaseResources
-> Task :app:mergeReleaseJavaResource
-> Task :app:compileReleaseJavaWithJavac FROM-CACHE
-> Task :app:dexBuilderRelease
-> Task :app:mergeReleaseGlobalSynthetics
 > Task :app:optimizeReleaseResources
-> Task :app:mergeExtDexRelease
+> Task :app:mergeReleaseJavaResource
 > Task :app:mergeDexRelease
 > Task :app:compileReleaseArtProfile
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
 
-BUILD SUCCESSFUL in 45s
+BUILD SUCCESSFUL in 1m
 39 actionable tasks: 34 executed, 5 from cache
 
 --- тесты ---
@@ -88,8 +88,8 @@ Daemon will be stopped at the end of the build
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
-> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
 > Task :app:packageDebugUnitTestForUnitTest
 > Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:generateDebugUnitTestConfig
@@ -98,27 +98,28 @@ Note: Recompile with -Xlint:deprecation for details.
 
 SmokeTest > appOpensAndTabsWork STANDARD_OUT
     === ОТЧЁТ ===
-    вкладка Главная: элементов 30 ← первый заход
+    вкладка Главная: элементов 5 ← первый заход
     вкладка Поиск: элементов 5 ← первый заход
     вкладка Обзор: элементов 7 ← первый заход
     вкладка Медиатека: элементов 2 ← первый заход
-    вкладка Главная: элементов 30 ← возврат
+    вкладка Главная: элементов 5 ← возврат
     вкладка Поиск: элементов 5 ← возврат
     вкладка Обзор: элементов 7 ← возврат
     вкладка Медиатека: элементов 2 ← возврат
     скачанное: элементов 4
     после аниме-ошибки: элементов 4
     первый текст медиатеки: Медиатека
-    финал, вкладка Главная: элементов 30
+    финал, вкладка Главная: элементов 5
     финал, вкладка Поиск: элементов 5
     финал, вкладка Обзор: элементов 7
     финал, вкладка Медиатека: элементов 4
     исполнитель: элементов 0
     подборка: Сёнэн-энергия | Главная | Поиск | Обзор | Медиатека | Сейчас играет | Ничего не играет | 0:00 | 0:00
     тексты Главной: AniBeat | Жанры | Экшен | Фантастика | Романтика | Комедия
+    тема без видео: треков 1
     разбор темы: треков 2
     перехваченных сбоев: 0
     нажатий: 80, падений: 0
 
-BUILD SUCCESSFUL in 1m 8s
+BUILD SUCCESSFUL in 1m 14s
 24 actionable tasks: 23 executed, 1 from cache
