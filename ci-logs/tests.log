@@ -8,19 +8,19 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
-> Task :app:processDebugManifestForPackage
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
 > Task :app:processDebugResources
@@ -29,77 +29,37 @@ Daemon will be stopped at the end of the build
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
-> Task :app:bundleDebugClassesToRuntimeJar
-> Task :app:bundleDebugClassesToCompileJar
 > Task :app:packageDebugUnitTestForUnitTest
-> Task :app:compileDebugUnitTestJavaWithJavac
 > Task :app:generateDebugUnitTestConfig
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:compileDebugUnitTestJavaWithJavac
 
 > Task :app:testDebugUnitTest
 
 SmokeTest > appOpensAndTabsWork STANDARD_OUT
     === ОТЧЁТ ===
-    вкладка Главная: элементов 30 ← первый заход
+    вкладка Главная: элементов 20 ← первый заход
     вкладка Поиск: элементов 5 ← первый заход
-    вкладка Обзор: элементов 8 ← первый заход
-    вкладка Медиатека: элементов 3 ← первый заход
-    вкладка Главная: элементов 30 ← возврат
+    вкладка Обзор: элементов 7 ← первый заход
+    вкладка Медиатека: элементов 2 ← первый заход
+    вкладка Главная: элементов 20 ← возврат
     вкладка Поиск: элементов 5 ← возврат
-    вкладка Обзор: элементов 8 ← возврат
-    вкладка Медиатека: элементов 3 ← возврат
-    скачанное: элементов 5
-    после аниме-ошибки: элементов 3
+    вкладка Обзор: элементов 7 ← возврат
+    вкладка Медиатека: элементов 2 ← возврат
+    скачанное: элементов 4
+    после аниме-ошибки: элементов 4
     первый текст медиатеки: Медиатека
-    финал, вкладка Главная: элементов 30
+    финал, вкладка Главная: элементов 20
     финал, вкладка Поиск: элементов 5
-    финал, вкладка Обзор: элементов 8
-    финал, вкладка Медиатека: элементов 5
+    финал, вкладка Обзор: элементов 7
+    финал, вкладка Медиатека: элементов 4
     исполнитель: элементов 0
     подборка: Сёнэн-энергия | Главная | Поиск | Обзор | Медиатека | Сейчас играет | Ничего не играет | 0:00 | 0:00
-    тексты Главной: AniBeat | AniBeat | Жанры | Экшен | Фантастика | Романтика
+    тексты Главной: AniBeat | Жанры | Экшен | Фантастика | Романтика | Комедия
     разбор темы: треков 2
     перехваченных сбоев: 0
-    нажатий: 96, падений: 1
+    нажатий: 80, падений: 0
 
-SmokeTest > appOpensAndTabsWork FAILED
-    java.lang.AssertionError: падений: 1
-    вкладка Главная: элементов 30 ← первый заход
-    вкладка Поиск: элементов 5 ← первый заход
-    вкладка Обзор: элементов 8 ← первый заход
-    вкладка Медиатека: элементов 3 ← первый заход
-    вкладка Главная: элементов 30 ← возврат
-    вкладка Поиск: элементов 5 ← возврат
-    вкладка Обзор: элементов 8 ← возврат
-    вкладка Медиатека: элементов 3 ← возврат
-    скачанное: элементов 5
-    после аниме-ошибки: элементов 3
-    первый текст медиатеки: Медиатека
-    финал, вкладка Главная: элементов 30
-    финал, вкладка Поиск: элементов 5
-    финал, вкладка Обзор: элементов 8
-    финал, вкладка Медиатека: элементов 5
-    исполнитель: элементов 0
-    подборка: Сёнэн-энергия | Главная | Поиск | Обзор | Медиатека | Сейчас играет | Ничего не играет | 0:00 | 0:00
-    тексты Главной: AniBeat | AniBeat | Жанры | Экшен | Фантастика | Романтика
-    разбор темы: треков 2
-    перехваченных сбоев: 0
-    ! нет кнопки назад на открытом экране
-        at org.junit.Assert.fail(Assert.java:89)
-        at org.junit.Assert.assertTrue(Assert.java:42)
-        at com.anibeat.app.SmokeTest.appOpensAndTabsWork(SmokeTest.java:254)
-
-1 test completed, 1 failed
-
-> Task :app:testDebugUnitTest FAILED
-
-FAILURE: Build failed with an exception.
-
-* What went wrong:
-Execution failed for task ':app:testDebugUnitTest'.
-> There were failing tests. See the report at: file:///home/runner/work/Nanajoxkmama/Nanajoxkmama/android/app/build/reports/tests/testDebugUnitTest/index.html
-
-* Try:
-> Run with --scan to get full insights.
-
-BUILD FAILED in 1m 12s
+BUILD SUCCESSFUL in 1m 7s
 24 actionable tasks: 23 executed, 1 from cache
