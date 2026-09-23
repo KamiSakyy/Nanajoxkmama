@@ -220,10 +220,11 @@ public class NowPlayingView extends FrameLayout {
         prev.setOnClickListener(v -> Player.prev());
 
         FrameLayout playBox = new FrameLayout(context);
-        playBox.setBackground(Ui.circle(Theme.ON));
+        android.graphics.drawable.GradientDrawable playBg = Theme.accentGradient(Theme.dpF(context, 34));
+        playBox.setBackground(playBg);
         play = new ImageView(context);
         play.setImageResource(R.drawable.ic_pause);
-        play.setColorFilter(Theme.ON_PRIMARY);
+        play.setColorFilter(Theme.ON_ACCENT);
         play.setPadding(Theme.dp(context, 17), Theme.dp(context, 17), Theme.dp(context, 17), Theme.dp(context, 17));
         playBox.addView(play, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         playBox.setOnClickListener(v -> Player.toggle());
@@ -425,7 +426,7 @@ public class NowPlayingView extends FrameLayout {
                 String key = track.id + "|" + url;
                 if (!key.equals(shownCover)) {
                     shownCover = key;
-                    Img.loadRounded(art, url, Img.size(getContext(), 340), 18f);
+                    Img.loadRounded(art, url, Img.size(getContext(), 340), 22f);
                 }
             }
             art.animate().scaleX(Player.isPlaying() ? 1f : 0.86f).scaleY(Player.isPlaying() ? 1f : 0.86f)

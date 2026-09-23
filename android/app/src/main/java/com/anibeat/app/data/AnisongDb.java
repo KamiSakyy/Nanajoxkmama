@@ -141,8 +141,9 @@ public final class AnisongDb {
             }
             t.anime = anime;
 
-            t.audioUrl = audio != null ? audio : video;
-            t.videoUrl = video != null ? video : audio;
+            // Музыка — только аудио: видео-ссылку в аудио не подставляем.
+            t.audioUrl = audio != null ? audio : "";
+            t.videoUrl = video != null ? video : "";
             t.resolution = hq != null && !hq.isEmpty() ? 720 : (mq != null && !mq.isEmpty() ? 480 : null);
             t.tags = hq != null && !hq.isEmpty() ? "HQ" : (mq != null && !mq.isEmpty() ? "MQ" : "");
             t.source = "extra";

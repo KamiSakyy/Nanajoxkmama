@@ -36,8 +36,10 @@ public class MiniPlayerView extends FrameLayout {
 
         MaterialCardView card = new MaterialCardView(context);
         card.setCardBackgroundColor(Theme.SURFACE_3);
-        card.setRadius(Theme.dpF(context, 14));
+        card.setRadius(Theme.dpF(context, 18));
         card.setCardElevation(0f);
+        card.setStrokeWidth(Theme.dp(context, 1));
+        card.setStrokeColor(Theme.OUTLINE_VARIANT);
         addView(card, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         LinearLayout row = new LinearLayout(context);
@@ -91,9 +93,10 @@ public class MiniPlayerView extends FrameLayout {
         Ui.ripple(next);
 
         progress = new View(context);
-        progress.setBackgroundColor(Theme.ACCENT);
-        FrameLayout.LayoutParams progressParams = new FrameLayout.LayoutParams(0, Theme.dp(context, 2));
+        progress.setBackground(Ui.rounded(context, Theme.ACCENT, 2f));
+        FrameLayout.LayoutParams progressParams = new FrameLayout.LayoutParams(0, Theme.dp(context, 3));
         progressParams.gravity = Gravity.BOTTOM;
+        progressParams.bottomMargin = Theme.dp(context, 6);
         addView(progress, progressParams);
 
         card.setOnClickListener(v -> host.openNowPlaying());

@@ -71,6 +71,22 @@ public final class Theme {
     public static final long DUR_SHEET = 320;
     public static final long DUR_NOWPLAYING = 420;
 
+    /** Фон нижнего меню: тонкая линия сверху и плотная поверхность. */
+    public static android.graphics.drawable.Drawable navBackground(Context context) {
+        android.graphics.drawable.GradientDrawable line = new android.graphics.drawable.GradientDrawable();
+        line.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        line.setColor(SEPARATOR);
+        android.graphics.drawable.GradientDrawable fill = new android.graphics.drawable.GradientDrawable();
+        fill.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        fill.setColor(SURFACE_1);
+        android.graphics.drawable.LayerDrawable layers = new android.graphics.drawable.LayerDrawable(
+                new android.graphics.drawable.Drawable[]{line, fill});
+        layers.setLayerHeight(0, dp(context, 1));
+        layers.setLayerGravity(0, android.view.Gravity.TOP);
+        layers.setLayerGravity(1, android.view.Gravity.FILL);
+        return layers;
+    }
+
     /** Кубическая кривая Безье как Android-интерполятор (порт CSS cubic-bezier). */
     public static Interpolator bezier(final float x1, final float y1, final float x2, final float y2) {
         return new Interpolator() {

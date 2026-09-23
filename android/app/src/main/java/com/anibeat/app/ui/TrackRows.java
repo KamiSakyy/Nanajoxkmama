@@ -134,7 +134,7 @@ public final class TrackRows {
             if (url == null) url = "";
             if (!url.equals(shownCover)) {
                 shownCover = url;
-                Img.loadRounded(cover, url, Img.size(view.getContext(), 46), 9f);
+                Img.loadRounded(cover, url, Img.size(view.getContext(), 50), 14f);
             }
 
             int percent = Downloads.progressOf(track.id, Downloads.KIND_AUDIO);

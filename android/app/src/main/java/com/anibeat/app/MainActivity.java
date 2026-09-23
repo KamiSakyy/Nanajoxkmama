@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements Host {
 
     private BottomNavigationView buildNav() {
         BottomNavigationView view = new BottomNavigationView(this);
-        view.setBackgroundColor(Theme.SURFACE_1);
+        view.setBackground(Theme.navBackground(this));
         view.setElevation(0f);
         ColorStateList colors = new ColorStateList(
                 new int[][]{new int[]{android.R.attr.state_checked}, new int[]{}},
