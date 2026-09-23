@@ -8,49 +8,49 @@ Daemon will be stopped at the end of the build
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
 > Task :app:packageDebugResources
-> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
 > Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest FROM-CACHE
 > Task :app:mergeDebugShaders
 > Task :app:compileDebugShaders NO-SOURCE
-> Task :app:processDebugManifestForPackage
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
 > Task :app:processDebugJavaRes NO-SOURCE
 > Task :app:processDebugUnitTestJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
 > Task :app:compileDebugJavaWithJavac
 Note: Some input files use or override a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 
-> Task :app:packageDebugUnitTestForUnitTest
-> Task :app:generateDebugUnitTestConfig
-> Task :app:bundleDebugClassesToCompileJar
 > Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:packageDebugUnitTestForUnitTest
 > Task :app:compileDebugUnitTestJavaWithJavac
+> Task :app:generateDebugUnitTestConfig
 
 > Task :app:testDebugUnitTest
 
 SmokeTest > appOpensAndTabsWork STANDARD_OUT
     === ОТЧЁТ ===
-    вкладка Главная: элементов 20 ← первый заход
+    вкладка Главная: элементов 30 ← первый заход
     вкладка Поиск: элементов 5 ← первый заход
     вкладка Обзор: элементов 7 ← первый заход
     вкладка Медиатека: элементов 2 ← первый заход
-    вкладка Главная: элементов 20 ← возврат
+    вкладка Главная: элементов 30 ← возврат
     вкладка Поиск: элементов 5 ← возврат
     вкладка Обзор: элементов 7 ← возврат
     вкладка Медиатека: элементов 2 ← возврат
     скачанное: элементов 4
     после аниме-ошибки: элементов 4
     первый текст медиатеки: Медиатека
-    финал, вкладка Главная: элементов 20
+    финал, вкладка Главная: элементов 30
     финал, вкладка Поиск: элементов 5
     финал, вкладка Обзор: элементов 7
     финал, вкладка Медиатека: элементов 4
@@ -61,5 +61,5 @@ SmokeTest > appOpensAndTabsWork STANDARD_OUT
     перехваченных сбоев: 0
     нажатий: 80, падений: 0
 
-BUILD SUCCESSFUL in 1m 7s
+BUILD SUCCESSFUL in 1m 8s
 24 actionable tasks: 23 executed, 1 from cache
