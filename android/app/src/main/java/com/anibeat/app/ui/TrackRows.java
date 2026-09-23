@@ -117,6 +117,7 @@ public final class TrackRows {
 
             String badgeText = track.themeSlug == null || track.themeSlug.isEmpty()
                     ? (track.type == null ? "" : track.type) : track.themeSlug.toUpperCase();
+            if (track.version != null && track.version > 1) badgeText = badgeText + " v" + track.version;
             if (!badgeText.equals(badge.getText().toString())) badge.setText(badgeText);
             badge.setVisibility(badgeText.isEmpty() ? View.GONE : View.VISIBLE);
             String typeKey = track.type == null ? "" : track.type.toUpperCase();

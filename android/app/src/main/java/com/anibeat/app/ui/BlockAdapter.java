@@ -185,8 +185,8 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 LinearLayout wrap = new LinearLayout(context);
                 wrap.setOrientation(LinearLayout.HORIZONTAL);
                 wrap.setGravity(Gravity.CENTER_VERTICAL);
-                wrap.setPadding(Theme.dp(context, 16), Theme.dp(context, 18), Theme.dp(context, 16), Theme.dp(context, 6));
-                TextView title = label(context, 22f, Theme.ON, true);
+                wrap.setPadding(Theme.dp(context, 16), Theme.dp(context, 18), Theme.dp(context, 16), Theme.dp(context, 8));
+                TextView title = label(context, 23f, Theme.ON, true);
                 wrap.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                 TextView action = label(context, 13f, Theme.ACCENT, false);
                 wrap.addView(action);
@@ -200,9 +200,17 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 wrap.setOrientation(LinearLayout.HORIZONTAL);
                 wrap.setGravity(Gravity.CENTER_VERTICAL);
                 wrap.setPadding(Theme.dp(context, 16), Theme.dp(context, 16), Theme.dp(context, 16), Theme.dp(context, 2));
-                TextView title = label(context, 16f, Theme.ON, true);
+                View marker = new View(context);
+                marker.setBackground(Theme.accentGradient(Theme.dpF(context, 2f)));
+                LinearLayout.LayoutParams markerParams = new LinearLayout.LayoutParams(
+                        Theme.dp(context, 3), Theme.dp(context, 16));
+                markerParams.rightMargin = Theme.dp(context, 9);
+                wrap.addView(marker, markerParams);
+                TextView title = label(context, 16.5f, Theme.ON, true);
                 wrap.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                TextView action = label(context, 12.5f, Theme.ON_VARIANT, false);
+                TextView action = label(context, 12.5f, Theme.ACCENT, false);
+                action.setPadding(Theme.dp(context, 10), Theme.dp(context, 4), Theme.dp(context, 10), Theme.dp(context, 4));
+                action.setBackground(Ui.rounded(context, Theme.ACCENT_CONTAINER, 9f));
                 wrap.addView(action);
                 VH holder = new VH(wrap);
                 holder.title = title;
@@ -392,6 +400,9 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
                 holder.title.setText(block.title);
                 holder.action.setText(block.action);
                 holder.action.setVisibility(block.action == null || block.action.isEmpty() ? View.GONE : View.VISIBLE);
+                holder.action.setBackground(block.kind == Block.SECTION
+                        ? Ui.rounded(context, Theme.ACCENT_CONTAINER, 9f) : null);
+                holder.action.setTextColor(block.kind == Block.SECTION ? Theme.ACCENT : Theme.ACCENT);
                 holder.action.setOnClickListener(block.onAction == null ? null : v -> block.onAction.run());
                 break;
             case Block.TEXT:
@@ -555,8 +566,10 @@ public class BlockAdapter extends RecyclerView.Adapter<BlockAdapter.VH> {
         column.setOrientation(LinearLayout.VERTICAL);
         MaterialCardView card = new MaterialCardView(context);
         card.setCardBackgroundColor(Theme.SURFACE_2);
-        card.setRadius(Theme.dpF(context, 14));
+        card.setRadius(Theme.dpF(context, 18));
         card.setCardElevation(0f);
+        card.setStrokeWidth(Theme.dp(context, 1));
+        card.setStrokeColor(Theme.OUTLINE_VARIANT);
         ImageView image = new ImageView(context);
         image.setScaleType(ImageView.ScaleType.CENTER_CROP);
         card.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.round(width * 1.42f)));

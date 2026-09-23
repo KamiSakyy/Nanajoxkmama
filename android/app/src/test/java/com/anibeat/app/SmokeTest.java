@@ -182,6 +182,66 @@ public class SmokeTest {
         clickSafely("возврат на Главную", () -> activity.showTab(0, false));
         layout(activity);
         report.add("тексты Главной: " + visibleTexts(activity, 6));
+        // На открытых поверх вкладок экранах есть кнопка «назад»
+        clickSafely("аниме-экран", () -> activity.openAnime(animeRef("naruto")));
+        layout(activity);
+        com.anibeat.app.ui.Screen opened = activity.currentScreen();
+        if (opened instanceof ListScreen && !((ListScreen) opened).hasBackButton()) {
+            failures.add("нет кнопки назад на открытом экране");
+        }
+        clickSafely("назад", activity::pop);
+
+        // Музыка — только аудио: видео-ссылка не подменяет аудиодорожку (это жгло трафик)
+        try {
+            org.json.JSONObject theme = new org.json.JSONObject();
+            theme.put("id", 7);
+            theme.put("slug", "OP1");
+            theme.put("type", "OP");
+            theme.put("sequence", 1);
+            org.json.JSONObject song = new org.json.JSONObject();
+            song.put("title", "Песня");
+            song.put("artists", new org.json.JSONArray());
+            theme.put("song", song);
+            org.json.JSONArray entries = new org.json.JSONArray();
+            for (int v = 1; v <= 2; v++) {
+                org.json.JSONObject entry = new org.json.JSONObject();
+                entry.put("id", 100 + v);
+                entry.put("version", v);
+                org.json.JSONObject video = new org.json.JSONObject();
+                video.put("id", 900 + v);
+                video.put("link", "https://example.com/video" + v + ".webm");
+                video.put("resolution", 1080);
+                org.json.JSONArray videos = new org.json.JSONArray();
+                videos.put(video);
+                entry.put("videos", videos);
+                entries.put(entry);
+            }
+            theme.put("animethemeentries", entries);
+            org.json.JSONObject anime = new org.json.JSONObject();
+            anime.put("id", 3);
+            anime.put("name", "Тест");
+            anime.put("slug", "test_anime");
+            anime.put("images", new org.json.JSONArray());
+            org.json.JSONArray themes = new org.json.JSONArray();
+            themes.put(theme);
+            anime.put("animethemes", themes);
+
+            java.util.List<com.anibeat.app.data.Models.Track> parsed =
+                    com.anibeat.app.data.Api.animeToTracks(anime, true);
+            report.add("разбор темы: треков " + parsed.size());
+            if (parsed.size() != 2) failures.add("показаны не все версии темы");
+            for (com.anibeat.app.data.Models.Track t : parsed) {
+                if (t.audioUrl != null && !t.audioUrl.isEmpty()) {
+                    failures.add("видео подставлено вместо аудио: " + t.audioUrl);
+                }
+            }
+            if (parsed.size() > 0 && (parsed.get(0).videoUrl == null || parsed.get(0).videoUrl.isEmpty())) {
+                failures.add("видео-ссылка потерялась");
+            }
+        } catch (Throwable t) {
+            failures.add("разбор темы упал: " + t);
+        }
+
         report.add("перехваченных сбоев: " + com.anibeat.app.core.Ui.problems());
         if (com.anibeat.app.core.Ui.problems() > 0) {
             failures.add("перехвачено сбоев: " + com.anibeat.app.core.Ui.problems());
@@ -191,6 +251,13 @@ public class SmokeTest {
         for (String line : report) System.out.println(line);
         System.out.println("нажатий: " + clicks + ", падений: " + failures.size());
         assertTrue(buildReport(), failures.isEmpty());
+    }
+
+    private com.anibeat.app.data.Models.AnimeRef animeRef(String slug) {
+        com.anibeat.app.data.Models.AnimeRef ref = new com.anibeat.app.data.Models.AnimeRef();
+        ref.slug = slug;
+        ref.name = slug;
+        return ref;
     }
 
     /** Видимые подписи на экране — по ним видно, что реально нарисовано. */

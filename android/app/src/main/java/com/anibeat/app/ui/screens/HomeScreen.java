@@ -178,4 +178,9 @@ public class HomeScreen extends ListScreen {
     protected void rebuild() {
         render(blocks, tracks);
     }
+
+    @Override
+    public String title() {
+        return "AniBeat";
+    }
 }

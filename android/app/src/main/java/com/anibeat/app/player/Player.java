@@ -114,10 +114,28 @@ public final class Player {
 
     public static void play(List<Models.Track> list, int startIndex) {
         if (list == null || list.isEmpty()) return;
+        Models.Track wanted = list.get(Math.max(0, Math.min(startIndex, list.size() - 1)));
+        if (!playable(wanted)) {
+            // Ссылки на звук ещё нет — берём её у источника, и только потом включаем трек.
+            com.anibeat.app.data.Api.attachAudio(wanted, ok -> {
+                if (ok) play(list, startIndex);
+                else Ui.toast(context, "У этой темы нет аудиодорожки");
+            });
+            return;
+        }
+        videoMode = videoMode && hasVideo(wanted);
         QUEUE.clear();
         QUEUE.addAll(list);
         index = Math.max(0, Math.min(startIndex, QUEUE.size() - 1));
         request(index, 0L, true);
+    }
+
+    /** Можно ли вообще воспроизвести трек в текущем режиме. */
+    private static boolean playable(Models.Track track) {
+        if (track == null) return false;
+        if (offlineUri(track) != null) return true;
+        if (videoMode && hasVideo(track)) return true;
+        return track.audioUrl != null && !track.audioUrl.isEmpty();
     }
 
     public static void playTrack(Models.Track track) {
@@ -386,6 +404,7 @@ public final class Player {
 
     /** Включить или выключить видео для текущего трека. */
     public static void setVideoMode(boolean value) {
+        if (value && !hasVideo(current())) value = false;
         if (videoMode == value) return;
         videoMode = value;
         if (index >= 0 && index < QUEUE.size() && engine != null) {
@@ -401,6 +420,18 @@ public final class Player {
 
     public static void toggleVideoMode() {
         setVideoMode(!videoMode);
+    }
+
+    /** Есть ли у трека видео вообще: ссылка или скачанный файл. */
+    public static boolean hasVideo(Models.Track track) {
+        if (track == null) return false;
+        if (track.videoUrl != null && !track.videoUrl.isEmpty()) return true;
+        try {
+            java.io.File file = com.anibeat.app.data.Downloads.offlineFile(track.id, com.anibeat.app.data.Downloads.KIND_VIDEO);
+            return file != null && file.exists() && file.length() > 0;
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /** Есть ли у трека скачанное видео на устройстве. */
@@ -600,14 +631,10 @@ public final class Player {
     private static String offlineUri(Models.Track track) {
         try {
             if (track == null || track.id == null) return null;
+            // Видео берём с устройства только если пользователь сам включил режим видео.
             String kind = videoMode ? com.anibeat.app.data.Downloads.KIND_VIDEO
                     : com.anibeat.app.data.Downloads.KIND_AUDIO;
             java.io.File file = com.anibeat.app.data.Downloads.offlineFile(track.id, kind);
-            if (file == null && !videoMode) {
-                // аудио нет, но скачано видео — играем его и включаем видеодорожку
-                file = com.anibeat.app.data.Downloads.offlineFile(track.id, com.anibeat.app.data.Downloads.KIND_VIDEO);
-                if (file != null) videoMode = true;
-            }
             if (file != null && file.exists() && file.length() > 0) return Uri.fromFile(file).toString();
         } catch (Throwable t) {
             Ui.report(t);
@@ -618,9 +645,10 @@ public final class Player {
     private static MediaItem item(Models.Track track) {
         String uri = offlineUri(track);
         boolean local = uri != null;
+        boolean video = videoMode && hasVideo(track);
         if (!local) {
-            uri = track.audioUrl;
-            if (videoMode && track.videoUrl != null && !track.videoUrl.isEmpty()) uri = track.videoUrl;
+            // В обычном режиме всегда аудиодорожка: видео в фоне не подгружается.
+            uri = video ? track.videoUrl : track.audioUrl;
         }
         MediaMetadata.Builder meta = new MediaMetadata.Builder()
                 .setTitle(track.title == null || track.title.isEmpty() ? track.themeSlug : track.title)

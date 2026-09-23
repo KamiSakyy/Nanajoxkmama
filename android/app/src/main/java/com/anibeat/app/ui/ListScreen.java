@@ -3,6 +3,9 @@ package com.anibeat.app.ui;
 import android.content.Context;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,6 +26,16 @@ public abstract class ListScreen extends FrameLayout implements Screen {
     protected final BlockAdapter adapter;
     protected final SwipeRefreshLayout swipe;
     protected final RecyclerView list;
+    /** Верхняя панель: стрелка назад, название и действия. */
+    protected final LinearLayout topBar;
+    /** Место под собственные панели экрана (например, строка поиска). */
+    protected final LinearLayout headerSlot;
+    private final ImageView backButton;
+    private final TextView topTitle;
+    private final LinearLayout topActions;
+    private Runnable backAction;
+    private int topInset;
+    private int topExtra;
 
     private final Meta.Listener metaListener = () -> Ui.postSafe(this::onMetaChanged);
     private boolean metaWatched;
@@ -37,6 +50,50 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         this.host = host;
         setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        LinearLayout column = new LinearLayout(context);
+        column.setOrientation(LinearLayout.VERTICAL);
+
+        topBar = new LinearLayout(context);
+        topBar.setOrientation(LinearLayout.HORIZONTAL);
+        topBar.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        topBar.setBackgroundColor(Theme.BG);
+        topBar.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(context, 56)));
+
+        backButton = new ImageView(context);
+        backButton.setImageResource(com.anibeat.app.R.drawable.ic_arrow_back);
+        backButton.setColorFilter(Theme.ON);
+        backButton.setVisibility(View.GONE);
+        int backPad = Theme.dp(context, 11);
+        backButton.setPadding(backPad, backPad, backPad, backPad);
+        LinearLayout.LayoutParams backParams = new LinearLayout.LayoutParams(
+                Theme.dp(context, 46), Theme.dp(context, 46));
+        backParams.leftMargin = Theme.dp(context, 6);
+        topBar.addView(backButton, backParams);
+        Ui.ripple(backButton);
+
+        topTitle = new TextView(context);
+        topTitle.setTextSize(19f);
+        topTitle.setTextColor(Theme.ON);
+        topTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        topTitle.setSingleLine(true);
+        topTitle.setIncludeFontPadding(false);
+        topTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        titleParams.leftMargin = Theme.dp(context, 8);
+        topBar.addView(topTitle, titleParams);
+
+        topActions = new LinearLayout(context);
+        topActions.setOrientation(LinearLayout.HORIZONTAL);
+        topActions.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        topBar.addView(topActions);
+        column.addView(topBar);
+
+        headerSlot = new LinearLayout(context);
+        headerSlot.setOrientation(LinearLayout.VERTICAL);
+        column.addView(headerSlot);
 
         swipe = new SwipeRefreshLayout(context);
         swipe.setColorSchemeColors(Theme.ACCENT, Theme.TERTIARY);
@@ -55,7 +112,14 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         list.setAdapter(adapter);
         swipe.addView(list, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-        addView(swipe);
+        column.addView(swipe, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        addView(column, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        backButton.setOnClickListener(v -> {
+            if (backAction != null) backAction.run();
+        });
 
         swipe.setOnRefreshListener(() -> Ui.safe(() -> load(true)));
     }
@@ -80,6 +144,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
                 Meta.addListener(metaListener);
                 metaWatched = true;
             }
+            refreshTopTitle();
             // Экран мог остаться без содержимого (первый заход не удался) — пробуем снова.
             if (!loaded || adapter.getItemCount() == 0) {
                 loaded = true;
@@ -120,19 +185,63 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         adapter.refreshChanged();
     }
 
-    /** Сколько сверху занимает собственная панель экрана (например, строка поиска). */
+    /** Сколько сверху занимает собственная панель экрана (сохранено для совместимости). */
     protected int extraTop() {
         return 0;
     }
 
+    /** Стрелка возврата: показывается только на открытых поверх вкладок экранах. */
+    public void setBackAction(Runnable action) {
+        this.backAction = action;
+        Ui.safe(() -> backButton.setVisibility(action == null ? View.GONE : View.VISIBLE));
+    }
+
+    /** Видна ли стрелка возврата (проверяется в тестах). */
+    public boolean hasBackButton() {
+        return backAction != null && backButton.getVisibility() == View.VISIBLE;
+    }
+
+    /** Место под собственную панель экрана. */
+    protected void addHeader(View view) {
+        Ui.safe(() -> headerSlot.addView(view));
+    }
+
+    protected void setTopTitle(String text) {
+        Ui.safe(() -> {
+            if (text != null && !text.contentEquals(topTitle.getText())) topTitle.setText(text);
+        });
+    }
+
+    /** Действия в верхней панели (иконки справа). */
+    protected void clearActions() {
+        Ui.safe(() -> topActions.removeAllViews());
+    }
+
+    protected View addAction(int icon, String description, Runnable action) {
+        ImageView button = new ImageView(getContext());
+        button.setImageResource(icon);
+        button.setColorFilter(Theme.ON);
+        button.setContentDescription(description);
+        int pad = Theme.dp(getContext(), 10);
+        button.setPadding(pad, pad, pad, pad);
+        topActions.addView(button, new LinearLayout.LayoutParams(
+                Theme.dp(getContext(), 44), Theme.dp(getContext(), 44)));
+        button.setOnClickListener(v -> Ui.safe(action));
+        Ui.ripple(button);
+        return button;
+    }
+
     /** Отступы содержимого под системные полосы, мини-плеер и меню. */
     public void setContentPadding(int top, int bottom) {
-        final int realTop = top + extraTop();
-        if (realTop == padTop && bottom == padBottom) return;
-        padTop = realTop;
+        if (top == padTop && bottom == padBottom) return;
+        padTop = top;
         padBottom = bottom;
+        topInset = top;
         Ui.safe(() -> {
-            list.setPadding(0, realTop, 0, bottom);
+            topBar.setPadding(0, top, 0, 0);
+            topBar.setLayoutParams(new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, Theme.dp(getContext(), 56) + top));
+            list.setPadding(0, extraTop(), 0, bottom);
             list.setClipToPadding(false);
         });
     }
@@ -179,6 +288,7 @@ public abstract class ListScreen extends FrameLayout implements Screen {
     protected void render(List<Block> blocks, List<Models.Track> tracks) {
         watchdogToken = new Object();
         hideLoading();
+        refreshTopTitle();
         Ui.safe(() -> {
             warmMeta(blocks, tracks);
             boolean wasEmpty = adapter.getItemCount() == 0;
@@ -188,6 +298,12 @@ public abstract class ListScreen extends FrameLayout implements Screen {
             // Наверх поднимаем только при первой загрузке: иначе прокрутка сбивается на каждом обновлении.
             if (wasEmpty) list.scrollToPosition(0);
         });
+    }
+
+    /** Название в верхней панели берём с экрана. */
+    protected void refreshTopTitle() {
+        String t = title();
+        if (t != null && !t.isEmpty()) setTopTitle(t);
     }
 
     /** Показать ошибку без падения приложения. */

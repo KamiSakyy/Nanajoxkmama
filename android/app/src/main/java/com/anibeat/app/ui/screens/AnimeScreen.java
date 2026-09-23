@@ -28,6 +28,7 @@ public class AnimeScreen extends ListScreen {
 
     public AnimeScreen(Context context, Host host, String slug) {
         super(context, host);
+        setTopTitle("Аниме");
         this.slug = slug;
     }
 

@@ -375,7 +375,7 @@ public class PlaybackService extends Service {
         ensureCover(track);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_anibeat)
-                .setColor(0xFF8AB4F8)
+                .setColor(Theme.ACCENT)
                 .setContentTitle(title)
                 .setContentText(text.toString())
                 .setContentIntent(activityIntent())

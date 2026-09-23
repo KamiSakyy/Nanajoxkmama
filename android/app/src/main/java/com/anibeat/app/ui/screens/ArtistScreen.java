@@ -24,6 +24,7 @@ public class ArtistScreen extends ListScreen {
 
     public ArtistScreen(Context context, Host host, String slug) {
         super(context, host);
+        setTopTitle("Исполнитель");
         this.slug = slug;
     }
 

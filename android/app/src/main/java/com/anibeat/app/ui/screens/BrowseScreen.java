@@ -137,4 +137,9 @@ public class BrowseScreen extends ListScreen {
         for (Models.GenreDef def : Api.GENRES) names.add(def.label);
         return names;
     }
+
+    @Override
+    public String title() {
+        return "Обзор";
+    }
 }

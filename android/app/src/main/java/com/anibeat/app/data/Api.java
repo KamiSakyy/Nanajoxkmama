@@ -240,7 +240,8 @@ public final class Api {
             JSONObject audio = video.optJSONObject("audio");
             String audioLink = audio != null ? audio.optString("link", null) : null;
             t.videoUrl = video.optString("link", "");
-            t.audioUrl = audioLink != null && !audioLink.isEmpty() ? audioLink : t.videoUrl;
+            // Только настоящая аудиодорожка: видео-файл вместо музыки не подставляем.
+            t.audioUrl = audioLink != null && !audioLink.isEmpty() && !"null".equals(audioLink) ? audioLink : "";
             t.resolution = video.has("resolution") && !video.isNull("resolution") ? video.optInt("resolution") : null;
             t.tags = video.optString("tags", "");
             t.version = entry.has("version") && !entry.isNull("version") ? entry.optInt("version") : null;
@@ -290,14 +291,13 @@ public final class Api {
     private static List<Models.Track> themesToTracks(JSONArray themes, int limit) {
         List<Models.Track> out = new ArrayList<>();
         if (themes == null) return out;
-        for (int i = 0; i < themes.length(); i++) {
+        for (int i = 0; i < themes.length() && out.size() < limit; i++) {
             JSONObject th = themes.optJSONObject(i);
             if (th == null) continue;
             JSONObject anime = th.optJSONObject("anime");
             if (anime == null) continue;
-            List<Models.Track> list = themeToTracks(th, anime, null);
-            if (!list.isEmpty()) out.add(list.get(0));
-            if (out.size() >= limit) break;
+            // Все доступные варианты темы (версии/серии) — «все песни», а не только первая.
+            out.addAll(themeToTracks(th, anime, null));
         }
         return out;
     }
@@ -374,7 +374,7 @@ public final class Api {
         String url = Net.buildUrl(BASE, "/search", fields(params(
                 "q", query,
                 "fields[search]", "anime,animethemes,artists",
-                "page[limit]", 12,
+                "page[limit]", 20,
                 "include[anime]", ANIME_LIST_INCLUDE,
                 "include[animetheme]", THEME_INCLUDE,
                 "include[artist]", "images"), F));
@@ -521,10 +521,8 @@ public final class Api {
                     if (th == null) continue;
                     JSONObject anime = th.optJSONObject("anime");
                     if (anime == null) continue;
-                    List<Models.Track> list = themeToTracks(th, anime, song);
-                    if (!list.isEmpty() && !seen.contains(list.get(0).id)) {
-                        seen.add(list.get(0).id);
-                        tracks.add(list.get(0));
+                    for (Models.Track found : themeToTracks(th, anime, song)) {
+                        if (found.id != null && seen.add(found.id)) tracks.add(found);
                     }
                 }
             }
@@ -616,6 +614,33 @@ public final class Api {
     }
 
     /** Аниме по MyAnimeList id (идём через /resource: site + external_id). */
+    /**
+     * Русский поиск: находим тайтлы по русскому названию через Shikimori,
+     * затем подтягиваем их темы из AniThemes.
+     */
+    public static void searchRussian(final String query, final Cb<Models.SearchResults> cb) {
+        Meta.searchShikimori(query, (ids, error) -> {
+            if (ids == null || ids.isEmpty()) {
+                cb.on(new Models.SearchResults(), null);
+                return;
+            }
+            List<Integer> limited = new ArrayList<>(ids.subList(0, Math.min(12, ids.size())));
+            getAnimeByMalIds(limited, (anime, err2) -> {
+                Models.SearchResults out = new Models.SearchResults();
+                out.anime = anime == null ? new ArrayList<>() : anime;
+                List<String> slugs = new ArrayList<>();
+                for (Models.AnimeSummary a : out.anime) {
+                    if (a.slug != null && !slugs.contains(a.slug)) slugs.add(a.slug);
+                }
+                List<String> head = slugs.isEmpty() ? slugs : new ArrayList<>(slugs.subList(0, Math.min(6, slugs.size())));
+                getTracksForAnimeSlugs(head, (tracks, err3) -> {
+                    out.tracks = tracks == null ? new ArrayList<>() : tracks;
+                    cb.on(out, null);
+                });
+            });
+        });
+    }
+
     public static void getAnimeByMalIds(List<Integer> ids, Cb<List<Models.AnimeSummary>> cb) {
         List<Integer> clean = new ArrayList<>();
         for (Integer id : ids) {
@@ -739,7 +764,7 @@ public final class Api {
             List<Models.Track> out = new ArrayList<>();
             for (String slug : slugs) {
                 JSONObject a = map.get(slug);
-                if (a != null) out.addAll(animeToTracks(a, false));
+                if (a != null) out.addAll(animeToTracks(a, true));
             }
             attachIds(out, () -> cb.on(out, error));
         });
@@ -787,13 +812,31 @@ public final class Api {
 
     /** Ссылка на звук конкретной темы: если её не было в общем ответе — дозапрашиваем. */
     public static void attachAudio(final Models.Track track) {
-        if (track == null) return;
+        attachAudio(track, null);
+    }
+
+    /** То же, но с ответом: сообщаем, удалось ли найти аудиодорожку. */
+    public static void attachAudio(final Models.Track track, final Net.Callback<Boolean> done) {
+        if (track == null) {
+            if (done != null) done.onResult(false, null);
+            return;
+        }
+        if (track.audioUrl != null && !track.audioUrl.isEmpty()) {
+            if (done != null) done.onResult(true, null);
+            return;
+        }
         String videoId = videoIdOf(track);
-        if (videoId == null) return;
+        if (videoId == null) {
+            if (done != null) done.onResult(false, null);
+            return;
+        }
         String url = Net.buildUrl(BASE, "/video/" + Net.encode(videoId), fields(params("include", "audio"), F));
         Net.getLow(url, Net.DAY, 30 * Net.DAY, (json, error) -> {
             try {
-                if (json == null) return;
+                if (json == null) {
+                    if (done != null) done.onResult(false, error);
+                    return;
+                }
                 JSONObject video = json.optJSONObject("video");
                 if (video == null) return;
                 JSONObject audio = video.optJSONObject("audio");
@@ -804,8 +847,10 @@ public final class Api {
                     String videoLink = video.optString("link", null);
                     if (videoLink != null && !videoLink.isEmpty() && !"null".equals(videoLink)) track.videoUrl = videoLink;
                 }
+                if (done != null) done.onResult(track.audioUrl != null && !track.audioUrl.isEmpty(), null);
             } catch (Throwable t) {
                 Ui.report(t);
+                if (done != null) done.onResult(false, null);
             }
         });
     }
@@ -834,7 +879,7 @@ public final class Api {
             JSONArray anime = Net.arr(json, "anime");
             for (int i = 0; i < anime.length(); i++) {
                 JSONObject a = anime.optJSONObject(i);
-                if (a != null) out.addAll(animeToTracks(a, false));
+                if (a != null) out.addAll(animeToTracks(a, true));
             }
             attachIds(out, () -> cb.on(out, error));
         });

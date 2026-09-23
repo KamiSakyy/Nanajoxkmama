@@ -12,36 +12,52 @@ import android.view.animation.Interpolator;
 /** Design tokens — точная копия палитры и кривых из сайта (index.css / @theme). */
 public final class Theme {
 
+    /* ------------------------------------------------------------------ */
+    /* Собственный стиль AniBeat: глубокий синий графит и фиолетовый акцент */
+    /* ------------------------------------------------------------------ */
+
     /* surfaces */
-    public static final int BG = 0xFF000000;
-    public static final int SURFACE = 0xFF000000;
-    public static final int SURFACE_1 = 0xFF0B0B0C;
-    public static final int SURFACE_2 = 0xFF141416;
-    public static final int SURFACE_3 = 0xFF1E1E21;
-    public static final int SURFACE_4 = 0xFF28282C;
-    public static final int SURFACE_5 = 0xFF333338;
+    public static final int BG = 0xFF07070C;
+    public static final int SURFACE = 0xFF07070C;
+    public static final int SURFACE_1 = 0xFF101018;
+    public static final int SURFACE_2 = 0xFF171722;
+    public static final int SURFACE_3 = 0xFF1F1F2C;
+    public static final int SURFACE_4 = 0xFF2A2A3A;
+    public static final int SURFACE_5 = 0xFF35354A;
 
     /* text */
-    public static final int ON = 0xFFFFFFFF;
-    public static final int ON_VARIANT = 0xFF9A9AA2;
-    public static final int ON_DIM = 0xFF63636B;
-    public static final int OUTLINE = 0xFF3A3A40;
-    public static final int OUTLINE_VARIANT = 0xFF232326;
-    public static final int SEPARATOR = 0xFF26262A;
+    public static final int ON = 0xFFF4F3FF;
+    public static final int ON_VARIANT = 0xFFA7A3BF;
+    public static final int ON_DIM = 0xFF6C6885;
+    public static final int OUTLINE = 0xFF3A3A52;
+    public static final int OUTLINE_VARIANT = 0xFF23232F;
+    public static final int SEPARATOR = 0xFF24242F;
 
     /* accents */
     public static final int PRIMARY = 0xFFFFFFFF;
-    public static final int PRIMARY_DIM = 0xFFDCDCDC;
-    public static final int ON_PRIMARY = 0xFF000000;
-    public static final int PRIMARY_CONTAINER = 0xFF2B2B2F;
-    public static final int ACCENT = 0xFF8AB4F8;
-    public static final int ACCENT_CONTAINER = 0xFF1B2736;
-    public static final int ON_ACCENT = 0xFF06121F;
-    public static final int SECONDARY = 0xFF8E8E96;
-    public static final int TERTIARY = 0xFF7EE0C0;
-    public static final int ERROR = 0xFFFF6B62;
-    public static final int WARNING = 0xFFFFB340;
-    public static final int LIVE = 0xFFFF5F57;
+    public static final int PRIMARY_DIM = 0xFFDCD9EE;
+    public static final int ON_PRIMARY = 0xFF0B0714;
+    public static final int PRIMARY_CONTAINER = 0xFF2B2A3C;
+    /** Основной акцент AniBeat. */
+    public static final int ACCENT = 0xFF8B7CFF;
+    /** Второй цвет градиента — мята. */
+    public static final int ACCENT_2 = 0xFF5BE7C4;
+    public static final int ACCENT_CONTAINER = 0xFF241F45;
+    public static final int ON_ACCENT = 0xFF0B0714;
+    public static final int SECONDARY = 0xFFB9A8FF;
+    public static final int TERTIARY = 0xFF5BE7C4;
+    public static final int ERROR = 0xFFFF6B85;
+    public static final int WARNING = 0xFFFFB86B;
+    public static final int LIVE = 0xFFFF6B6B;
+
+    /** Градиент акцента для кнопок и полосок. */
+    public static android.graphics.drawable.GradientDrawable accentGradient(float radiusDp) {
+        android.graphics.drawable.GradientDrawable gradient = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{ACCENT, ACCENT_2});
+        gradient.setCornerRadius(radiusDp);
+        return gradient;
+    }
 
     /* motion — кривые сайта из index.css / tailwind */
     public static final Interpolator EASE_OUT = bezier(0.2f, 0f, 0f, 1f);

@@ -83,4 +83,9 @@ public class TracksScreen extends ListScreen {
     protected void rebuild() {
         render(blocks(), data);
     }
+
+    @Override
+    public String title() {
+        return header == null ? "" : header;
+    }
 }

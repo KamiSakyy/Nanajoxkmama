@@ -178,11 +178,24 @@ public class MainActivity extends AppCompatActivity implements Host {
     private BottomNavigationView buildNav() {
         BottomNavigationView view = new BottomNavigationView(this);
         view.setBackgroundColor(Theme.SURFACE_1);
+        view.setElevation(0f);
         ColorStateList colors = new ColorStateList(
                 new int[][]{new int[]{android.R.attr.state_checked}, new int[]{}},
                 new int[]{Theme.ACCENT, Theme.ON_VARIANT});
         view.setItemIconTintList(colors);
         view.setItemTextColor(colors);
+        try {
+            view.setItemActiveIndicatorEnabled(true);
+            view.setItemActiveIndicatorColor(ColorStateList.valueOf(Theme.ACCENT_CONTAINER));
+            view.setItemActiveIndicatorWidth(Theme.dp(this, 64));
+            view.setItemActiveIndicatorHeight(Theme.dp(this, 32));
+            view.setItemActiveIndicatorShapeAppearance(
+                    com.google.android.material.shape.ShapeAppearanceModel.builder()
+                            .setAllCornerSizes(Theme.dpF(this, 16))
+                            .build());
+        } catch (Throwable t) {
+            Ui.report(t);
+        }
         view.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
         Menu menu = view.getMenu();
         menu.add(0, 1, 0, "Главная").setIcon(R.drawable.ic_home);
@@ -287,6 +300,7 @@ public class MainActivity extends AppCompatActivity implements Host {
                     break;
             }
         }
+        configureTopBar(tabs[index], index);
         setContent(tabs[index], animate && !sameTab);
         if (nav != null && nav.getSelectedItemId() != index + 1) {
             navSync = true;
@@ -297,6 +311,26 @@ public class MainActivity extends AppCompatActivity implements Host {
             }
         }
         updateBars(true);
+    }
+
+    /** Верхняя панель вкладки: название и полезные действия. */
+    private void configureTopBar(Screen screen, int index) {
+        Ui.safe(() -> {
+            if (!(screen instanceof ListScreen)) return;
+            ListScreen list = (ListScreen) screen;
+            String title = screen.title();
+            if (title != null && !title.isEmpty()) list.setTopTitle(title);
+            list.clearActions();
+            if (index == 0) {
+                list.addAction(R.drawable.ic_search, "Поиск", () -> showTab(1, true));
+                list.addAction(R.drawable.ic_settings, "Настройки", () -> Sheets.settings(this));
+            } else if (index == 2) {
+                list.addAction(R.drawable.ic_search, "Поиск", () -> showTab(1, true));
+                list.addAction(R.drawable.ic_settings, "Настройки", () -> Sheets.settings(this));
+            } else if (index == 3) {
+                list.addAction(R.drawable.ic_settings, "Настройки", () -> Sheets.settings(this));
+            }
+        });
     }
 
     /** Спрятать лишние экраны и вернуть им нормальный вид (иначе остаются прозрачными = чёрный экран). */
@@ -356,6 +390,11 @@ public class MainActivity extends AppCompatActivity implements Host {
             stack.add(current);
         }
         View view = screen.view();
+        if (screen instanceof ListScreen) {
+            ((ListScreen) screen).setBackAction(this::pop);
+            String title = screen.title();
+            if (title != null && !title.isEmpty()) ((ListScreen) screen).setTopTitle(title);
+        }
         content.addView(view, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         hideExcept(view);
@@ -603,6 +642,11 @@ public class MainActivity extends AppCompatActivity implements Host {
                     List<Models.Track> filtered = com.anibeat.app.ui.Genres.filter(tracks, genreId);
                     sink.tracks(filtered.isEmpty() ? tracks : filtered, null);
                 })), true);
+    }
+
+    @Override
+    public void openTab(int index) {
+        showTab(index, true);
     }
 
     @Override

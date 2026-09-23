@@ -36,6 +36,9 @@ public interface Host {
     /** Открыть медиатеку на нужном разделе: favorites, playlists, downloads, history. */
     void openLibraryTab(String tab);
 
+    /** Перейти на вкладку по номеру: 0 — Главная, 1 — Поиск, 2 — Обзор, 3 — Медиатека. */
+    void openTab(int index);
+
     void pushScreen(Screen screen);
 
     /** Закрыть текущий экран. */

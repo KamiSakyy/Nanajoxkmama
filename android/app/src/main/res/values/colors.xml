@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="anibeat_black">#FF000000</color>
-    <color name="anibeat_bg">#FF000000</color>
-    <color name="anibeat_surface_1">#FF0B0B0C</color>
-    <color name="anibeat_surface_2">#FF141416</color>
-    <color name="anibeat_surface_3">#FF1E1E21</color>
+    <color name="anibeat_bg">#07070C</color>
+    <color name="anibeat_surface_1">#101018</color>
+    <color name="anibeat_surface_2">#171722</color>
+    <color name="anibeat_surface_3">#1F1F2C</color>
     <color name="anibeat_surface_4">#FF28282C</color>
-    <color name="anibeat_on">#FFFFFFFF</color>
-    <color name="anibeat_on_variant">#FF9A9AA2</color>
-    <color name="anibeat_on_dim">#FF63636B</color>
-    <color name="anibeat_outline">#FF3A3A40</color>
-    <color name="anibeat_outline_variant">#FF232326</color>
-    <color name="anibeat_accent">#FF8AB4F8</color>
-    <color name="anibeat_on_accent">#FF06121F</color>
-    <color name="anibeat_accent_container">#FF1B2736</color>
-    <color name="anibeat_tertiary">#FF7EE0C0</color>
+    <color name="anibeat_on">#F4F3FF</color>
+    <color name="anibeat_on_variant">#A7A3BF</color>
+    <color name="anibeat_on_dim">#6C6885</color>
+    <color name="anibeat_outline">#3A3A52</color>
+    <color name="anibeat_outline_variant">#23232F</color>
+    <color name="anibeat_accent">#8B7CFF</color>
+    <color name="anibeat_on_accent">#0B0714</color>
+    <color name="anibeat_accent_container">#241F45</color>
+    <color name="anibeat_tertiary">#5BE7C4</color>
     <color name="anibeat_warning">#FFFFB340</color>
-    <color name="anibeat_error">#FFFF6B62</color>
+    <color name="anibeat_error">#FF6B85</color>
     <color name="anibeat_ripple">#33FFFFFF</color>
 </resources>

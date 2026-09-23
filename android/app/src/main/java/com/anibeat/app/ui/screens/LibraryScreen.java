@@ -211,4 +211,9 @@ public class LibraryScreen extends ListScreen {
         labels.add("История");
         return labels;
     }
+
+    @Override
+    public String title() {
+        return "Медиатека";
+    }
 }

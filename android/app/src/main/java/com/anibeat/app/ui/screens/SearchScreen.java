@@ -40,6 +40,7 @@ public class SearchScreen extends ListScreen {
     private Models.SearchResults results;
     private String mode = "all";
     private String query = "";
+    private int pending;
     private boolean searching;
     private int barHeight;
     private int generation;
@@ -83,11 +84,13 @@ public class SearchScreen extends ListScreen {
             showStart();
         });
         bar.addView(row);
-        FrameLayout.LayoutParams barParams = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        barParams.setMargins(Theme.dp(context, 12), Theme.dp(context, 8), Theme.dp(context, 12), 0);
-        addView(bar, barParams);
-        this.barHeight = Theme.dp(context, 68);
+        LinearLayout barWrap = new LinearLayout(context);
+        barWrap.setOrientation(LinearLayout.VERTICAL);
+        barWrap.setPadding(Theme.dp(context, 12), Theme.dp(context, 4), Theme.dp(context, 12), Theme.dp(context, 10));
+        barWrap.addView(bar, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        addHeader(barWrap);
+        this.barHeight = 0;
 
         input.addTextChangedListener(new TextWatcher() {
             @Override
@@ -119,7 +122,7 @@ public class SearchScreen extends ListScreen {
 
     @Override
     protected int extraTop() {
-        return barHeight;
+        return 0;
     }
 
     @Override
@@ -138,17 +141,65 @@ public class SearchScreen extends ListScreen {
         final int ticket = ++generation;
         setRefreshing(true);
         Library.addRecentSearch(asked);
+        final boolean russian = hasCyrillic(asked);
+        results = new Models.SearchResults();
+        pending = russian ? 2 : 1;
+
         Api.searchAll(asked, (found, error) -> Ui.postSafe(() -> {
             if (ticket != generation) return;
-            searching = false;
-            setRefreshing(false);
-            if (error != null || found == null) {
-                fail(error == null ? "Поиск не удался" : error);
-                return;
-            }
-            results = found;
-            renderResults();
+            merge(found, error);
         }));
+
+        if (russian) {
+            // Русское название ищем отдельно: Shikimori → AniThemes.
+            Api.searchRussian(asked, (found, error) -> Ui.postSafe(() -> {
+                if (ticket != generation) return;
+                merge(found, null);
+            }));
+        }
+    }
+
+    /** Слить ответ источника с тем, что уже найдено (важно для русского поиска). */
+    private void merge(Models.SearchResults found, String error) {
+        if (found != null) {
+            if (results == null) results = new Models.SearchResults();
+            if (found.tracks != null) for (Models.Track t : found.tracks) {
+                if (t == null || t.id == null) continue;
+                boolean has = false;
+                for (Models.Track known : results.tracks) if (t.id.equals(known.id)) has = true;
+                if (!has) results.tracks.add(t);
+            }
+            if (found.anime != null) for (Models.AnimeSummary a : found.anime) {
+                if (a == null || a.slug == null) continue;
+                boolean has = false;
+                for (Models.AnimeSummary known : results.anime) if (a.slug.equals(known.slug)) has = true;
+                if (!has) results.anime.add(a);
+            }
+            if (found.artists != null) for (Models.ArtistSummary a : found.artists) {
+                if (a == null || a.slug == null) continue;
+                boolean has = false;
+                for (Models.ArtistSummary known : results.artists) if (a.slug.equals(known.slug)) has = true;
+                if (!has) results.artists.add(a);
+            }
+        }
+        if (pending > 0) pending--;
+        searching = false;
+        setRefreshing(false);
+        boolean empty = results == null || (results.tracks.isEmpty() && results.anime.isEmpty() && results.artists.isEmpty());
+        if (empty && pending == 0) {
+            fail(error == null ? "Ничего не найдено" : error);
+            return;
+        }
+        if (!empty) renderResults();
+    }
+
+    private static boolean hasCyrillic(String text) {
+        if (text == null) return false;
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c >= 0x0400 && c <= 0x04FF) return true;
+        }
+        return false;
     }
 
     private void showStart() {
@@ -275,5 +326,10 @@ public class SearchScreen extends ListScreen {
         debounce.removeCallbacks(searchTask);
         query = text == null ? "" : text.trim();
         search();
+    }
+
+    @Override
+    public String title() {
+        return "Поиск";
     }
 }

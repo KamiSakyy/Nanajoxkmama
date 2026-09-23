@@ -171,6 +171,39 @@ public final class Meta {
         }
     }
 
+    /**
+     * Поиск по русскому названию: Shikimori отдаёт список аниме, из него берём MyAnimeList id.
+     * Дальше id превращаются в тайтлы AniThemes — так работает русский поиск.
+     */
+    public static void searchShikimori(final String query, final Net.Callback<List<Integer>> cb) {
+        if (query == null || query.trim().isEmpty()) {
+            cb.onResult(new ArrayList<>(), null);
+            return;
+        }
+        resolveHost(host -> {
+            if (host == null) {
+                cb.onResult(new ArrayList<>(), null);
+                return;
+            }
+            String url = host + "/api/animes?search=" + Net.encode(query.trim())
+                    + "&limit=20&order=popularity&kind=tv,movie,ova,ona,special";
+            Net.getLow(url, 6 * Net.HOUR, 7 * Net.DAY, (json, error) -> {
+                List<Integer> ids = new ArrayList<>();
+                JSONArray list = json == null ? null : json.optJSONArray("array");
+                if (list == null && json != null) list = json.optJSONArray("animes");
+                if (list != null) {
+                    for (int i = 0; i < list.length(); i++) {
+                        JSONObject a = list.optJSONObject(i);
+                        if (a == null) continue;
+                        int id = a.optInt("id");
+                        if (id > 0 && !ids.contains(id)) ids.add(id);
+                    }
+                }
+                cb.onResult(ids, ids.isEmpty() ? error : null);
+            });
+        });
+    }
+
     /* ------------------------------------------------------------------ */
     /* Shikimori                                                           */
     /* ------------------------------------------------------------------ */
