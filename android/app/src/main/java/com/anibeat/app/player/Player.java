@@ -117,8 +117,8 @@ public final class Player {
         Models.Track wanted = list.get(Math.max(0, Math.min(startIndex, list.size() - 1)));
         if (!playable(wanted)) {
             // Ссылки на звук ещё нет — берём её у источника, и только потом включаем трек.
-            com.anibeat.app.data.Api.attachAudio(wanted, ok -> {
-                if (ok) play(list, startIndex);
+            com.anibeat.app.data.Api.attachAudio(wanted, (ok, error) -> {
+                if (ok != null && ok) play(list, startIndex);
                 else Ui.toast(context, "У этой темы нет аудиодорожки");
             });
             return;

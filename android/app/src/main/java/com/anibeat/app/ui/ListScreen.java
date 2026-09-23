@@ -206,18 +206,18 @@ public abstract class ListScreen extends FrameLayout implements Screen {
         Ui.safe(() -> headerSlot.addView(view));
     }
 
-    protected void setTopTitle(String text) {
+    public void setTopTitle(String text) {
         Ui.safe(() -> {
             if (text != null && !text.contentEquals(topTitle.getText())) topTitle.setText(text);
         });
     }
 
     /** Действия в верхней панели (иконки справа). */
-    protected void clearActions() {
+    public void clearActions() {
         Ui.safe(() -> topActions.removeAllViews());
     }
 
-    protected View addAction(int icon, String description, Runnable action) {
+    public View addAction(int icon, String description, Runnable action) {
         ImageView button = new ImageView(getContext());
         button.setImageResource(icon);
         button.setColorFilter(Theme.ON);
