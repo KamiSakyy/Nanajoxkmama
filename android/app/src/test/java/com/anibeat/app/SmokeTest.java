@@ -186,7 +186,8 @@ public class SmokeTest {
         clickSafely("аниме-экран", () -> activity.openAnime(animeRef("naruto")));
         layout(activity);
         com.anibeat.app.ui.Screen opened = activity.currentScreen();
-        if (opened instanceof ListScreen && !((ListScreen) opened).hasBackButton()) {
+        if (opened instanceof com.anibeat.app.ui.ListScreen
+                && !((com.anibeat.app.ui.ListScreen) opened).hasBackButton()) {
             failures.add("нет кнопки назад на открытом экране");
         }
         clickSafely("назад", activity::pop);
